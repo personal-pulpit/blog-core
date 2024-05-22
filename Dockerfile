@@ -1,13 +1,7 @@
-FROM golang:latest      
-ENV GO111MODULE=on                                                                      
-ENV GOPROXY=https://goproxy.io
-RUN mkdir /app
-WORKDIR /app
-COPY go.mod  .
-COPY go.sum .
-RUN go mod download
-COPY . .
-RUN go build -o main .
-EXPOSE 8080
-CMD ["/app/main"]
 
+FROM mysql:latest
+
+ENV MYSQL_ROOT_PASSWORD=password
+ENV MYSQL_DATABASE=blog
+ENV MYSQL_USER=myuser
+ENV MYSQL_PASSWORD=mypassword

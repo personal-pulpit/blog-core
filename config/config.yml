@@ -1,0 +1,10 @@
+server:
+  Port: 8090
+mysql:
+  Port: 3306
+  Host: 0.0.0.0
+  Username: root
+  Password: password
+  DBname: blog
+jwt:
+  Secret: mysecretkey

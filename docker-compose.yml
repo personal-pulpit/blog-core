@@ -1,33 +1,13 @@
-version: '3.12'
-services:
-  db:
-    image: mysql
-    container_name: db
-    environment:
-      MYSQL_DATABASE: 'blog'
-      MYSQL_PASSWORD: 'password'
-      MYSQL_ROOT_PASSWORD: 'password'
-    ports:
-      - '3306:3306'
-    expose:
-      - '3306'
-    volumes:
-      - my-db:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+version: '3.8'
 
-  web:
-    container_name: web
+services:
+  mysql:
+    container_name: db
     build: .
     ports:
-      - '8080:8080'
-    image: blog
-    depends_on:
-      db:
-        condition: service_healthy
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
 
 volumes:
-  my-db:
+  mysql_data:
