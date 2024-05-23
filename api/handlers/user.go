@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"blog/pkg/service"
+	"blog/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,19 +10,43 @@ import (
 
 type User struct{}
 
-func (u User) GetAll(ctx *gin.Context) {}
+func (u User) GetUsers(ctx *gin.Context) {
+	users, err := service.GetUsers()
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest,  utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed in getting users!", err),
+		)
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
+		http.StatusOK, "user created!", map[string]interface{}{
+			"user":users,
+		},
+	))
+}
 
 func (u User) Get(ctx *gin.Context) {
 	id := ctx.Param("id")
 	user, err := service.GetUser(id)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"data": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest,  utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed in getting user!", err),
+		)
+		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": user})
+	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
+		http.StatusOK, "user Got!", map[string]interface{}{
+			"fristname":    user.Fristname,
+			"lastname":     user.Lastname,
+			"username":     user.Username,
+			"email":        user.Email,
+			"phone number": user.PhoneNumber,
+		},
+	))
 }
 
 func (u User) Create(ctx *gin.Context) {
-	firstname := ctx.PostForm("firstname")
+	firstname := ctx.PostForm("fristname")
 	lastname := ctx.PostForm("lastname")
 	username := ctx.PostForm("username")
 	password := ctx.PostForm("password")
@@ -30,9 +55,20 @@ func (u User) Create(ctx *gin.Context) {
 	user, err := service.CreateUser(firstname, lastname, username, password, email, phonenumber)
 
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"data": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed in creatig user", err),
+		)
+		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": user})
+	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
+		http.StatusOK, "user created!", map[string]interface{}{
+			"fristname":    user.Fristname,
+			"lastname":     user.Lastname,
+			"username":     user.Username,
+			"email":        user.Email,
+			"phone number": user.PhoneNumber,
+		},
+	))
 }
 func (u User) UpdateById(ctx *gin.Context) {
 	id := ctx.PostForm("id")
@@ -43,11 +79,22 @@ func (u User) UpdateById(ctx *gin.Context) {
 	email := ctx.PostForm("email")
 	phonenumber := ctx.PostForm("phonenumber")
 
-	err := service.UpdateUserById(id, firstname, lastname, username, password, email, phonenumber)
+	user,err := service.UpdateUserById(id, firstname, lastname, username, password, email, phonenumber)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"data": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest,  utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed in updating user!", err),
+		)
+		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": "ok!"})
+	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
+		http.StatusOK, "user updated!", map[string]interface{}{
+			"fristname":    user.Fristname,
+			"lastname":     user.Lastname,
+			"username":     user.Username,
+			"email":        user.Email,
+			"phone number": phonenumber,
+		},
+	))
 }
 func (u User) DeleteById(ctx *gin.Context) {
 	id := ctx.Param("id")
@@ -55,7 +102,11 @@ func (u User) DeleteById(ctx *gin.Context) {
 	err := service.DeleteUser(id)
 
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"data": err.Error()})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed in deleting user!", err),)
+			return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"data": "ok!"})
+	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
+		http.StatusOK, "user updated!", map[string]interface{}{},
+	))
 }

@@ -18,6 +18,7 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/user":
 		{
 			u := handlers.User{}
+			r.GET("",u.GetUsers)
 			r.GET("/:id", u.Get)
 			r.POST("", u.Create)
 			r.PATCH("", u.UpdateById)
