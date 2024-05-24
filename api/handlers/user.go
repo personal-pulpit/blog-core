@@ -44,7 +44,34 @@ func (u User) Get(ctx *gin.Context) {
 		},
 	))
 }
+func (u User) Verify(ctx *gin.Context){
+	username := ctx.PostForm("username")
+	password := ctx.PostForm("password")
+	user,err := service.VerifyUser(username,password)
+	if err != nil{
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "password or username is wrong", err),
+		)
+		return
+	}
+	err = utils.SetToken(ctx,user.Id,user.Role,user.Username)
+	if err != nil{
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed...", err),
+		)
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
+		http.StatusOK, "welcome back!", map[string]interface{}{
+			"fristname":    user.Fristname,
+			"lastname":     user.Lastname,
+			"username":     user.Username,
+			"email":        user.Email,
+			"phone number": user.PhoneNumber,
+		},
+	))
 
+}
 func (u User) Create(ctx *gin.Context) {
 	firstname := ctx.PostForm("fristname")
 	lastname := ctx.PostForm("lastname")
@@ -53,10 +80,16 @@ func (u User) Create(ctx *gin.Context) {
 	email := ctx.PostForm("email")
 	phonenumber := ctx.PostForm("phonenumber")
 	user, err := service.CreateUser(firstname, lastname, username, password, email, phonenumber)
-
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in creatig user", err),
+		)
+		return
+	}
+	err = utils.SetToken(ctx,user.Id,user.Role,user.Username)
+	if err != nil{
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "failed...", err),
 		)
 		return
 	}
@@ -107,6 +140,10 @@ func (u User) DeleteById(ctx *gin.Context) {
 			return
 	}
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
-		http.StatusOK, "user updated!", map[string]interface{}{},
+		http.StatusOK, "user deleted!", map[string]interface{}{},
 	))
+}
+func (u User)Logout(ctx *gin.Context){
+	utils.DestroyToken(ctx)
+	ctx.Redirect(http.StatusSeeOther,"/")
 }

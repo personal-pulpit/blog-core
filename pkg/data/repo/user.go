@@ -4,14 +4,15 @@ import (
 	"blog/pkg/data/database"
 	"blog/pkg/data/models"
 )
-func GetUsers()([]models.User,error){
+
+func GetUsers() ([]models.User, error) {
 	var users []models.User
 	err := database.DB.Find(&users).Error
 	return users, err
 }
 func GetUser(id string) (models.User, error) {
 	var u models.User
-	err := database.DB.First(&u,id).Error
+	err := database.DB.First(&u, id).Error
 	return u, err
 }
 
@@ -28,11 +29,11 @@ func CreateUser(fristname, lastname, username, password, email, phonenumber stri
 
 	return u, err
 }
-func UpdateUserById(id, fristname, lastname, username, password, email, phonenumber string) (models.User,error) {
+func UpdateUserById(id, fristname, lastname, username, password, email, phonenumber string) (models.User, error) {
 	u, err := GetUser(id)
 
 	if err != nil {
-		return models.User{},err
+		return models.User{}, err
 	}
 	u.Fristname = fristname
 	u.Lastname = lastname
@@ -43,11 +44,15 @@ func UpdateUserById(id, fristname, lastname, username, password, email, phonenum
 
 	err = database.DB.Save(&u).Error
 
-	return u,err
+	return u, err
 }
 func DeleteUser(id string) error {
 	var u models.User
-	err := database.DB.Delete(&u, id).Error
+	return database.DB.Delete(&u, id).Error
 
-	return err
+}
+func VerifyUser(username string) (models.User, error) {
+	var u models.User
+	err:= database.DB.First(&u,"username=?",username).Error
+	return u,err
 }

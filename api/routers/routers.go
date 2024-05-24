@@ -20,10 +20,12 @@ func praseRouters(r *gin.RouterGroup) {
 			u := handlers.User{}
 			r.GET("",u.GetUsers)
 			r.GET("/:id", u.Get)
+			r.GET("/logout", u.Logout)
 			r.POST("", u.Create)
+			r.POST("/login",u.Verify)
 			r.PATCH("", u.UpdateById)
 			r.DELETE("/:id", u.DeleteById)
-		}
+		}	
 	}
 
 }
