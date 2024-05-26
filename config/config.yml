@@ -14,3 +14,4 @@ redis:
   Username: ""
   Password: ""
   DBname:       0
+  Protocol: 3

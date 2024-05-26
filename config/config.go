@@ -10,6 +10,7 @@ var Cfg = Config{}
 
 type (
 	Config struct {
+		Redis MyRedisConfig
 		Mysql  MysqlConfig
 		Jwt    JwtConfig
 		Server ServerConfig
@@ -27,12 +28,13 @@ type (
 	ServerConfig struct {
 		Port string
 	}
-	Redis struct{
+	MyRedisConfig struct{
 		Host     string
 		Username string
 		Password string
 		Port     string
 		DBname   string
+		Protocol string
 	}
 )
 
