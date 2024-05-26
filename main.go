@@ -20,5 +20,9 @@ func main() {
 	logger.MyLogger.Info("database connected!",map[string]interface{}{
 		"status":true,
 	})
+	database.ConnectRedis()
+	logger.MyLogger.Info("redis connected!",map[string]interface{}{
+		"status":true,
+	})
 	server.InitServer()
 }

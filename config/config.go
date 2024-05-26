@@ -8,24 +8,33 @@ import (
 
 var Cfg = Config{}
 
-type Config struct {
-	Mysql  MysqlConfig
-	Jwt    JwtConfig
-	Server ServerConfig
-}
-type MysqlConfig struct {
-	Host     string
-	Username string
-	Password string
-	Port     string
-	DBname   string
-}
-type JwtConfig struct {
-	Secret string
-}
-type ServerConfig struct {
-	Port string
-}
+type (
+	Config struct {
+		Mysql  MysqlConfig
+		Jwt    JwtConfig
+		Server ServerConfig
+	}
+	MysqlConfig struct {
+		Host     string
+		Username string
+		Password string
+		Port     string
+		DBname   string
+	}
+	JwtConfig struct {
+		Secret string
+	}
+	ServerConfig struct {
+		Port string
+	}
+	Redis struct{
+		Host     string
+		Username string
+		Password string
+		Port     string
+		DBname   string
+	}
+)
 
 func InitConfig() {
 	cfg := Config{}

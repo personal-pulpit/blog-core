@@ -20,7 +20,6 @@ func ConnectDB() {
 		config.Cfg.Mysql.Port,
 		config.Cfg.Mysql.DBname,
 	)
-	fmt.Println(dns)
 	db, err := gorm.Open(mysql.Open(dns))
 	if err != nil {
 		log.Fatalln(err)

@@ -8,3 +8,9 @@ mysql:
   DBname: blog
 jwt:
   Secret: mysecretkey
+redis:
+  Port: 6379
+  Host: 0.0.0.0
+  Username: ""
+  Password: ""
+  DBname:       0
