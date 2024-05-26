@@ -19,7 +19,7 @@ func (u User) GetUsers(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
-		http.StatusOK, "user created!", map[string]interface{}{
+		http.StatusOK, "users got!", map[string]interface{}{
 			"user":users,
 		},
 	))
@@ -61,6 +61,7 @@ func (u User) Verify(ctx *gin.Context){
 		)
 		return
 	}
+	ctx.Set("is_logged",true)
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
 		http.StatusOK, "welcome back!", map[string]interface{}{
 			"fristname":    user.Fristname,
@@ -93,6 +94,7 @@ func (u User) Create(ctx *gin.Context) {
 		)
 		return
 	}
+	ctx.Set("is_logged",true)
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
 		http.StatusOK, "user created!", map[string]interface{}{
 			"fristname":    user.Fristname,
