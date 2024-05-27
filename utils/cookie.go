@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -9,11 +10,11 @@ import (
 
 var errFailedSettingToken = errors.New("failed setting token")
 
-func SetToken(ctx *gin.Context, id, role uint,username string) error {
+func SetToken(ctx *gin.Context, id, role uint, username string) error {
 	if id == 0 || role == 0 {
 		return errFailedSettingToken
 	}
-	token, err := CreateToken(id, role,username)
+	token, err := CreateToken(id, role, username)
 	if err != nil {
 		return err
 	}
@@ -37,4 +38,11 @@ func GetToken(ctx *gin.Context) jwt.MapClaims {
 
 func DestroyToken(ctx *gin.Context) {
 	ctx.SetCookie("token", "", -1, "/", "localhost", false, true)
+}
+
+func GetIdFromToken(ctx *gin.Context) string {
+	claims := GetToken(ctx)
+	fid, _ := claims["id"].(float64)
+	sid := strconv.FormatFloat(fid, 'f', -1, 64)
+	return sid
 }

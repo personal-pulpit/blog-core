@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.30'
 
 services:
   mysql:
@@ -7,8 +7,8 @@ services:
     environment:
       MYSQL_DATABASE: 'blog'
       MYSQL_ROOT_PASSWORD: 'password'
-      MYSQL_USER: myuser
-      MYSQL_PASSWORD: mypassword
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
       - "3306:3306"
     volumes:

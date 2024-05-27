@@ -7,7 +7,7 @@ const(
 )
 type User struct {
 	Id uint `gorm:"primaryKey"`
-	Fristname string `gorm:"size:25;not null"`
+	Firstname string `gorm:"size:25;not null"`
 	Lastname string `gorm:"size:25;not null"`
 	Username string `gorm:"unique;size:25;not null"`
 	Password string `gorm:"size:150;not null"`

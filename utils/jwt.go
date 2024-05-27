@@ -18,8 +18,6 @@ func CreateToken(Id, role uint, username string) (string, error) {
         fmt.Println("secret:",secret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       Id,
-		"role":     role,
-		"username": username,
 	})
 	tokenString, err := token.SignedString(secret)
 	return tokenString, err
