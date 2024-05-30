@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"blog/pkg/service"
 	"blog/utils"
+	"blog/utils/common"
 	"fmt"
 	"net/http"
 
@@ -12,21 +12,21 @@ import (
 func Base(ctx *gin.Context) {
 	if ctx.GetBool("is_logged") {
 		id := utils.GetIdFromToken(ctx)
-		user,err := service.GetUserByIdRedis(id)
-		if err != nil{
+		user, err := common.GetUserFromRedisById(id)
+		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, utils.NewErrorHtppResponse(
 				http.StatusInternalServerError, "sometime went wrong!", err,
 			))
 			return
 		}
-		msg := fmt.Sprintf("Hey %s", user.Firstname)
+		msg := fmt.Sprintf("Hey %s", user["firstname"])
 		ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
 			http.StatusOK, msg, map[string]interface{}{},
 		))
 		return
 	}
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
-		http.StatusOK, "welcome to my api",map[string]interface{}{},
+		http.StatusOK, "welcome to my api", map[string]interface{}{},
 	))
 
 }

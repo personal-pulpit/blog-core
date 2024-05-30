@@ -3,123 +3,149 @@ package repo
 import (
 	"blog/pkg/data/database"
 	"blog/pkg/data/models"
+	"blog/utils"
+
 	"context"
 	"fmt"
 	"strconv"
+
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
-func GetUsers() ([]models.User, error) {
-	var users []models.User
-	err := database.DB.Find(&users).Error
-	return users, err
-}
-func GetUser(id string) (models.User, error) {
-	var u models.User
-	err := database.DB.First(&u, id).Error
-	return u, err
+type UserRepo struct {
+	DB  *gorm.DB
+	RDB *redis.Client
 }
 
-func CreateUser(firstname, lastname, username, password, email, phonenumber string) (models.User, error) {
+func NewUserRepo() *UserRepo {
+	return &UserRepo{
+		DB:  database.DB,
+		RDB: database.Rdb,
+	}
+}
+func (ur *UserRepo) CreateUser(firstname, lastname, biography, username, password, email, phonenumber string) (models.User, error) {
 	var u models.User
 	u.Firstname = firstname
 	u.Lastname = lastname
+	u.Biography = biography
 	u.Username = username
-	u.Password = password
 	u.Email = email
 	u.PhoneNumber = phonenumber
-
-	err := database.DB.Create(&u).Error
-	if err != nil{
-		return models.User{},err
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		return models.User{}, err
 	}
+	u.Password = hashedPassword
+	err = ur.DB.Create(&u).Error
+	if err != nil {
+		return models.User{}, err
+	}
+	return ur.CreateChache(u)
+}
+func (ur *UserRepo) UpdateUserById(id, firstname, lastname, biography, username string) (models.User, error) {
+	var u models.User
+	err := ur.DB.First(&u, id).Error
+	if err != nil {
+		return models.User{}, err
+	}
+	u.Firstname = firstname
+	u.Lastname = lastname
+	u.Biography = biography
+	u.Username = username
+	err = ur.DB.Save(&u).Error
+	if err != nil {
+		return models.User{}, err
+	}
+	u, err = ur.CreateChache(u)
+	if err != nil {
+		return models.User{}, err
+	}
+	return u, err
+}
+func (ur *UserRepo) DeleteUser(id string) error {
+	var u models.User
+	err := ur.DB.Delete(&u, id).Error
+	if err != nil {
+		return err
+	}
+	id = strconv.Itoa(int(u.Id))
+	err = ur.DeleteChacheByIdRedis(id)
+	return err
+}
+func (ur *UserRepo) VerifyUser(username, password string) (models.User, error) {
+	var u models.User
+	err := ur.DB.First(&u, "username=?", username).Error
+	if err != nil {
+		return u, err
+	}
+	err = utils.CheckPassword(password, u.Password)
+	if err != nil {
+		return u, err
+	}
+	u, err = ur.CreateChache(u)
+	return u, err
+}
+func (ur *UserRepo) GetUserByIdRedis(id string) (map[string]string, error) {
+	redisMapRes := ur.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
+	if redisMapRes.Err() != nil {
+		return map[string]string{}, redisMapRes.Err()
+	}
+	// var u models.User
+	// for key, value := range redisMapRes.Val() {
+	// 	switch key {
+	// 	case "firstname":
+	// 		u.Firstname = value
+	// 	case "lastname":
+	// 		u.Lastname = value
+	// 	case "biography":
+	// 		u.Biography = value
+	// 	case "username":
+	// 		u.Username = value
+	// 	case "password":
+	// 		u.Password = value
+	// 	case "email":
+	// 		u.Email = value
+	// 	case "phonenumber":
+	// 		u.PhoneNumber = value
+	// 	case "role":
+	// 		rolef, _ := strconv.Atoi(value)
+	// 		roleu := uint(rolef)
+	// 		u.Role = roleu
+	// 	}
+	// }
+	return redisMapRes.Val(), nil
+}
+func (ur *UserRepo) CreateChache(u models.User) (models.User, error) {
 	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
 		"firstname":   u.Firstname,
 		"lastname":    u.Lastname,
+		"biography":   u.Biography,
 		"username":    u.Username,
 		"email":       u.Email,
 		"phonenumber": u.PhoneNumber,
 		"role":        u.Role,
+		"createdAt":   u.CreatedAt,
+		"updatedAt":   u.UpdatedAt,
 	})
 	return u, redisRes.Err()
 }
-func UpdateUserById(id, firstname, lastname, username, password, email, phonenumber string) (models.User, error) {
-	redisMapRes := database.Rdb.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
-	if redisMapRes.Err() != nil {
-		return models.User{}, redisMapRes.Err()
-	}
-	var u models.User
-	for key, value := range redisMapRes.Val() {
-		switch key {
-		case "firstname":
-			u.Firstname = value
-		case "lastname":
-			u.Lastname = value
-		case "username":
-			u.Username = value
-		case "password":
-			u.Password = value
-		case "email":
-			u.Email = value
-		case "phonenumber":
-			u.PhoneNumber = value
-		}
-	}
-	err := database.DB.Save(&u).Error
-	if err != nil {
-		return models.User{}, err
-	}
-	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
-		"firstname":   u.Firstname,
-		"lastname":    u.Lastname,
-		"username":    u.Username,
-		"email":       u.Email,
-		"phonenumber": u.PhoneNumber,
-	})
-	if redisRes.Err() != nil {
-		return models.User{}, redisRes.Err()
-	}
-	return u, err
-}
-func DeleteUser(id string) error {
-	var u models.User
-	err := database.DB.Delete(&u, id).Error
-	if err != nil {
-		return err
-	}
-	redisRes := database.Rdb.Del(context.Background(), fmt.Sprintf("user:%d", u.Id))
+func (ur *UserRepo) DeleteChacheByIdRedis(id string) error {
+	redisRes := database.Rdb.Del(context.Background(), fmt.Sprintf("user:%s", id))
 	return redisRes.Err()
-
 }
-func VerifyUser(username string) (models.User, error) {
-	var u models.User
-	err := database.DB.First(&u, "username=?", username).Error
-	return u, err
-}
-func GetUserByIdRedis(id string) (models.User,error) {
-	redisMapRes := database.Rdb.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
-	if redisMapRes.Err() != nil {
-		return models.User{}, redisMapRes.Err()
+func (ur *UserRepo) GetUsersRedis() ([]map[string]string, error) {
+	var users []map[string]string
+	keys, err := ur.RDB.Keys(context.Background(), "user:*").Result()
+	if err != nil {
+		return users, err
 	}
-	var u models.User
-	for key, value := range redisMapRes.Val() {
-		switch key {
-		case "firstname":
-			u.Firstname = value
-		case "lastname":
-			u.Lastname = value
-		case "username":
-			u.Username = value
-		case "password":
-			u.Password = value
-		case "email":
-			u.Email = value
-		case "phonenumber":
-			u.PhoneNumber = value
-		case "role":
-			rolef, _ := strconv.Atoi(value)
-			roleu := uint(rolef)
-			u.Role = roleu
+	for _, key := range keys {
+		userMap, err := ur.RDB.HGetAll(context.Background(), key).Result()
+		if err != nil {
+			return []map[string]string{}, err
 		}
+		users = append(users, userMap)
 	}
-	return u,nil
+	return users, nil
 }

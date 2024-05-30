@@ -14,7 +14,7 @@ var (
 	errUnexpectedSigningMethod = errors.New("unexpected signin method")
 )
 
-func CreateToken(Id, role uint, username string) (string, error) {
+func CreateToken(Id uint) (string, error) {
         fmt.Println("secret:",secret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       Id,

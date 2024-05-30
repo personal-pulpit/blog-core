@@ -6,6 +6,7 @@ mysql:
   Username: root
   Password: password
   DBname: blog
+  ParseTime: true
 jwt:
   Secret: mysecretkey
 redis:

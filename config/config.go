@@ -21,6 +21,7 @@ type (
 		Password string
 		Port     string
 		DBname   string
+		ParseTime bool
 	}
 	JwtConfig struct {
 		Secret string

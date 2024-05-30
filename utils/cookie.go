@@ -10,11 +10,11 @@ import (
 
 var errFailedSettingToken = errors.New("failed setting token")
 
-func SetToken(ctx *gin.Context, id, role uint, username string) error {
-	if id == 0 || role == 0 {
+func SetToken(ctx *gin.Context, id uint) error {
+	if id == 0  {
 		return errFailedSettingToken
 	}
-	token, err := CreateToken(id, role, username)
+	token, err := CreateToken(id)
 	if err != nil {
 		return err
 	}

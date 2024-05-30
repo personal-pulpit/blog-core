@@ -3,6 +3,7 @@ package routers
 import (
 	"blog/api/handlers"
 	"blog/api/middlewares"
+	"blog/pkg/data/repo"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,9 @@ func praseRouters(r *gin.RouterGroup) {
 	switch r.BasePath() {
 	case "/api/v1/user":
 		{
-			u := handlers.User{}
+			u := &handlers.User{
+					UserRepo: repo.NewUserRepo(),
+			}
 			r.GET("",u.GetUsers)
 			r.GET("/:id", u.Get)
 			r.GET("/logout", middlewares.EnsureLoggedIn(),u.Logout)

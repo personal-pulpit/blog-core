@@ -2,17 +2,24 @@ package common
 
 import (
 	"blog/pkg/data/models"
-	"blog/pkg/service"
+	"blog/pkg/data/repo"
 	"blog/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func IsAdmin(ctx *gin.Context) bool {
 	id := utils.GetIdFromToken(ctx)
-	user, err := service.GetUserByIdRedis(id)
+	user, err := GetUserFromRedisById(id)
 	if err != nil {
 		panic(err)
 	}
-	return user.Role == uint(models.AdminRole)
+	sRole := user["role"]
+	role,_:=strconv.Atoi(sRole)
+	return uint(role) == uint(models.AdminRole)
+}
+func GetUserFromRedisById(id string) (map[string]string, error) {
+	ur := repo.NewUserRepo()
+	return ur.GetUserByIdRedis(id)
 }
