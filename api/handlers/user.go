@@ -27,7 +27,7 @@ func (u *User) GetUsers(ctx *gin.Context) {
 	))
 }
 
-func (u *User) Get(ctx *gin.Context) {
+func (u *User) GetUserById(ctx *gin.Context) {
 	id := ctx.Param("id")
 	user, err := u.UserRepo.GetUserByIdRedis(id)
 	if err != nil {
@@ -44,6 +44,8 @@ func (u *User) Get(ctx *gin.Context) {
 			"username":     user["username"],
 			"email":        user["email"],
 			"phone number": user["phonenumber"],
+			"created at": user["createdAt"],
+			"updated at": user["updatedAt"],
 		},
 	))
 }

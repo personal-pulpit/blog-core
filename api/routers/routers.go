@@ -23,7 +23,7 @@ func praseRouters(r *gin.RouterGroup) {
 					UserRepo: repo.NewUserRepo(),
 			}
 			r.GET("",u.GetUsers)
-			r.GET("/:id", u.Get)
+			r.GET("/:id", u.GetUserById)
 			r.GET("/logout", middlewares.EnsureLoggedIn(),u.Logout)
 			r.POST("",middlewares.EnsureNotLoggedIn(),u.Create)
 			r.POST("/login",middlewares.EnsureNotLoggedIn(),u.Verify)

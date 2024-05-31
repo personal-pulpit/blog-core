@@ -4,6 +4,7 @@ import (
 	"blog/pkg/data/database"
 	"blog/pkg/data/models"
 	"blog/utils"
+	"errors"
 
 	"context"
 	"fmt"
@@ -17,6 +18,14 @@ type UserRepo struct {
 	DB  *gorm.DB
 	RDB *redis.Client
 }
+
+var (
+	ErrEmailAlreadyExits       = errors.New("email already exits")
+	ErrUsernameAlreadyExits    = errors.New("username already exits")
+	ErrPhoneNumberAlreadyExits = errors.New("phone number already exits")
+	ErrUserNotFound            = errors.New("user not found")
+	ErrUsernameOrPasswordWrong      = errors.New("username or password wrong")
+)
 
 func NewUserRepo() *UserRepo {
 	return &UserRepo{
@@ -39,7 +48,15 @@ func (ur *UserRepo) CreateUser(firstname, lastname, biography, username, passwor
 	u.Password = hashedPassword
 	err = ur.DB.Create(&u).Error
 	if err != nil {
-		return models.User{}, err
+		if utils.CheckErrorForWord(err, "email") {
+			return models.User{}, ErrEmailAlreadyExits
+		} else if utils.CheckErrorForWord(err, "username") {
+			return models.User{}, ErrUsernameAlreadyExits
+		} else if utils.CheckErrorForWord(err, "phone_number") {
+			return models.User{}, ErrPhoneNumberAlreadyExits
+		} else {
+			return models.User{}, err
+		}
 	}
 	return ur.CreateChache(u)
 }
@@ -47,13 +64,20 @@ func (ur *UserRepo) UpdateUserById(id, firstname, lastname, biography, username 
 	var u models.User
 	err := ur.DB.First(&u, id).Error
 	if err != nil {
-		return models.User{}, err
+		if errors.Is(err,gorm.ErrRecordNotFound){
+			return u,ErrUserNotFound
+		}
+		return u, err
 	}
 	u.Firstname = firstname
 	u.Lastname = lastname
 	u.Biography = biography
 	u.Username = username
 	err = ur.DB.Save(&u).Error
+	if err != nil {
+		return models.User{}, err
+	}
+	err = ur.DeleteChacheByIdRedis(id)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -77,43 +101,30 @@ func (ur *UserRepo) VerifyUser(username, password string) (models.User, error) {
 	var u models.User
 	err := ur.DB.First(&u, "username=?", username).Error
 	if err != nil {
+		if errors.Is(err,gorm.ErrRecordNotFound){
+			return u,ErrUserNotFound
+		}
 		return u, err
 	}
 	err = utils.CheckPassword(password, u.Password)
 	if err != nil {
+		if utils.CheckErrorForWord(err,"crypto/bcrypt"){
+			return u,ErrUsernameOrPasswordWrong
+		}
 		return u, err
 	}
 	u, err = ur.CreateChache(u)
 	return u, err
 }
 func (ur *UserRepo) GetUserByIdRedis(id string) (map[string]string, error) {
+	exists := ur.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", id))
+	if exists.Val() == 0 {
+		return map[string]string{}, ErrUserNotFound
+	}
 	redisMapRes := ur.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
 	if redisMapRes.Err() != nil {
 		return map[string]string{}, redisMapRes.Err()
 	}
-	// var u models.User
-	// for key, value := range redisMapRes.Val() {
-	// 	switch key {
-	// 	case "firstname":
-	// 		u.Firstname = value
-	// 	case "lastname":
-	// 		u.Lastname = value
-	// 	case "biography":
-	// 		u.Biography = value
-	// 	case "username":
-	// 		u.Username = value
-	// 	case "password":
-	// 		u.Password = value
-	// 	case "email":
-	// 		u.Email = value
-	// 	case "phonenumber":
-	// 		u.PhoneNumber = value
-	// 	case "role":
-	// 		rolef, _ := strconv.Atoi(value)
-	// 		roleu := uint(rolef)
-	// 		u.Role = roleu
-	// 	}
-	// }
 	return redisMapRes.Val(), nil
 }
 func (ur *UserRepo) CreateChache(u models.User) (models.User, error) {
