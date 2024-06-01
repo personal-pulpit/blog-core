@@ -8,9 +8,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type User struct {
-	UserRepo *repo.UserRepo
-}
+type (
+	User struct {
+		UserRepo *repo.UserRepo
+	}
+	UpdateInput struct {
+		Firstname string `form:"firstname" binding:"required"`
+		Lastname  string `form:"lastname" binding:"required"`
+		Username  string `form:"username" binding:"required,usernamevalidaitor"`
+		Biography string `form:"biography" binding:"required"`
+	}
+	SigninInput struct {
+		Firstname   string `form:"firstname" binding:"required"`
+		Lastname    string `form:"lastname" binding:"required"`
+		Username    string `form:"username" binding:"required,usernamevalidaitor"`
+		Password    string `form:"password" binding:"required"`
+		Email       string `form:"email" binding:"required,emailvalidatior"`
+		PhoneNumber string `form:"phonenumber" binding:"required,phonenumbervalidaitor"`
+		Biography   string `form:"biography" binding:"required"`
+	}
+	LoginInput struct {
+		Username string `form:"username" binding:"required,usernamevalidaitor"`
+		Password string `form:"password" binding:"required"`
+	}
+)
 
 func (u *User) GetUsers(ctx *gin.Context) {
 	users, err := u.UserRepo.GetUsersRedis()
@@ -44,15 +65,21 @@ func (u *User) GetUserById(ctx *gin.Context) {
 			"username":     user["username"],
 			"email":        user["email"],
 			"phone number": user["phonenumber"],
-			"created at": user["createdAt"],
-			"updated at": user["updatedAt"],
+			"created at":   user["createdAt"],
+			"updated at":   user["updatedAt"],
 		},
 	))
 }
 func (u *User) Verify(ctx *gin.Context) {
-	username := ctx.PostForm("username")
-	password := ctx.PostForm("password")
-	user, err := u.UserRepo.VerifyUser(username, password)
+	var li LoginInput
+	err := ctx.ShouldBind(&li)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "sometimes went wrong", err),
+		)
+		return
+	}
+	user, err := u.UserRepo.VerifyUser(li.Username, li.Password)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "password or username is wrong", err),
@@ -71,7 +98,7 @@ func (u *User) Verify(ctx *gin.Context) {
 		http.StatusOK, "welcome back!", map[string]interface{}{
 			"firstname":    user.Firstname,
 			"lastname":     user.Lastname,
-			"biography":user.Biography,
+			"biography":    user.Biography,
 			"username":     user.Username,
 			"email":        user.Email,
 			"phone number": user.PhoneNumber,
@@ -80,14 +107,23 @@ func (u *User) Verify(ctx *gin.Context) {
 
 }
 func (u *User) Create(ctx *gin.Context) {
-	firstname := ctx.PostForm("firstname")
-	lastname := ctx.PostForm("lastname")
-	username := ctx.PostForm("username")
-	password := ctx.PostForm("password")
-	email := ctx.PostForm("email")
-	phonenumber := ctx.PostForm("phonenumber")
-	biography := ctx.PostForm("biography")
-	user, err := u.UserRepo.CreateUser(firstname, lastname, biography, username, password, email, phonenumber)
+	var si SigninInput
+	err := ctx.ShouldBind(&si)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "sometimes went wrong", err),
+		)
+		return
+	}
+	user, err := u.UserRepo.CreateUser(
+		si.Firstname,
+		si.Lastname,
+		si.Biography,
+		si.Username,
+		si.Password,
+		si.Email,
+		si.PhoneNumber,
+	)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in creatig user", err),
@@ -114,12 +150,22 @@ func (u *User) Create(ctx *gin.Context) {
 	))
 }
 func (u *User) UpdateById(ctx *gin.Context) {
-	id := ctx.PostForm("id")
-	firstname := ctx.PostForm("firstname")
-	lastname := ctx.PostForm("lastname")
-	username := ctx.PostForm("username")
-	biography := ctx.PostForm("biography")
-	user, err := u.UserRepo.UpdateUserById(id, firstname, lastname, biography, username)
+	id := utils.GetIdFromToken(ctx)
+	var ui UpdateInput
+	err := ctx.ShouldBind(&ui)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
+			http.StatusBadRequest, "sometimes went wrong", err),
+		)
+		return
+	}
+	user, err := u.UserRepo.UpdateUserById(
+		id,
+		ui.Firstname,
+		ui.Lastname,
+		ui.Biography,
+		ui.Username,
+	)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in updating user!", err),

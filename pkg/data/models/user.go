@@ -11,7 +11,7 @@ type User struct {
 	Base
 	Firstname   string `gorm:"size:25;NOT NULL"`
 	Lastname    string `gorm:"size:25;NOT NULL"`
-	Username    string `gorm:"unique;size:25;NOT NULL"`
+	Username    string `gorm:"unique;size:20;NOT NULL"`
 	Password    string `gorm:"size:150;NOT NULL"`
 	Email       string `gorm:"unique;size:50;NOT NULL"`
 	PhoneNumber string `gorm:"unique;size:11;NOT NULL"`
