@@ -24,5 +24,6 @@ func main() {
 	logger.MyLogger.Info("redis connected!",map[string]interface{}{
 		"status":true,
 	})
+	defer database.CloseRedis()
 	server.InitServer()
 }
