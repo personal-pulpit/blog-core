@@ -33,8 +33,8 @@ type (
 	}
 )
 
-func (u *User) GetUsers(ctx *gin.Context) {
-	users, err := u.UserRepo.GetUsersRedis()
+func (u *User) GetAll(ctx *gin.Context) {
+	users, err := u.UserRepo.GetAll()
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in getting users!", err),
@@ -43,14 +43,14 @@ func (u *User) GetUsers(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
 		http.StatusOK, "users got!", map[string]interface{}{
-			"user": users,
+			"users": users,
 		},
 	))
 }
 
-func (u *User) GetUserById(ctx *gin.Context) {
+func (u *User) GetById(ctx *gin.Context) {
 	id := ctx.Param("id")
-	user, err := u.UserRepo.GetUserByIdRedis(id)
+	user, err := u.UserRepo.GetById(id)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in getting user!", err),
@@ -79,7 +79,7 @@ func (u *User) Verify(ctx *gin.Context) {
 		)
 		return
 	}
-	user, err := u.UserRepo.VerifyUser(li.Username, li.Password)
+	user, err := u.UserRepo.Verify(li.Username, li.Password)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "password or username is wrong", err),
@@ -115,7 +115,7 @@ func (u *User) Create(ctx *gin.Context) {
 		)
 		return
 	}
-	user, err := u.UserRepo.CreateUser(
+	user, err := u.UserRepo.Create(
 		si.Firstname,
 		si.Lastname,
 		si.Biography,
@@ -159,7 +159,7 @@ func (u *User) UpdateById(ctx *gin.Context) {
 		)
 		return
 	}
-	user, err := u.UserRepo.UpdateUserById(
+	user, err := u.UserRepo.UpdateById(
 		id,
 		ui.Firstname,
 		ui.Lastname,
@@ -183,9 +183,7 @@ func (u *User) UpdateById(ctx *gin.Context) {
 }
 func (u *User) DeleteById(ctx *gin.Context) {
 	id := ctx.Param("id")
-
-	err := u.UserRepo.DeleteUser(id)
-
+	err := u.UserRepo.Delete(id)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, utils.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in deleting user!", err))
@@ -196,7 +194,7 @@ func (u *User) DeleteById(ctx *gin.Context) {
 	))
 }
 func (u *User) Logout(ctx *gin.Context) {
-	u.UserRepo.DeleteChacheByIdRedis(utils.GetIdFromToken(ctx))
+	u.UserRepo.DeleteChacheById(utils.GetIdFromToken(ctx))
 	utils.DestroyToken(ctx)
 	ctx.JSON(http.StatusOK, utils.NewSuccessfulHtppResponse(
 		http.StatusOK, "user logouted!", map[string]interface{}{},

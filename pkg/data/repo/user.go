@@ -33,7 +33,33 @@ func NewUserRepo() *UserRepo {
 		RDB: database.Rdb,
 	}
 }
-func (ur *UserRepo) CreateUser(firstname, lastname, biography, username, password, email, phonenumber string) (models.User, error) {
+func (ur *UserRepo) GetAll() ([]map[string]string, error) {
+	var users []map[string]string
+	keys, err := ur.RDB.Keys(context.Background(), "user:*").Result()
+	if err != nil {
+		return users, err
+	}
+	for _, key := range keys {
+		userMap, err := ur.RDB.HGetAll(context.Background(), key).Result()
+		if err != nil {
+			return []map[string]string{}, err
+		}
+		users = append(users, userMap)
+	}
+	return users, nil
+}
+func (ur *UserRepo) GetById(id string) (map[string]string, error) {
+	exists := ur.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", id))
+	if exists.Val() == 0 {
+		return map[string]string{}, ErrUserNotFound
+	}
+	redisMapRes := ur.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
+	if redisMapRes.Err() != nil {
+		return map[string]string{}, redisMapRes.Err()
+	}
+	return redisMapRes.Val(), nil
+}
+func (ur *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (models.User, error) {
 	var u models.User
 	u.Firstname = firstname
 	u.Lastname = lastname
@@ -60,7 +86,7 @@ func (ur *UserRepo) CreateUser(firstname, lastname, biography, username, passwor
 	}
 	return ur.CreateChache(u)
 }
-func (ur *UserRepo) UpdateUserById(id, firstname, lastname, biography, username string) (models.User, error) {
+func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (models.User, error) {
 	var u models.User
 	err := ur.DB.First(&u, id).Error
 	if err != nil {
@@ -77,7 +103,7 @@ func (ur *UserRepo) UpdateUserById(id, firstname, lastname, biography, username 
 	if err != nil {
 		return models.User{}, err
 	}
-	err = ur.DeleteChacheByIdRedis(id)
+	err = ur.DeleteChacheById(id)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -87,17 +113,17 @@ func (ur *UserRepo) UpdateUserById(id, firstname, lastname, biography, username 
 	}
 	return u, err
 }
-func (ur *UserRepo) DeleteUser(id string) error {
+func (ur *UserRepo) Delete(id string) error {
 	var u models.User
 	err := ur.DB.Delete(&u, id).Error
 	if err != nil {
 		return err
 	}
 	id = strconv.Itoa(int(u.Id))
-	err = ur.DeleteChacheByIdRedis(id)
+	err = ur.DeleteChacheById(id)
 	return err
 }
-func (ur *UserRepo) VerifyUser(username, password string) (models.User, error) {
+func (ur *UserRepo) Verify(username, password string) (models.User, error) {
 	var u models.User
 	err := ur.DB.First(&u, "username=?", username).Error
 	if err != nil {
@@ -116,17 +142,7 @@ func (ur *UserRepo) VerifyUser(username, password string) (models.User, error) {
 	u, err = ur.CreateChache(u)
 	return u, err
 }
-func (ur *UserRepo) GetUserByIdRedis(id string) (map[string]string, error) {
-	exists := ur.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", id))
-	if exists.Val() == 0 {
-		return map[string]string{}, ErrUserNotFound
-	}
-	redisMapRes := ur.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
-	if redisMapRes.Err() != nil {
-		return map[string]string{}, redisMapRes.Err()
-	}
-	return redisMapRes.Val(), nil
-}
+
 func (ur *UserRepo) CreateChache(u models.User) (models.User, error) {
 	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
 		"firstname":   u.Firstname,
@@ -141,22 +157,14 @@ func (ur *UserRepo) CreateChache(u models.User) (models.User, error) {
 	})
 	return u, redisRes.Err()
 }
-func (ur *UserRepo) DeleteChacheByIdRedis(id string) error {
+func (ur *UserRepo) DeleteChacheById(id string) error {
 	redisRes := database.Rdb.Del(context.Background(), fmt.Sprintf("user:%s", id))
 	return redisRes.Err()
 }
-func (ur *UserRepo) GetUsersRedis() ([]map[string]string, error) {
-	var users []map[string]string
-	keys, err := ur.RDB.Keys(context.Background(), "user:*").Result()
-	if err != nil {
-		return users, err
+func  (ur *UserRepo) GetUsernameById(id string)(string,error){
+	user, err := ur.GetById(id)
+	if err != nil{
+		return "",err
 	}
-	for _, key := range keys {
-		userMap, err := ur.RDB.HGetAll(context.Background(), key).Result()
-		if err != nil {
-			return []map[string]string{}, err
-		}
-		users = append(users, userMap)
-	}
-	return users, nil
+	return user["username"],err
 }

@@ -29,6 +29,10 @@ func ConnectDB() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	err = db.AutoMigrate(&models.Article{})
+	if err != nil {
+		log.Fatalln(err)
+	}
 	DB = db
 }
 

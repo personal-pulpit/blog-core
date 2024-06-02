@@ -21,5 +21,5 @@ func IsAdmin(ctx *gin.Context) bool {
 }
 func GetUserFromRedisById(id string) (map[string]string, error) {
 	ur := repo.NewUserRepo()
-	return ur.GetUserByIdRedis(id)
+	return ur.GetById(id)
 }

@@ -29,7 +29,7 @@ func InitValidations() {
 	val, ok := binding.Validator.Engine().(*validator.Validate)
 	if ok {
 		val.RegisterValidation("usernamevalidaitor", usernameValidaitor)
-		val.RegisterValidation("emailalidatior", emailValidatior)
+		val.RegisterValidation("emailvalidatior", emailValidatior)
 		val.RegisterValidation("phonenumbervalidaitor", phoneNumberValidatior)
 	}
 }
