@@ -1,8 +1,9 @@
 package middlewares
 
 import (
-	"blog/utils"
-	"blog/utils/common"
+	"blog/api/helpers"
+	"blog/api/helpers/common"
+
 	"errors"
 	"net/http"
 
@@ -28,12 +29,12 @@ func SetUserStatus() gin.HandlerFunc {
 }
 func EnsureLoggedIn() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		is_logged := ctx.GetBool("is_logged")
+		is_logged := common.GetUserStatus(ctx)
 		if is_logged {
 			ctx.Next()
 		} else {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				utils.NewErrorHtppResponse(http.StatusUnauthorized,
+				helpers.NewErrorHtppResponse(http.StatusUnauthorized,
 					"sometime went wrong", ErrYouAreUnAuthorized))
 			return
 		}
@@ -41,11 +42,11 @@ func EnsureLoggedIn() gin.HandlerFunc {
 }
 func EnsureNotLoggedIn() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		is_logged := ctx.GetBool("is_logged")
+		is_logged := common.GetUserStatus(ctx)
 		if !is_logged {
 			ctx.Next()
 		} else {
-			utils.DestroyToken(ctx)
+			helpers.DestroyToken(ctx)
 			ctx.Next()
 		}
 	}
@@ -54,7 +55,7 @@ func EnsureAdmin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if !common.IsAdmin(ctx) {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				utils.NewErrorHtppResponse(http.StatusUnauthorized,
+				helpers.NewErrorHtppResponse(http.StatusUnauthorized,
 					"sometime went wrong", ErrYouAreUnAuthorized))
 			return
 		} else {

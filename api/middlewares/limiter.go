@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"blog/utils"
+	"blog/api/helpers"
 	"net/http"
 
 	"github.com/didip/tollbooth"
@@ -9,15 +9,15 @@ import (
 )
 
 func LimitByRequest() gin.HandlerFunc {
-        limiter := tollbooth.NewLimiter(1, nil)
-        return func(ctx *gin.Context) {
-                err := tollbooth.LimitByRequest(limiter, ctx.Writer, ctx.Request)
-                if err != nil {
-                        ctx.AbortWithStatusJSON(http.StatusTooManyRequests,utils.NewErrorHtppResponse(
-							http.StatusTooManyRequests,"to many requests",err,
-						))
-                } else {
-                        ctx.Next()
-                }
-        }
+	limiter := tollbooth.NewLimiter(1, nil)
+	return func(ctx *gin.Context) {
+		err := tollbooth.LimitByRequest(limiter, ctx.Writer, ctx.Request)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusTooManyRequests, helpers.NewErrorHtppResponse(
+				http.StatusTooManyRequests, "to many requests", err,
+			))
+		} else {
+			ctx.Next()
+		}
+	}
 }
