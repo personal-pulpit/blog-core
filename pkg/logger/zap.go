@@ -12,14 +12,14 @@ type ZapLogger struct {
 }
 var MyLogger = ZapLogger{}
 func InitZapLogger()  {
-	if _,err := os.Stat("pkg/logger/log.log");err == nil{
-		err = os.Truncate("pkg/logger/log.log",0)
+	if _,err := os.Stat("../pkg/logger/log.log");err == nil{
+		err = os.Truncate("../pkg/logger/log.log",0)
 		if err != nil{
 			panic(err)
 		}
 	}
 	cfg := zap.NewProductionConfig()
-	cfg.OutputPaths = []string{"pkg/logger/log.log"}
+	cfg.OutputPaths = []string{"../pkg/logger/log.log"}
 	cfg.Encoding = "json"
 	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 

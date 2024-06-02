@@ -1,6 +1,7 @@
 package server
 
 import (
+	"blog/api/middlewares"
 	"blog/api/routers"
 	"blog/api/validation"
 	"blog/config"
@@ -12,6 +13,7 @@ func InitServer() {
 	r := gin.New()
 	validation.InitValidations()
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(middlewares.LimitByRequest())
 	routers.InitRouters(r)
 	r.Run(":" + config.Cfg.Server.Port)
 }
