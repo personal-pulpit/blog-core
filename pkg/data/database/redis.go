@@ -2,8 +2,8 @@ package database
 
 import (
 	"blog/config"
+	"blog/pkg/logging"
 	"fmt"
-	"log"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -21,13 +21,13 @@ func ConnectRedis() {
 	)
 	opts, err := redis.ParseURL(url)
 	if err != nil {
-		panic(err)
+		logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
 	}
 	Rdb = redis.NewClient(opts)
 }
 func CloseRedis() {
 	err := Rdb.Close()
-	if err != nil{
-		log.Fatalln(err)
+	if err != nil {
+		logging.MyLogger.Fatal(logging.General, logging.Down, err.Error(), nil)
 	}
 }

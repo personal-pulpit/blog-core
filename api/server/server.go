@@ -13,6 +13,7 @@ func InitServer() {
 	r := gin.New()
 	validation.InitValidations()
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(middlewares.CustomLogger())
 	r.Use(middlewares.LimitByRequest())
 	routers.InitRouters(r)
 	r.Run(":" + config.Cfg.Server.Port)

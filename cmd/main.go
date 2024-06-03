@@ -4,26 +4,18 @@ import (
 	"blog/api/server"
 	"blog/config"
 	"blog/pkg/data/database"
-	"blog/pkg/logger"
+	"blog/pkg/logging"
 )
 
 func main() {
-	logger.InitZapLogger()
-	logger.MyLogger.Info("logger initialized!",map[string]interface{}{
-		"status":true,
-	})
 	config.InitConfig()
-	logger.MyLogger.Info("configs initialized!",map[string]interface{}{
-		"status":true,
-	})
+	logging.InitZapLogger()
+	logging.MyLogger.Info(logging.General,logging.Initialized,"configs initialized!",nil)
+	logging.MyLogger.Info(logging.General,logging.Initialized,"logger initialized!",nil)
 	database.ConnectDB()
-	logger.MyLogger.Info("database connected!",map[string]interface{}{
-		"status":true,
-	})
+	logging.MyLogger.Info(logging.General,logging.Startup,"database connected!",nil)
 	database.ConnectRedis()
-	logger.MyLogger.Info("redis connected!",map[string]interface{}{
-		"status":true,
-	})
+	logging.MyLogger.Info(logging.General,logging.Startup,"redis connected!",nil)
 	defer database.CloseRedis()
 	server.InitServer()
 }

@@ -3,8 +3,8 @@ package database
 import (
 	"blog/config"
 	"blog/pkg/data/models"
+	"blog/pkg/logging"
 	"fmt"
-	"log"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -23,16 +23,9 @@ func ConnectDB() {
 	)
 	db, err := gorm.Open(mysql.Open(dns))
 	if err != nil {
-		log.Fatalln(err)
-	}
-	err = db.AutoMigrate(&models.User{})
-	if err != nil {
-		log.Fatalln(err)
-	}
-	err = db.AutoMigrate(&models.Article{})
-	if err != nil {
-		log.Fatalln(err)
+		logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
 	}
 	DB = db
+	Migration(models.User{})
+	Migration(models.Article{})
 }
-

@@ -14,6 +14,7 @@ type (
 		Mysql  MysqlConfig
 		Jwt    JwtConfig
 		Server ServerConfig
+		Logger LoggerConfig
 	}
 	MysqlConfig struct {
 		Host     string
@@ -36,6 +37,12 @@ type (
 		Port     string
 		DBname   string
 		Protocol string
+	}
+	LoggerConfig struct {
+		LogFilePath string
+		LoggerName string
+		Level    string
+		Encoding string
 	}
 )
 

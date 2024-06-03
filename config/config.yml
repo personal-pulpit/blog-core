@@ -16,3 +16,8 @@ redis:
   Password: ""
   DBname:       0
   Protocol: 3
+logger:
+  LogFilePath: ../logs/log.log   
+  LoggerName: zap
+  Level: debug
+  Encoding: json
