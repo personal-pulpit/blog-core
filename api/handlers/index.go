@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"blog/api/helpers/common"
 	"blog/api/helpers"
+	"blog/api/helpers/common"
+	"blog/constants"
 	"fmt"
 	"net/http"
 
@@ -11,11 +12,10 @@ import (
 
 func Base(ctx *gin.Context) {
 	if common.GetUserStatus(ctx) {
-		id := helpers.GetIdFromToken(ctx)
-		user, err := common.GetUserFromRedisById(id)
+		user, err := common.GetUserFromRedisById(helpers.GetIdFromToken(ctx))
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, helpers.NewErrorHtppResponse(
-				http.StatusInternalServerError, "sometime went wrong!", err,
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, helpers.NewErrorHtppResponse(
+				http.StatusInternalServerError, constants.MsgSometimeWentWrong, err,
 			))
 			return
 		}
