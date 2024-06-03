@@ -21,7 +21,7 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/user":
 		{
 			u := &handlers.User{
-				UserRepo: repo.NewUserRepo(),
+				UserRepo: repo.NewUserDB(),
 			}
 			r.GET("", u.GetAll)
 			r.GET("/:id", u.GetById)
@@ -34,8 +34,8 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/article":
 		{
 			p := &handlers.Article{
-				ArticleRepo: repo.NewArticleRepo(),
-				UserRepo: repo.NewUserRepo(),
+				ArticleRepo: repo.NewArticleDB(),
+				UserRepo: repo.NewUserDB(),
 			}
 			r.GET("", p.GetAll)
 			r.GET("/:id", p.GetById)

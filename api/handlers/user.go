@@ -10,7 +10,7 @@ import (
 
 type (
 	User struct {
-		UserRepo *repo.UserRepo
+		UserRepo repo.UserDB
 	}
 	UpdateInput struct {
 		Firstname string `form:"firstname" binding:"required"`
@@ -183,7 +183,7 @@ func (u *User) UpdateById(ctx *gin.Context) {
 }
 func (u *User) DeleteById(ctx *gin.Context) {
 	id := ctx.Param("id")
-	err := u.UserRepo.Delete(id)
+	err := u.UserRepo.DeleteById(id)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed in deleting user!", err))

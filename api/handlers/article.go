@@ -16,8 +16,8 @@ var (
 
 type (
 	Article struct {
-		ArticleRepo *repo.ArticleRepo
-		UserRepo    *repo.UserRepo
+		ArticleRepo repo.ArticleDB
+		UserRepo    repo.UserDB
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`

@@ -1,4 +1,4 @@
-package repo
+package db
 
 import (
 	"blog/pkg/data/database"
@@ -113,7 +113,7 @@ func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username stri
 	}
 	return u, err
 }
-func (ur *UserRepo) Delete(id string) error {
+func (ur *UserRepo) DeleteById(id string) error {
 	var u models.User
 	err := ur.DB.Delete(&u, id).Error
 	if err != nil {
