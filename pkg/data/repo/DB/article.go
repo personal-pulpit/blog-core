@@ -3,6 +3,7 @@ package db
 import (
 	"blog/pkg/data/database"
 	"blog/pkg/data/models"
+	"blog/pkg/logging"
 	"errors"
 
 	"context"
@@ -14,8 +15,9 @@ import (
 )
 
 type ArticleRepo struct {
-	DB  *gorm.DB
-	RDB *redis.Client
+	DB     *gorm.DB
+	RDB    *redis.Client
+	Logger logging.ZapLogger
 }
 
 var (
@@ -24,47 +26,56 @@ var (
 
 func NewArticleRepo() *ArticleRepo {
 	return &ArticleRepo{
-		DB:  database.DB,
-		RDB: database.Rdb,
+		DB:     database.DB,
+		RDB:    database.Rdb,
+		Logger: logging.MyLogger,
 	}
 }
 func (ar *ArticleRepo) GetAll() ([]map[string]string, error) {
 	var articles []map[string]string
 	keys, err := ar.RDB.Keys(context.Background(), "article:*").Result()
 	if err != nil {
+		ar.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 		return articles, err
 	}
 	for _, key := range keys {
 		articleMap, err := ar.RDB.HGetAll(context.Background(), key).Result()
 		if err != nil {
+			ar.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 			return []map[string]string{}, err
 		}
 		articles = append(articles, articleMap)
 	}
+	ar.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return articles, nil
 }
 
 func (ar *ArticleRepo) GetById(id string) (map[string]string, error) {
 	exists := ar.RDB.Exists(context.Background(), fmt.Sprintf("article:%s", id))
 	if exists.Val() == 0 {
+		ar.Logger.Error(logging.Redis, logging.Get, ErrArticleNotFound.Error(), nil)
 		return map[string]string{}, ErrArticleNotFound
 	}
 	redisMapRes := ar.RDB.HGetAll(context.Background(), fmt.Sprintf("article:%s", id))
 	if redisMapRes.Err() != nil {
-		return map[string]string{}, redisMapRes.Err()
+		ar.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
+		return redisMapRes.Val(), redisMapRes.Err()
 	}
+	ar.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (ar *ArticleRepo) Create(sAuthorId,title, content string) (models.Article, error) {
-	iAuthorId,_:=strconv.Atoi(sAuthorId)
+func (ar *ArticleRepo) Create(sAuthorId, title, content string) (models.Article, error) {
+	iAuthorId, _ := strconv.Atoi(sAuthorId)
 	var a models.Article
 	a.Title = title
 	a.Content = content
 	a.AuthorId = uint(iAuthorId)
 	err := ar.DB.Create(&a).Error
 	if err != nil {
+		ar.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
 		return a, err
 	}
+	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	return ar.CreateChacheById(a)
 }
 func (ar *ArticleRepo) UpdateById(id, title, content string) (models.Article, error) {
@@ -72,30 +83,32 @@ func (ar *ArticleRepo) UpdateById(id, title, content string) (models.Article, er
 	err := ar.DB.First(&a, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ar.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
 			return a, ErrArticleNotFound
 		}
+		ar.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
 		return a, err
 	}
 	a.Title = title
 	a.Content = content
 	err = ar.DB.Save(&a).Error
 	if err != nil {
-		return models.Article{}, err
-	}
-	err = ar.deleteChacheById(id)
-	if err != nil {
-		return models.Article{}, err
+		ar.Logger.Error(logging.Mysql, logging.Update, err.Error(), nil)
+		return a, err
 	}
 	a, err = ar.CreateChacheById(a)
 	if err != nil {
-		return models.Article{}, err
+		ar.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		return a, err
 	}
+	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	return a, err
 }
 func (ar *ArticleRepo) DeleteById(id string) error {
 	var a models.Article
 	err := ar.DB.Delete(&a, id).Error
 	if err != nil {
+		ar.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
 		return err
 	}
 	err = ar.deleteChacheById(id)
