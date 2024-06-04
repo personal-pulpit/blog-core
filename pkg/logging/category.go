@@ -19,6 +19,9 @@ const (
 	Startup         SubCategory = "Startup"
 	ExternalService SubCategory = "ExternalService"
 	Down SubCategory = "Down"
+	//Redis
+	Set SubCategory = "Set"
+	Get SubCategory = "Get"
 	// Mysql
 	Migration SubCategory = "Migration"
 	Select    SubCategory = "Select"

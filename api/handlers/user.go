@@ -115,7 +115,7 @@ func (u *User) Create(ctx *gin.Context) {
 		)
 		return
 	}
-	user, err := u.UserRepo.Create(
+	user,tx,err := u.UserRepo.Create(
 		si.Firstname,
 		si.Lastname,
 		si.Biography,
@@ -132,11 +132,13 @@ func (u *User) Create(ctx *gin.Context) {
 	}
 	err = helpers.SetToken(ctx, user.Id)
 	if err != nil {
+		tx.Rollback()
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
 			http.StatusBadRequest, "failed...", err),
 		)
 		return
 	}
+	tx.Commit()
 	ctx.Set("is_logged", true)
 	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
 		http.StatusOK, "user created!", map[string]interface{}{

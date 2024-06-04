@@ -3,13 +3,15 @@ package repo
 import (
 	"blog/pkg/data/models"
 	db "blog/pkg/data/repo/DB"
+
+	"gorm.io/gorm"
 )
 
 type UserDB interface {
 	GetAll() ([]map[string]string, error)
 	GetById(id string) (map[string]string, error)
 	Verify(username, password string) (models.User, error)
-	Create(firstname, lastname, biography, username, password, email, phonenumber string) (models.User, error)
+	Create(firstname, lastname, biography, username, password, email, phonenumber string) (models.User,*gorm.DB,error)
 	UpdateById(id, firstname, lastname, biography, username string) (models.User, error)
 	DeleteById(id string) error
 	GetUsernameById(id string)(string,error)
