@@ -70,13 +70,22 @@ func (ar *ArticleRepo) Create(sAuthorId, title, content string) (models.Article,
 	a.Title = title
 	a.Content = content
 	a.AuthorId = uint(iAuthorId)
-	err := ar.DB.Create(&a).Error
+	tx := NewTx(ar.DB)
+	err := tx.Create(&a).Error
 	if err != nil {
 		ar.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
 		return a, err
 	}
 	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
-	return ar.CreateChacheById(a)
+	err = ar.CreateChacheById(a)
+	if err != nil{
+		tx.Rollback()
+		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return a,err
+	}
+	tx.Commit()
+	ar.Logger.Error(logging.Mysql, logging.Insert, "", nil)
+	return a,nil
 }
 func (ar *ArticleRepo) UpdateById(id, title, content string) (models.Article, error) {
 	var a models.Article
@@ -91,31 +100,43 @@ func (ar *ArticleRepo) UpdateById(id, title, content string) (models.Article, er
 	}
 	a.Title = title
 	a.Content = content
-	err = ar.DB.Save(&a).Error
+	tx := NewTx(ar.DB)
+	err = tx.Save(&a).Error
 	if err != nil {
 		ar.Logger.Error(logging.Mysql, logging.Update, err.Error(), nil)
 		return a, err
 	}
-	a, err = ar.CreateChacheById(a)
+	err = ar.CreateChacheById(a)
 	if err != nil {
+		tx.Rollback()
 		ar.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return a, err
 	}
+	tx.Commit()
 	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	return a, err
 }
 func (ar *ArticleRepo) DeleteById(id string) error {
 	var a models.Article
-	err := ar.DB.Delete(&a, id).Error
+	tx := NewTx(ar.DB)
+	err := tx.Delete(&a, id).Error
 	if err != nil {
 		ar.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
 		return err
 	}
 	err = ar.deleteChacheById(id)
-	return err
+	if err != nil{
+		tx.Rollback()
+		ar.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
+		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return err
+	}
+	ar.Logger.Info(logging.Mysql, logging.Delete, "", nil)
+	return nil
 }
 
-func (ar *ArticleRepo) CreateChacheById(a models.Article) (models.Article, error) {
+func (ar *ArticleRepo) CreateChacheById(a models.Article)  error {
 	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("article:%d", a.Id), map[string]interface{}{
 		"title":     a.Title,
 		"content":   a.Content,
@@ -123,7 +144,7 @@ func (ar *ArticleRepo) CreateChacheById(a models.Article) (models.Article, error
 		"updatedAt": a.UpdatedAt,
 		"authorId":  a.AuthorId,
 	})
-	return a, redisRes.Err()
+	return redisRes.Err()
 }
 func (ar *ArticleRepo) deleteChacheById(id string) error {
 	redisRes := database.Rdb.Del(context.Background(), fmt.Sprintf("article:%s", id))

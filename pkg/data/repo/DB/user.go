@@ -82,7 +82,7 @@ func (ur *UserRepo) Create(firstname, lastname, biography, username, password, e
 		return u, nil,err
 	}
 	u.Password = hashedPassword
-	tx := ur.NewTx()
+	tx := NewTx(ur.DB)
 	err = tx.Create(&u).Error
 	if err != nil {
 		if utils.CheckErrorForWord(err, "email") {
@@ -103,6 +103,7 @@ func (ur *UserRepo) Create(firstname, lastname, biography, username, password, e
 	if err != nil{
 		tx.Rollback()
 		ur.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return u,nil,err
 	}
 	txj := tx.Commit()
@@ -112,7 +113,7 @@ func (ur *UserRepo) Create(firstname, lastname, biography, username, password, e
 }
 func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (models.User, error) {
 	var u models.User
-	tx := ur.NewTx()
+	tx := NewTx(ur.DB)
 	err := tx.First(&u, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -129,13 +130,14 @@ func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username stri
 	err = tx.Save(&u).Error
 	if err != nil {
 		tx.Rollback()
-		ur.Logger.Error(logging.Mysql, logging.Update, err.Error(), nil)
+		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return u, err
 	}
 	err = ur.CreateChache(u)
 	if err != nil {
 		tx.Rollback()
 		ur.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return u, err
 	}
 	ur.Logger.Info(logging.Mysql, logging.Update, "", nil)
@@ -143,7 +145,7 @@ func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username stri
 }
 func (ur *UserRepo) DeleteById(id string) error {
 	var u models.User
-	tx := ur.NewTx()
+	tx := NewTx(ur.DB)
 	err := tx.Delete(&u, id).Error
 	if err != nil {
 		ur.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
@@ -154,6 +156,7 @@ func (ur *UserRepo) DeleteById(id string) error {
 	if err != nil{
 		tx.Rollback()
 		ur.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
+		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return err
 	}
 	ur.Logger.Info(logging.Mysql, logging.Delete, "", nil)
@@ -214,6 +217,4 @@ func (ur *UserRepo) GetUsernameById(id string) (string, error) {
 	}
 	return user["username"], err
 }
-func (ur *UserRepo) NewTx()*gorm.DB{
-	return ur.DB.Begin()
-}
+
