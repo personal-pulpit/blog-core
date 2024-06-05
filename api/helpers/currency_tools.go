@@ -17,14 +17,14 @@ func GetResponse(ctx *gin.Context, baseCode int, ResponseChannel <-chan HttpResp
 	defer cancel()
 	select {
 	case response := <-ResponseChannel:
-		if response.Code == baseCode {
-			ctx.JSON(baseCode, response)
+		if response.Code != baseCode {
+			ctx.AbortWithStatusJSON(response.Code, response)
 			return
 		}
-		ctx.AbortWithStatusJSON(response.Code, response)
+		ctx.JSON(baseCode, response)
 	case <-ctxWithTimeout.Done():
 		ctx.AbortWithStatusJSON(http.StatusRequestTimeout, NewHttpResponse(
-			http.StatusBadRequest, "timed out", nil),
+			http.StatusRequestTimeout, "timed out", nil),
 		)
 	}
 }

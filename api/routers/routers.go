@@ -8,13 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouters(r *gin.Engine) {
-	r.GET("/", middlewares.SetUserStatus(), handlers.Base)
+func InitRouters()*gin.Engine{
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(middlewares.CustomLogger())
+	r.Use(middlewares.LimitByRequest())
+	r.GET("/", middlewares.SetUserStatus(), handlers.Index)
 	v1 := r.Group("/api/v1", middlewares.SetUserStatus())
 	{
 		praseRouters(v1.Group("/user"))
 		praseRouters(v1.Group("/article"))
 	}
+	return r
 }
 func praseRouters(r *gin.RouterGroup) {
 	switch r.BasePath() {
@@ -45,4 +50,16 @@ func praseRouters(r *gin.RouterGroup) {
 		}
 	}
 
+}
+func InitRoutersForTest()*gin.Engine{
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(middlewares.LimitByRequest())
+	r.GET("/", middlewares.SetUserStatus(), handlers.Index)
+	v1 := r.Group("/api/v1", middlewares.SetUserStatus())
+	{
+		praseRouters(v1.Group("/user"))
+		praseRouters(v1.Group("/article"))
+	}
+	return r
 }

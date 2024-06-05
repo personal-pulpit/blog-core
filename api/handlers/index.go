@@ -9,14 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Base(ctx *gin.Context) {
+func Index(ctx *gin.Context) {
 	if common.GetUserStatus(ctx) {
 		ch := make(chan helpers.HttpResponse)
 		go func() {
 			user, err := common.GetUserFromRedisById(helpers.GetIdFromToken(ctx))
 			if err != nil {
 				ch <- helpers.NewHttpResponse(
-					http.StatusOK, err.Error(), map[string]interface{}{},
+					http.StatusBadRequest, err.Error(), map[string]interface{}{},
 				)
 				return
 			}
@@ -24,7 +24,7 @@ func Base(ctx *gin.Context) {
 				http.StatusOK, fmt.Sprintf("Hey %s", user["firstname"]), map[string]interface{}{},
 			)
 		}()
-		helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
+		helpers.GetResponse(ctx, http.StatusOK,ch)
 	} else {
 		ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
 			http.StatusOK, "welcome to my api", map[string]interface{}{},
