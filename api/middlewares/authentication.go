@@ -3,7 +3,6 @@ package middlewares
 import (
 	"blog/api/helpers"
 	"blog/api/helpers/common"
-
 	"errors"
 	"net/http"
 
@@ -34,8 +33,8 @@ func EnsureLoggedIn() gin.HandlerFunc {
 			ctx.Next()
 		} else {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				helpers.NewErrorHtppResponse(http.StatusUnauthorized,
-					"sometime went wrong", ErrYouAreUnAuthorized))
+				helpers.NewHttpResponse(
+					http.StatusUnauthorized,ErrYouAreUnAuthorized.Error(), nil))
 			return
 		}
 	}
@@ -55,8 +54,8 @@ func EnsureAdmin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if !common.IsAdmin(ctx) {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				helpers.NewErrorHtppResponse(http.StatusUnauthorized,
-					"sometime went wrong", ErrYouAreUnAuthorized))
+				helpers.NewHttpResponse(
+					http.StatusUnauthorized,ErrYouAreUnAuthorized.Error(),nil ))
 			return
 		} else {
 			ctx.Next()

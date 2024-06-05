@@ -33,172 +33,172 @@ type (
 	}
 )
 
-func (u *User) GetAll(ctx *gin.Context) {
-	users, err := u.UserRepo.GetAll()
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed in getting users!", err),
-		)
-		return
-	}
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "users got!", map[string]interface{}{
-			"users": users,
-		},
-	))
-}
+var userResponseChannel = make(chan helpers.HttpResponse)
 
+func (u *User) GetAll(ctx *gin.Context) {
+	go func() {
+		users, err := u.UserRepo.GetAll()
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(http.StatusOK, "users got!", map[string]interface{}{"users": users})
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
+}
 func (u *User) GetById(ctx *gin.Context) {
-	id := ctx.Param("id")
-	user, err := u.UserRepo.GetById(id)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed in getting user!", err),
+	go func() {
+		id := ctx.Param("id")
+		user, err := u.UserRepo.GetById(id)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusCreated, "user Got!", map[string]interface{}{
+				"firstname":    user["firstname"],
+				"lastname":     user["lastname"],
+				"biography":    user["biography"],
+				"username":     user["username"],
+				"email":        user["email"],
+				"phone number": user["phonenumber"],
+				"created at":   user["createdAt"],
+				"updated at":   user["updatedAt"],
+			},
 		)
-		return
-	}
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "user Got!", map[string]interface{}{
-			"firstname":    user["firstname"],
-			"lastname":     user["lastname"],
-			"biography":    user["biography"],
-			"username":     user["username"],
-			"email":        user["email"],
-			"phone number": user["phonenumber"],
-			"created at":   user["createdAt"],
-			"updated at":   user["updatedAt"],
-		},
-	))
+
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
 func (u *User) Verify(ctx *gin.Context) {
-	var li LoginInput
-	err := ctx.ShouldBind(&li)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "sometimes went wrong", err),
+	go func() {
+		var li LoginInput
+		err := ctx.ShouldBind(&li)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		user, err := u.UserRepo.Verify(li.Username, li.Password)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		err = helpers.SetToken(ctx, user.Id)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "welcome back!", map[string]interface{}{
+				"firstname":    user.Firstname,
+				"lastname":     user.Lastname,
+				"biography":    user.Biography,
+				"username":     user.Username,
+				"email":        user.Email,
+				"phone number": user.PhoneNumber,
+			},
 		)
-		return
-	}
-	user, err := u.UserRepo.Verify(li.Username, li.Password)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "password or username is wrong", err),
-		)
-		return
-	}
-	err = helpers.SetToken(ctx, user.Id)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed...", err),
-		)
-		return
-	}
-	ctx.Set("is_logged", true)
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "welcome back!", map[string]interface{}{
-			"firstname":    user.Firstname,
-			"lastname":     user.Lastname,
-			"biography":    user.Biography,
-			"username":     user.Username,
-			"email":        user.Email,
-			"phone number": user.PhoneNumber,
-		},
-	))
-
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
 func (u *User) Create(ctx *gin.Context) {
-	var si SigninInput
-	err := ctx.ShouldBind(&si)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "sometimes went wrong", err),
+	go func() {
+		var si SigninInput
+		err := ctx.ShouldBind(&si)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		user, tx, err := u.UserRepo.Create(
+			si.Firstname,
+			si.Lastname,
+			si.Biography,
+			si.Username,
+			si.Password,
+			si.Email,
+			si.PhoneNumber,
 		)
-		return
-	}
-	user,tx,err := u.UserRepo.Create(
-		si.Firstname,
-		si.Lastname,
-		si.Biography,
-		si.Username,
-		si.Password,
-		si.Email,
-		si.PhoneNumber,
-	)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed in creatig user", err),
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		err = helpers.SetToken(ctx, user.Id)
+		if err != nil {
+			tx.Rollback()
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		tx.Commit()
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusCreated, "user created!", map[string]interface{}{
+				"firstname":    user.Firstname,
+				"lastname":     user.Lastname,
+				"biography":    user.Biography,
+				"username":     user.Username,
+				"email":        user.Email,
+				"phone number": user.PhoneNumber,
+			},
 		)
-		return
-	}
-	err = helpers.SetToken(ctx, user.Id)
-	if err != nil {
-		tx.Rollback()
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed...", err),
-		)
-		return
-	}
-	tx.Commit()
-	ctx.Set("is_logged", true)
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "user created!", map[string]interface{}{
-			"firstname":    user.Firstname,
-			"lastname":     user.Lastname,
-			"biography":    user.Biography,
-			"username":     user.Username,
-			"email":        user.Email,
-			"phone number": user.PhoneNumber,
-		},
-	))
+	}()
+	helpers.GetResponse(ctx, http.StatusCreated, userResponseChannel)
 }
 func (u *User) UpdateById(ctx *gin.Context) {
-	id := helpers.GetIdFromToken(ctx)
-	var ui UpdateInput
-	err := ctx.ShouldBind(&ui)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "sometimes went wrong", err),
+	go func() {
+		id := helpers.GetIdFromToken(ctx)
+		var ui UpdateInput
+		err := ctx.ShouldBind(&ui)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		user, err := u.UserRepo.UpdateById(
+			id,
+			ui.Firstname,
+			ui.Lastname,
+			ui.Biography,
+			ui.Username,
 		)
-		return
-	}
-	user, err := u.UserRepo.UpdateById(
-		id,
-		ui.Firstname,
-		ui.Lastname,
-		ui.Biography,
-		ui.Username,
-	)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed in updating user!", err),
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "user updated!", map[string]interface{}{
+				"firstname": user.Firstname,
+				"lastname":  user.Lastname,
+				"biography": user.Biography,
+				"username":  user.Username,
+			},
 		)
-		return
-	}
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "user updated!", map[string]interface{}{
-			"firstname": user.Firstname,
-			"lastname":  user.Lastname,
-			"biography": user.Biography,
-			"username":  user.Username,
-		},
-	))
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
 func (u *User) DeleteById(ctx *gin.Context) {
-	id := ctx.Param("id")
-	err := u.UserRepo.DeleteById(id)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewErrorHtppResponse(
-			http.StatusBadRequest, "failed in deleting user!", err))
-		return
-	}
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "user deleted!", map[string]interface{}{},
-	))
+	go func() {
+		id := ctx.Param("id")
+		err := u.UserRepo.DeleteById(id)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "user deleted!", map[string]interface{}{},
+		)
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
 func (u *User) Logout(ctx *gin.Context) {
-	u.UserRepo.DeleteChacheById(helpers.GetIdFromToken(ctx))
-	helpers.DestroyToken(ctx)
-	ctx.JSON(http.StatusOK, helpers.NewSuccessfulHtppResponse(
-		http.StatusOK, "user logouted!", map[string]interface{}{},
-	))
+	go func() {
+		u.UserRepo.DeleteChacheById(helpers.GetIdFromToken(ctx))
+		helpers.DestroyToken(ctx)
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "user logouted!", map[string]interface{}{},
+		)
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
