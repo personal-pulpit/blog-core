@@ -7,6 +7,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type CustomError struct {
+	Field   string
+	Value   string
+	Message string
+}
+
 var (
 	usernameValidaitor validator.Func = func(fld validator.FieldLevel) bool {
 		username := fld.Field().String()
@@ -33,3 +39,4 @@ func InitValidations() {
 		val.RegisterValidation("phonenumbervalidaitor", phoneNumberValidatior)
 	}
 }
+

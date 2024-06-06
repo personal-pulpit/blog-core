@@ -4,6 +4,7 @@ import (
 	"blog/api/helpers"
 	"blog/pkg/data/repo"
 	db "blog/pkg/data/repo/DB"
+	"blog/utils"
 	"errors"
 	"net/http"
 	"strconv"
@@ -80,8 +81,17 @@ func (a *Article) Create(ctx *gin.Context) {
 		var ai ArticleInput
 		err := ctx.ShouldBind(&ai)
 		if err != nil {
+			if utils.CheckErrorForWord(err, "required") {
+				articleResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest,
+					utils.GetValidationError(ErrPleaseCompleteAllFields),
+					nil)
+				return
+			}
 			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusBadRequest,
+				utils.GetValidationError(err),
+				nil)
 			return
 		}
 		//check
@@ -119,9 +129,18 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 		var ai ArticleInput
 		err := ctx.ShouldBind(&ai)
 		if err != nil {
+			if utils.CheckErrorForWord(err, "required") {
 				articleResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest, err.Error(), nil)
+					http.StatusBadRequest,
+					utils.GetValidationError(ErrPleaseCompleteAllFields),
+					nil)
 				return
+			}
+			articleResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				utils.GetValidationError(err),
+				nil)
+			return
 		}
 		article, err := a.ArticleRepo.UpdateById(
 			id,
