@@ -3,6 +3,7 @@ package handlers
 import (
 	"blog/api/helpers"
 	"blog/pkg/data/repo"
+	db "blog/pkg/data/repo/DB"
 	"errors"
 	"net/http"
 	"strconv"
@@ -47,14 +48,19 @@ func (a *Article) GetById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		article, err := a.ArticleRepo.GetById(id)
 		if err != nil {
+			if errors.Is(err, db.ErrArticleNotFound) {
+				articleResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
+			}
 			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		username, err := a.UserRepo.GetUsernameById(article["authorId"])
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		articleResponseChannel <- helpers.NewHttpResponse(
@@ -91,7 +97,7 @@ func (a *Article) Create(ctx *gin.Context) {
 		username, err := a.UserRepo.GetUsernameById(authorid)
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		articleResponseChannel <- helpers.NewHttpResponse(
@@ -113,9 +119,9 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 		var ai ArticleInput
 		err := ctx.ShouldBind(&ai)
 		if err != nil {
-			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
-			return
+				articleResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
 		}
 		article, err := a.ArticleRepo.UpdateById(
 			id,
@@ -123,6 +129,11 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 			ai.Content,
 		)
 		if err != nil {
+			if errors.Is(err, db.ErrArticleNotFound) {
+				articleResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
+			}
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusBadRequest, err.Error(), nil)
 			return
@@ -130,7 +141,7 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 		username, err := a.UserRepo.GetUsernameById(strconv.Itoa(int(article.AuthorId)))
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		articleResponseChannel <- helpers.NewHttpResponse(
@@ -151,6 +162,11 @@ func (a *Article) DeleteById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		err := a.ArticleRepo.DeleteById(id)
 		if err != nil {
+			if errors.Is(err, db.ErrArticleNotFound) {
+				articleResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
+			}
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusBadRequest, err.Error(), nil)
 			return

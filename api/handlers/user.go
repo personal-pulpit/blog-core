@@ -3,6 +3,8 @@ package handlers
 import (
 	"blog/api/helpers"
 	"blog/pkg/data/repo"
+	db "blog/pkg/data/repo/DB"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,7 +41,7 @@ func (u *User) GetAll(ctx *gin.Context) {
 	go func() {
 		users, err := u.UserRepo.GetAll()
 		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		userResponseChannel <- helpers.NewHttpResponse(http.StatusOK, "users got!", map[string]interface{}{"users": users})
@@ -51,7 +53,11 @@ func (u *User) GetById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		user, err := u.UserRepo.GetById(id)
 		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			if errors.Is(err, db.ErrUserNotFound) {
+				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+				return
+			}
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		userResponseChannel <- helpers.NewHttpResponse(
@@ -80,7 +86,11 @@ func (u *User) Verify(ctx *gin.Context) {
 		}
 		user, err := u.UserRepo.Verify(li.Username, li.Password)
 		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+			if errors.Is(err, db.ErrUserNotFound) || errors.Is(err, db.ErrUsernameOrPasswordWrong) {
+				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+				return
+			}
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		err = helpers.SetToken(ctx, user.Id)
@@ -119,15 +129,22 @@ func (u *User) Create(ctx *gin.Context) {
 			si.PhoneNumber,
 		)
 		if err != nil {
+			if errors.Is(err, db.ErrEmailAlreadyExits) ||
+				errors.Is(err, db.ErrUsernameAlreadyExits) ||
+				errors.Is(err, db.ErrPhoneNumberAlreadyExits) {
+				userResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
+			}
 			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		err = helpers.SetToken(ctx, user.Id)
 		if err != nil {
 			tx.Rollback()
 			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		tx.Commit()
@@ -162,9 +179,9 @@ func (u *User) UpdateById(ctx *gin.Context) {
 			ui.Username,
 		)
 		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
-			return
+				userResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
 		}
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "user updated!", map[string]interface{}{
@@ -182,8 +199,13 @@ func (u *User) DeleteById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		err := u.UserRepo.DeleteById(id)
 		if err != nil {
+			if errors.Is(err, db.ErrUserNotFound) {
+				userResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
+			}
 			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
+				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
 		userResponseChannel <- helpers.NewHttpResponse(

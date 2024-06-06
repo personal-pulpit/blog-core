@@ -68,7 +68,7 @@ func (ur *UserRepo) GetById(id string) (map[string]string, error) {
 	ur.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (ur *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (models.User,*gorm.DB,error) {
+func (ur *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (models.User, *gorm.DB, error) {
 	var u models.User
 	u.Firstname = firstname
 	u.Lastname = lastname
@@ -79,7 +79,7 @@ func (ur *UserRepo) Create(firstname, lastname, biography, username, password, e
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		ur.Logger.Error(logging.Internal, logging.HashPassword, err.Error(), nil)
-		return u, nil,err
+		return u, nil, err
 	}
 	u.Password = hashedPassword
 	tx := NewTx(ur.DB)
@@ -87,39 +87,35 @@ func (ur *UserRepo) Create(firstname, lastname, biography, username, password, e
 	if err != nil {
 		if utils.CheckErrorForWord(err, "email") {
 			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil,ErrEmailAlreadyExits
+			return u, nil, ErrEmailAlreadyExits
 		} else if utils.CheckErrorForWord(err, "username") {
 			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil,ErrUsernameAlreadyExits
+			return u, nil, ErrUsernameAlreadyExits
 		} else if utils.CheckErrorForWord(err, "phone_number") {
 			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil,ErrPhoneNumberAlreadyExits
+			return u, nil, ErrPhoneNumberAlreadyExits
 		} else {
 			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil,err
+			return u, nil, err
 		}
 	}
-	err=  ur.CreateChache(u)
-	if err != nil{
+	err = ur.CreateChache(u)
+	if err != nil {
 		tx.Rollback()
 		ur.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
 		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return u,nil,err
+		return u, nil, err
 	}
 	txj := tx.Commit()
-	ur.Logger.Info(logging.Mysql, logging.Insert,"", nil)
+	ur.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	//retrun tx for rollback if jwt token can not be set
-	return u,txj,nil
+	return u, txj, nil
 }
 func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (models.User, error) {
 	var u models.User
 	tx := NewTx(ur.DB)
 	err := tx.First(&u, id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
-			return u, ErrUserNotFound
-		}
 		ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
 		return u, err
 	}
@@ -148,12 +144,14 @@ func (ur *UserRepo) DeleteById(id string) error {
 	tx := NewTx(ur.DB)
 	err := tx.Delete(&u, id).Error
 	if err != nil {
-		ur.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
-		return err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+			return ErrUserNotFound
+		}
 	}
 	id = strconv.Itoa(int(u.Id))
 	err = ur.DeleteChacheById(id)
-	if err != nil{
+	if err != nil {
 		tx.Rollback()
 		ur.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
 		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
@@ -176,22 +174,22 @@ func (ur *UserRepo) Verify(username, password string) (models.User, error) {
 	err = utils.CheckPassword(password, u.Password)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "crypto/bcrypt") {
-		ur.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
+			ur.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
 			return u, ErrUsernameOrPasswordWrong
 		}
 		ur.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
 		return u, err
 	}
 	err = ur.CreateChache(u)
-	if err != nil{
-	ur.Logger.Info(logging.Mysql, logging.Verify,err.Error(),nil)
-	return u,err
+	if err != nil {
+		ur.Logger.Info(logging.Mysql, logging.Verify, err.Error(), nil)
+		return u, err
 	}
-	ur.Logger.Info(logging.Mysql, logging.Verify,"",nil)
-	return u,nil
+	ur.Logger.Info(logging.Mysql, logging.Verify, "", nil)
+	return u, nil
 }
 
-func (ur *UserRepo) CreateChache(u models.User) (error) {
+func (ur *UserRepo) CreateChache(u models.User) error {
 	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
 		"firstname":   u.Firstname,
 		"lastname":    u.Lastname,
@@ -217,4 +215,3 @@ func (ur *UserRepo) GetUsernameById(id string) (string, error) {
 	}
 	return user["username"], err
 }
-
