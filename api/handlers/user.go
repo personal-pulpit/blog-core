@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	"blog/database/mysql_repo"
+	mysql_repository "blog/database/mysql_repo"
 	"blog/internal/repository"
 
 	"blog/utils"
@@ -14,7 +14,7 @@ import (
 
 type (
 	User struct {
-		UserRepo repository.UserRepo
+		UserRepo repository.UserRepository
 	}
 	UpdateInput struct {
 		Firstname string `form:"firstname" binding:"required"`
@@ -56,10 +56,10 @@ func (u *User) GetAll(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
-func (u *User) GetById(ctx *gin.Context) {
+func (u *User) GetByID(ctx *gin.Context) {
 	go func() {
-		id := ctx.Param("id")
-		user, err := u.UserRepo.GetById(id)
+		ID := ctx.Param("ID")
+		user, err := u.UserRepo.GetByID(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
@@ -117,7 +117,7 @@ func (u *User) Verify(ctx *gin.Context) {
 			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
-		err = helpers.SetToken(ctx, user.Id)
+		err = helpers.SetToken(ctx, user.ID)
 		if err != nil {
 			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
@@ -192,7 +192,7 @@ func (u *User) Create(ctx *gin.Context) {
 				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
-		err = helpers.SetToken(ctx, user.Id)
+		err = helpers.SetToken(ctx, user.ID)
 		if err != nil {
 			tx.Rollback()
 			userResponseChannel <- helpers.NewHttpResponse(
@@ -213,9 +213,9 @@ func (u *User) Create(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusCreated, userResponseChannel)
 }
-func (u *User) UpdateById(ctx *gin.Context) {
+func (u *User) UpdateByID(ctx *gin.Context) {
 	go func() {
-		id := helpers.GetIdFromToken(ctx)
+		ID := helpers.GetIdFromToken(ctx)
 		var ui UpdateInput
 		err := ctx.ShouldBind(&ui)
 		if err != nil {
@@ -238,8 +238,8 @@ func (u *User) UpdateById(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, err := u.UserRepo.UpdateById(
-			id,
+		user, err := u.UserRepo.UpdateByID(
+			ID,
 			ui.Firstname,
 			ui.Lastname,
 			ui.Biography,
@@ -261,10 +261,10 @@ func (u *User) UpdateById(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
-func (u *User) DeleteById(ctx *gin.Context) {
+func (u *User) DeleteByID(ctx *gin.Context) {
 	go func() {
-		id := ctx.Param("id")
-		err := u.UserRepo.DeleteById(id)
+		ID := ctx.Param("ID")
+		err := u.UserRepo.DeleteByID(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(

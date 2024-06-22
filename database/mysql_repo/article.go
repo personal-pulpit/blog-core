@@ -3,7 +3,9 @@ package mysql_repository
 import (
 	"blog/database"
 	"blog/internal/model"
+	"blog/internal/repository"
 	"blog/pkg/logging"
+
 	"errors"
 
 	"context"
@@ -24,7 +26,7 @@ var (
 	ErrArticleNotFound = errors.New("article not found")
 )
 
-func NewArticleRepo() *ArticleRepo {
+func NewArticleRepo() repository.ArticleRepository {
 	return &ArticleRepo{
 		DB:     database.GetMysqlDB(),
 		RDB:    database.GetRedisDB(),
@@ -50,13 +52,13 @@ func (a *ArticleRepo) GetAll() ([]map[string]string, error) {
 	return articles, nil
 }
 
-func (a *ArticleRepo) GetById(id string) (map[string]string, error) {
-	exists := a.RDB.Exists(context.Background(), fmt.Sprintf("article:%s", id))
+func (a *ArticleRepo) GetByID(ID string) (map[string]string, error) {
+	exists := a.RDB.Exists(context.Background(), fmt.Sprintf("article:%s", ID))
 	if exists.Val() == 0 {
 		a.Logger.Error(logging.Redis, logging.Get, ErrArticleNotFound.Error(), nil)
 		return map[string]string{}, ErrArticleNotFound
 	}
-	redisMapRes := a.RDB.HGetAll(context.Background(), fmt.Sprintf("article:%s", id))
+	redisMapRes := a.RDB.HGetAll(context.Background(), fmt.Sprintf("article:%s", ID))
 	if redisMapRes.Err() != nil {
 		a.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
 		return redisMapRes.Val(), redisMapRes.Err()
@@ -87,9 +89,9 @@ func (a *ArticleRepo) Create(sAuthorId, title, content string) (model.Article, e
 	a.Logger.Error(logging.Mysql, logging.Insert, "", nil)
 	return article, nil
 }
-func (a *ArticleRepo) UpdateById(id, title, content string) (model.Article, error) {
+func (a *ArticleRepo) UpdateByID(ID, title, content string) (model.Article, error) {
 	var article model.Article
-	err := a.DB.First(&article, id).Error
+	err := a.DB.First(&article, ID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			a.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
@@ -117,15 +119,15 @@ func (a *ArticleRepo) UpdateById(id, title, content string) (model.Article, erro
 	a.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	return article, err
 }
-func (a *ArticleRepo) DeleteById(id string) error {
+func (a *ArticleRepo) DeleteByID(ID string) error {
 	var article model.Article
 	tx := NewTx(a.DB)
-	err := tx.Delete(&article, id).Error
+	err := tx.Delete(&article, ID).Error
 	if err != nil {
 		a.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
 		return err
 	}
-	err = a.deleteChacheById(id)
+	err = a.deleteChacheById(ID)
 	if err != nil {
 		tx.Rollback()
 		a.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
@@ -137,7 +139,7 @@ func (a *ArticleRepo) DeleteById(id string) error {
 }
 
 func (a *ArticleRepo) CreateChacheById(article model.Article) error {
-	redisRes := a.RDB.HMSet(context.Background(), fmt.Sprintf("article:%d", article.Id), map[string]interface{}{
+	redisRes := a.RDB.HMSet(context.Background(), fmt.Sprintf("article:%d", article.ID), map[string]interface{}{
 		"title":     article.Title,
 		"content":   article.Content,
 		"createdAt": article.CreatedAt,
@@ -146,7 +148,7 @@ func (a *ArticleRepo) CreateChacheById(article model.Article) error {
 	})
 	return redisRes.Err()
 }
-func (a *ArticleRepo) deleteChacheById(id string) error {
-	redisRes := a.RDB.Del(context.Background(), fmt.Sprintf("article:%s", id))
+func (a *ArticleRepo) deleteChacheById(ID string) error {
+	redisRes := a.RDB.Del(context.Background(), fmt.Sprintf("article:%s", ID))
 	return redisRes.Err()
 }

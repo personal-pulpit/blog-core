@@ -3,6 +3,7 @@ package mysql_repository
 import (
 	"blog/database"
 	"blog/internal/model"
+	"blog/internal/repository"
 	"blog/pkg/logging"
 	"blog/utils"
 	"errors"
@@ -15,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepo struct {
+type userRepo struct {
 	DB     *gorm.DB
 	RDB    *redis.Client
 	Logger logging.ZapLogger
@@ -29,14 +30,14 @@ var (
 	ErrUsernameOrPasswordWrong = errors.New("username or password wrong")
 )
 
-func NewUserRepo() *UserRepo {
-	return &UserRepo{
+func NewUserRepository() repository.UserRepository {
+	return &userRepo{
 		DB:     database.GetMysqlDB(),
 		RDB:    database.GetRedisDB(),
 		Logger: logging.MyLogger,
 	}
 }
-func (u *UserRepo) GetAll() ([]map[string]string, error) {
+func (u *userRepo) GetAll() ([]map[string]string, error) {
 	var users []map[string]string
 	keys, err := u.RDB.Keys(context.Background(), "user:*").Result()
 	if err != nil {
@@ -54,13 +55,13 @@ func (u *UserRepo) GetAll() ([]map[string]string, error) {
 	u.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return users, nil
 }
-func (u *UserRepo) GetById(id string) (map[string]string, error) {
-	exists := u.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", id))
+func (u *userRepo) GetByID(ID string) (map[string]string, error) {
+	exists := u.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", ID))
 	if exists.Val() == 0 {
 		u.Logger.Error(logging.Redis, logging.Get, ErrUserNotFound.Error(), nil)
 		return map[string]string{}, ErrUserNotFound
 	}
-	redisMapRes := u.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
+	redisMapRes := u.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", ID))
 	if redisMapRes.Err() != nil {
 		u.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
 		return map[string]string{}, redisMapRes.Err()
@@ -68,7 +69,7 @@ func (u *UserRepo) GetById(id string) (map[string]string, error) {
 	u.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (u *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error) {
+func (u *userRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error) {
 	var user model.User
 	user.Firstname = firstname
 	user.Lastname = lastname
@@ -111,10 +112,10 @@ func (u *UserRepo) Create(firstname, lastname, biography, username, password, em
 	//retrun tx for rollback if jwt token can not be set
 	return user, txj, nil
 }
-func (u *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (model.User, error) {
+func (u *userRepo) UpdateByID(ID, firstname, lastname, biography, username string) (model.User, error) {
 	var user model.User
 	tx := NewTx(u.DB)
-	err := tx.First(&u, id).Error
+	err := tx.First(&u, ID).Error
 	if err != nil {
 		u.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
 		return user, err
@@ -139,18 +140,18 @@ func (u *UserRepo) UpdateById(id, firstname, lastname, biography, username strin
 	u.Logger.Info(logging.Mysql, logging.Update, "", nil)
 	return user, nil
 }
-func (u *UserRepo) DeleteById(id string) error {
+func (u *userRepo) DeleteByID(ID string) error {
 	var user model.User
 	tx := NewTx(u.DB)
-	err := tx.Delete(&u, id).Error
+	err := tx.Delete(&u, ID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			u.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
 			return ErrUserNotFound
 		}
 	}
-	id = strconv.Itoa(int(user.Id))
-	err = u.DeleteChacheById(id)
+	ID = strconv.Itoa(int(user.ID))
+	err = u.DeleteChacheById(ID)
 	if err != nil {
 		tx.Rollback()
 		u.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
@@ -160,7 +161,7 @@ func (u *UserRepo) DeleteById(id string) error {
 	u.Logger.Info(logging.Mysql, logging.Delete, "", nil)
 	return nil
 }
-func (u *UserRepo) Verify(username, password string) (model.User, error) {
+func (u *userRepo) Verify(username, password string) (model.User, error) {
 	var user model.User
 	err := u.DB.First(&u, "username=?", username).Error
 	if err != nil {
@@ -189,8 +190,8 @@ func (u *UserRepo) Verify(username, password string) (model.User, error) {
 	return user, nil
 }
 
-func (u *UserRepo) CreateChache(user model.User) error {
-	redisRes := u.RDB.HMSet(context.Background(), fmt.Sprintf("user:%d", user.Id), map[string]interface{}{
+func (u *userRepo) CreateChache(user model.User) error {
+	redisRes := u.RDB.HMSet(context.Background(), fmt.Sprintf("user:%d", user.ID), map[string]interface{}{
 		"firstname":   user.Firstname,
 		"lastname":    user.Lastname,
 		"biography":   user.Biography,
@@ -203,12 +204,12 @@ func (u *UserRepo) CreateChache(user model.User) error {
 	})
 	return redisRes.Err()
 }
-func (u *UserRepo) DeleteChacheById(id string) error {
-	redisRes := u.RDB.Del(context.Background(), fmt.Sprintf("user:%s", id))
+func (u *userRepo) DeleteChacheById(ID string) error {
+	redisRes := u.RDB.Del(context.Background(), fmt.Sprintf("user:%s", ID))
 	return redisRes.Err()
 }
-func (u *UserRepo) GetUsernameById(id string) (string, error) {
-	user, err := u.GetById(id)
+func (u *userRepo) GetUsernameById(ID string) (string, error) {
+	user, err := u.GetByID(ID)
 	if err != nil {
 		u.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 		return "", err

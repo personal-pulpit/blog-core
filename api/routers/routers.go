@@ -3,6 +3,7 @@ package routers
 import (
 	"blog/api/handlers"
 	"blog/api/middlewares"
+	mysql_repository "blog/database/mysql_repo"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,24 +26,27 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/user":
 		{
 			u := &handlers.User{
-				
+				UserRepo: mysql_repository.NewUserRepository(),
 			}
 			r.GET("", u.GetAll)
-			r.GET("/:id", u.GetById)
+			r.GET("/:ID", u.GetByID)
 			r.GET("/logout", middlewares.EnsureLoggedIn(), u.Logout)
 			r.POST("", middlewares.EnsureNotLoggedIn(), u.Create)
 			r.POST("/login", middlewares.EnsureNotLoggedIn(), u.Verify)
-			r.PATCH("", middlewares.EnsureLoggedIn(), u.UpdateById)
-			r.DELETE("/:id", middlewares.EnsureAdmin(), u.DeleteById)
+			r.PATCH("", middlewares.EnsureLoggedIn(), u.UpdateByID)
+			r.DELETE("/:ID", middlewares.EnsureAdmin(), u.DeleteByID)
 		}
 	case "/api/v1/article":
 		{
-			p := &handlers.Article{}
+			p := &handlers.Article{
+				UserRepo:    mysql_repository.NewUserRepository(),
+				ArticleRepo: mysql_repository.NewArticleRepo(),
+			}
 			r.GET("", p.GetAll)
-			r.GET("/:id", p.GetById)
+			r.GET("/:ID", p.GetByID)
 			r.POST("", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.Create)
-			r.PATCH("", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.UpdateById)
-			r.DELETE("/:id", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.DeleteById)
+			r.PATCH("", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.UpdateByID)
+			r.DELETE("/:ID", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.DeleteByID)
 		}
 	}
 

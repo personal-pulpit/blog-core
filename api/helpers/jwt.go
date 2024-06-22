@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	secret                     =[]byte(config.Cfg.Jwt.Secret)
+	secret                     = []byte(config.Cfg.Jwt.Secret)
 	errInvalidToken            = errors.New("token is invalid")
 	errUnexpectedSigningMethod = errors.New("unexpected signin method")
 )
 
-func CreateToken(Id uint) (string, error) {
-        fmt.Println("secret:",secret)
+func CreateToken(ID uint) (string, error) {
+	fmt.Println("secret:", secret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       Id,
+		"ID": ID,
 	})
 	tokenString, err := token.SignedString(secret)
 	return tokenString, err

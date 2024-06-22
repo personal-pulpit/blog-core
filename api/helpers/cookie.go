@@ -10,11 +10,11 @@ import (
 
 var errFailedSettingToken = errors.New("failed setting token")
 
-func SetToken(ctx *gin.Context, id uint) error {
-	if id == 0  {
+func SetToken(ctx *gin.Context, ID uint) error {
+	if ID == 0 {
 		return errFailedSettingToken
 	}
-	token, err := CreateToken(id)
+	token, err := CreateToken(ID)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func DestroyToken(ctx *gin.Context) {
 
 func GetIdFromToken(ctx *gin.Context) string {
 	claims := GetToken(ctx)
-	fid, _ := claims["id"].(float64)
+	fid, _ := claims["ID"].(float64)
 	sid := strconv.FormatFloat(fid, 'f', -1, 64)
 	return sid
 }

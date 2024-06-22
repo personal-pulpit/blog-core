@@ -2,11 +2,9 @@ package handlers
 
 import (
 	"blog/api/helpers"
+	mysql_repository "blog/database/mysql_repo"
 	"blog/internal/repository"
-	 "blog/database/mysql_repo"
-	
 
-	
 	"blog/utils"
 	"errors"
 	"net/http"
@@ -16,14 +14,14 @@ import (
 )
 
 var (
-	ErrNoIdDetected        = errors.New("no id detected")
+	ErrNoIdDetected        = errors.New("no ID detected")
 	articleResponseChannel = make(chan helpers.HttpResponse)
 )
 
 type (
 	Article struct {
-		ArticleRepo repository.ArticleRepo
-		UserRepo    repository.UserRepo
+		ArticleRepo repository.ArticleRepository
+		UserRepo    repository.UserRepository
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`
@@ -47,10 +45,10 @@ func (a *Article) GetAll(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 }
-func (a *Article) GetById(ctx *gin.Context) {
+func (a *Article) GetByID(ctx *gin.Context) {
 	go func() {
-		id := ctx.Param("id")
-		article, err := a.ArticleRepo.GetById(id)
+		ID := ctx.Param("ID")
+		article, err := a.ArticleRepo.GetByID(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
@@ -126,9 +124,9 @@ func (a *Article) Create(ctx *gin.Context) {
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 
 }
-func (a *Article) UpdateById(ctx *gin.Context) {
+func (a *Article) UpdateByID(ctx *gin.Context) {
 	go func() {
-		id := ctx.Param("id")
+		ID := ctx.Param("ID")
 		var ai ArticleInput
 		err := ctx.ShouldBind(&ai)
 		if err != nil {
@@ -145,8 +143,8 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 				nil)
 			return
 		}
-		article, err := a.ArticleRepo.UpdateById(
-			id,
+		article, err := a.ArticleRepo.UpdateByID(
+			ID,
 			ai.Title,
 			ai.Content,
 		)
@@ -179,10 +177,10 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 
 }
-func (a *Article) DeleteById(ctx *gin.Context) {
+func (a *Article) DeleteByID(ctx *gin.Context) {
 	go func() {
-		id := ctx.Param("id")
-		err := a.ArticleRepo.DeleteById(id)
+		ID := ctx.Param("ID")
+		err := a.ArticleRepo.DeleteByID(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
