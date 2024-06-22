@@ -2,7 +2,8 @@ package common
 
 import (
 	"blog/api/helpers"
-	mysql_repository "blog/database/mysql_repo"
+	redis_repository "blog/database/redis/repo"
+
 	"blog/internal/model"
 
 	"strconv"
@@ -12,7 +13,7 @@ import (
 
 func IsAdmin(ctx *gin.Context) bool {
 	ID := helpers.GetIdFromToken(ctx)
-	user, err := GetUserFromRedisById(ID)
+	user, err := GetUserFromRedisByID(ID)
 	if err != nil {
 		panic(err)
 	}
@@ -20,9 +21,9 @@ func IsAdmin(ctx *gin.Context) bool {
 	role, _ := strconv.Atoi(sRole)
 	return uint(role) == uint(model.AdminRole)
 }
-func GetUserFromRedisById(ID string) (map[string]string, error) {
-	u := mysql_repository.NewUserRepository()
-	return u.GetByID(ID)
+func GetUserFromRedisByID(ID string) (map[string]string, error) {
+	u := redis_repository.NewUserRedisRepository()
+	return u.GetCacheByID(ID)
 }
 func GetUserStatus(ctx *gin.Context) bool {
 	is_logged := ctx.GetBool("is_logged")

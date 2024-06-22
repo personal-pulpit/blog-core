@@ -3,7 +3,8 @@ package routers
 import (
 	"blog/api/handlers"
 	"blog/api/middlewares"
-	mysql_repository "blog/database/mysql_repo"
+	mysql_repository "blog/database/mysql/repo"
+	redis_repository "blog/database/redis/repo"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,7 +27,8 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/user":
 		{
 			u := &handlers.User{
-				UserRepo: mysql_repository.NewUserRepository(),
+				UserMysqlRepo: mysql_repository.NewUserMysqlRepository(),
+				UserRedisRepo: redis_repository.NewUserRedisRepository(),
 			}
 			r.GET("", u.GetAll)
 			r.GET("/:ID", u.GetByID)
@@ -39,8 +41,9 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/article":
 		{
 			p := &handlers.Article{
-				UserRepo:    mysql_repository.NewUserRepository(),
-				ArticleRepo: mysql_repository.NewArticleRepo(),
+				ArticleMysqlRepo:    mysql_repository.NewArticleMysqlRepo(),
+				ArticleRedisRepo: redis_repository.NewArticleRedisRepository(),
+				UserRedisRepo: redis_repository.NewUserRedisRepository(),
 			}
 			r.GET("", p.GetAll)
 			r.GET("/:ID", p.GetByID)

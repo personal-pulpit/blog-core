@@ -3,7 +3,7 @@ package main
 import (
 	"blog/api/server"
 	"blog/config"
-	"blog/database"
+	"blog/database/redis"
 	"blog/pkg/logging"
 )
 

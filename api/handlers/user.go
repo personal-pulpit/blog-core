@@ -2,7 +2,8 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	mysql_repository "blog/database/mysql_repo"
+	mysql_repository "blog/database/mysql/repo"
+
 	"blog/internal/repository"
 
 	"blog/utils"
@@ -14,7 +15,8 @@ import (
 
 type (
 	User struct {
-		UserRepo repository.UserRepository
+		UserMysqlRepo repository.UserMysqlRepository
+		UserRedisRepo repository.UserRedisRepository
 	}
 	UpdateInput struct {
 		Firstname string `form:"firstname" binding:"required"`
@@ -47,7 +49,7 @@ var (
 
 func (u *User) GetAll(ctx *gin.Context) {
 	go func() {
-		users, err := u.UserRepo.GetAll()
+		users, err := u.UserRedisRepo.GetCaches()
 		if err != nil {
 			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
@@ -59,7 +61,7 @@ func (u *User) GetAll(ctx *gin.Context) {
 func (u *User) GetByID(ctx *gin.Context) {
 	go func() {
 		ID := ctx.Param("ID")
-		user, err := u.UserRepo.GetByID(ID)
+		user, err := u.UserRedisRepo.GetCacheByID(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
@@ -108,7 +110,7 @@ func (u *User) Verify(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, err := u.UserRepo.Verify(li.Username, li.Password)
+		user, err := u.UserMysqlRepo.Verify(li.Username, li.Password)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) || errors.Is(err, mysql_repository.ErrUsernameOrPasswordWrong) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
@@ -171,7 +173,7 @@ func (u *User) Create(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, tx, err := u.UserRepo.Create(
+		user, tx, err := u.UserMysqlRepo.Create(
 			si.Firstname,
 			si.Lastname,
 			si.Biography,
@@ -238,7 +240,7 @@ func (u *User) UpdateByID(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, err := u.UserRepo.UpdateByID(
+		user, err := u.UserMysqlRepo.UpdateByID(
 			ID,
 			ui.Firstname,
 			ui.Lastname,
@@ -264,7 +266,7 @@ func (u *User) UpdateByID(ctx *gin.Context) {
 func (u *User) DeleteByID(ctx *gin.Context) {
 	go func() {
 		ID := ctx.Param("ID")
-		err := u.UserRepo.DeleteByID(ID)
+		err := u.UserMysqlRepo.DeleteByID(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(
@@ -283,7 +285,7 @@ func (u *User) DeleteByID(ctx *gin.Context) {
 }
 func (u *User) Logout(ctx *gin.Context) {
 	go func() {
-		u.UserRepo.DeleteChacheById(helpers.GetIdFromToken(ctx))
+		u.UserRedisRepo.DeleteCacheByID(helpers.GetIdFromToken(ctx))
 		helpers.DestroyToken(ctx)
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "user logouted!", map[string]interface{}{},
