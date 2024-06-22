@@ -2,7 +2,7 @@ package db
 
 import (
 	"blog/pkg/data/database"
-	"blog/pkg/data/models"
+	"blog/pkg/data/model"
 	"blog/pkg/logging"
 	"blog/utils"
 	"errors"
@@ -68,8 +68,8 @@ func (ur *UserRepo) GetById(id string) (map[string]string, error) {
 	ur.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (ur *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (models.User, *gorm.DB, error) {
-	var u models.User
+func (ur *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error) {
+	var u model.User
 	u.Firstname = firstname
 	u.Lastname = lastname
 	u.Biography = biography
@@ -111,8 +111,8 @@ func (ur *UserRepo) Create(firstname, lastname, biography, username, password, e
 	//retrun tx for rollback if jwt token can not be set
 	return u, txj, nil
 }
-func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (models.User, error) {
-	var u models.User
+func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (model.User, error) {
+	var u model.User
 	tx := NewTx(ur.DB)
 	err := tx.First(&u, id).Error
 	if err != nil {
@@ -140,7 +140,7 @@ func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username stri
 	return u, nil
 }
 func (ur *UserRepo) DeleteById(id string) error {
-	var u models.User
+	var u model.User
 	tx := NewTx(ur.DB)
 	err := tx.Delete(&u, id).Error
 	if err != nil {
@@ -160,8 +160,8 @@ func (ur *UserRepo) DeleteById(id string) error {
 	ur.Logger.Info(logging.Mysql, logging.Delete, "", nil)
 	return nil
 }
-func (ur *UserRepo) Verify(username, password string) (models.User, error) {
-	var u models.User
+func (ur *UserRepo) Verify(username, password string) (model.User, error) {
+	var u model.User
 	err := ur.DB.First(&u, "username=?", username).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -189,7 +189,7 @@ func (ur *UserRepo) Verify(username, password string) (models.User, error) {
 	return u, nil
 }
 
-func (ur *UserRepo) CreateChache(u models.User) error {
+func (ur *UserRepo) CreateChache(u model.User) error {
 	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
 		"firstname":   u.Firstname,
 		"lastname":    u.Lastname,

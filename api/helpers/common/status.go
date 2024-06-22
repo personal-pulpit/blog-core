@@ -2,7 +2,7 @@ package common
 
 import (
 	"blog/api/helpers"
-	"blog/pkg/data/models"
+	"blog/pkg/data/model"
 	"blog/pkg/data/repo"
 
 	"strconv"
@@ -17,8 +17,8 @@ func IsAdmin(ctx *gin.Context) bool {
 		panic(err)
 	}
 	sRole := user["role"]
-	role,_:=strconv.Atoi(sRole)
-	return uint(role) == uint(models.AdminRole)
+	role, _ := strconv.Atoi(sRole)
+	return uint(role) == uint(model.AdminRole)
 }
 func GetUserFromRedisById(id string) (map[string]string, error) {
 	ur := repo.NewUserDB()

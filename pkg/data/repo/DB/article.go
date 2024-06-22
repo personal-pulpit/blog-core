@@ -2,7 +2,7 @@ package db
 
 import (
 	"blog/pkg/data/database"
-	"blog/pkg/data/models"
+	"blog/pkg/data/model"
 	"blog/pkg/logging"
 	"errors"
 
@@ -64,9 +64,9 @@ func (ar *ArticleRepo) GetById(id string) (map[string]string, error) {
 	ar.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (ar *ArticleRepo) Create(sAuthorId, title, content string) (models.Article, error) {
+func (ar *ArticleRepo) Create(sAuthorId, title, content string) (model.Article, error) {
 	iAuthorId, _ := strconv.Atoi(sAuthorId)
-	var a models.Article
+	var a model.Article
 	a.Title = title
 	a.Content = content
 	a.AuthorId = uint(iAuthorId)
@@ -78,17 +78,17 @@ func (ar *ArticleRepo) Create(sAuthorId, title, content string) (models.Article,
 	}
 	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	err = ar.CreateChacheById(a)
-	if err != nil{
+	if err != nil {
 		tx.Rollback()
 		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return a,err
+		return a, err
 	}
 	tx.Commit()
 	ar.Logger.Error(logging.Mysql, logging.Insert, "", nil)
-	return a,nil
+	return a, nil
 }
-func (ar *ArticleRepo) UpdateById(id, title, content string) (models.Article, error) {
-	var a models.Article
+func (ar *ArticleRepo) UpdateById(id, title, content string) (model.Article, error) {
+	var a model.Article
 	err := ar.DB.First(&a, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -118,7 +118,7 @@ func (ar *ArticleRepo) UpdateById(id, title, content string) (models.Article, er
 	return a, err
 }
 func (ar *ArticleRepo) DeleteById(id string) error {
-	var a models.Article
+	var a model.Article
 	tx := NewTx(ar.DB)
 	err := tx.Delete(&a, id).Error
 	if err != nil {
@@ -126,7 +126,7 @@ func (ar *ArticleRepo) DeleteById(id string) error {
 		return err
 	}
 	err = ar.deleteChacheById(id)
-	if err != nil{
+	if err != nil {
 		tx.Rollback()
 		ar.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
 		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
@@ -136,7 +136,7 @@ func (ar *ArticleRepo) DeleteById(id string) error {
 	return nil
 }
 
-func (ar *ArticleRepo) CreateChacheById(a models.Article)  error {
+func (ar *ArticleRepo) CreateChacheById(a model.Article) error {
 	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("article:%d", a.Id), map[string]interface{}{
 		"title":     a.Title,
 		"content":   a.Content,

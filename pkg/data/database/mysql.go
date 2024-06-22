@@ -2,7 +2,7 @@ package database
 
 import (
 	"blog/config"
-	"blog/pkg/data/models"
+	"blog/internal/model"
 	"blog/pkg/logging"
 	"fmt"
 
@@ -26,6 +26,6 @@ func ConnectDB() {
 		logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
 	}
 	DB = db
-	Migration(models.User{})
-	Migration(models.Article{})
+	Migration(model.User{})
+	Migration(model.Article{})
 }
