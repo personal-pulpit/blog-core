@@ -26,127 +26,127 @@ var (
 
 func NewArticleRepo() *ArticleRepo {
 	return &ArticleRepo{
-		DB:     database.DB,
-		RDB:    database.RDB,
+		DB:     database.GetMysqlDB(),
+		RDB:    database.GetRedisDB(),
 		Logger: logging.MyLogger,
 	}
 }
-func (ar *ArticleRepo) GetAll() ([]map[string]string, error) {
+func (a *ArticleRepo) GetAll() ([]map[string]string, error) {
 	var articles []map[string]string
-	keys, err := ar.RDB.Keys(context.Background(), "article:*").Result()
+	keys, err := a.RDB.Keys(context.Background(), "article:*").Result()
 	if err != nil {
-		ar.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
+		a.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 		return articles, err
 	}
 	for _, key := range keys {
-		articleMap, err := ar.RDB.HGetAll(context.Background(), key).Result()
+		articleMap, err := a.RDB.HGetAll(context.Background(), key).Result()
 		if err != nil {
-			ar.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
+			a.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 			return []map[string]string{}, err
 		}
 		articles = append(articles, articleMap)
 	}
-	ar.Logger.Info(logging.Redis, logging.Get, "", nil)
+	a.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return articles, nil
 }
 
-func (ar *ArticleRepo) GetById(id string) (map[string]string, error) {
-	exists := ar.RDB.Exists(context.Background(), fmt.Sprintf("article:%s", id))
+func (a *ArticleRepo) GetById(id string) (map[string]string, error) {
+	exists := a.RDB.Exists(context.Background(), fmt.Sprintf("article:%s", id))
 	if exists.Val() == 0 {
-		ar.Logger.Error(logging.Redis, logging.Get, ErrArticleNotFound.Error(), nil)
+		a.Logger.Error(logging.Redis, logging.Get, ErrArticleNotFound.Error(), nil)
 		return map[string]string{}, ErrArticleNotFound
 	}
-	redisMapRes := ar.RDB.HGetAll(context.Background(), fmt.Sprintf("article:%s", id))
+	redisMapRes := a.RDB.HGetAll(context.Background(), fmt.Sprintf("article:%s", id))
 	if redisMapRes.Err() != nil {
-		ar.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
+		a.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
 		return redisMapRes.Val(), redisMapRes.Err()
 	}
-	ar.Logger.Info(logging.Redis, logging.Get, "", nil)
+	a.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (ar *ArticleRepo) Create(sAuthorId, title, content string) (model.Article, error) {
+func (a *ArticleRepo) Create(sAuthorId, title, content string) (model.Article, error) {
 	iAuthorId, _ := strconv.Atoi(sAuthorId)
-	var a model.Article
-	a.Title = title
-	a.Content = content
-	a.AuthorId = uint(iAuthorId)
-	tx := NewTx(ar.DB)
-	err := tx.Create(&a).Error
+	var article model.Article
+	article.Title = title
+	article.Content = content
+	article.AuthorId = uint(iAuthorId)
+	tx := NewTx(a.DB)
+	err := tx.Create(&article).Error
 	if err != nil {
-		ar.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-		return a, err
+		a.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
+		return article, err
 	}
-	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
-	err = ar.CreateChacheById(a)
+	a.Logger.Info(logging.Mysql, logging.Insert, "", nil)
+	err = a.CreateChacheById(article)
 	if err != nil {
 		tx.Rollback()
-		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return a, err
+		a.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return article, err
 	}
 	tx.Commit()
-	ar.Logger.Error(logging.Mysql, logging.Insert, "", nil)
-	return a, nil
+	a.Logger.Error(logging.Mysql, logging.Insert, "", nil)
+	return article, nil
 }
-func (ar *ArticleRepo) UpdateById(id, title, content string) (model.Article, error) {
-	var a model.Article
-	err := ar.DB.First(&a, id).Error
+func (a *ArticleRepo) UpdateById(id, title, content string) (model.Article, error) {
+	var article model.Article
+	err := a.DB.First(&article, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ar.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
-			return a, ErrArticleNotFound
+			a.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+			return article, ErrArticleNotFound
 		}
-		ar.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
-		return a, err
+		a.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+		return article, err
 	}
-	a.Title = title
-	a.Content = content
-	tx := NewTx(ar.DB)
-	err = tx.Save(&a).Error
+	article.Title = title
+	article.Content = content
+	tx := NewTx(a.DB)
+	err = tx.Save(&article).Error
 	if err != nil {
-		ar.Logger.Error(logging.Mysql, logging.Update, err.Error(), nil)
-		return a, err
+		a.Logger.Error(logging.Mysql, logging.Update, err.Error(), nil)
+		return article, err
 	}
-	err = ar.CreateChacheById(a)
+	err = a.CreateChacheById(article)
 	if err != nil {
 		tx.Rollback()
-		ar.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
-		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return a, err
+		a.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		a.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return article, err
 	}
 	tx.Commit()
-	ar.Logger.Info(logging.Mysql, logging.Insert, "", nil)
-	return a, err
+	a.Logger.Info(logging.Mysql, logging.Insert, "", nil)
+	return article, err
 }
-func (ar *ArticleRepo) DeleteById(id string) error {
-	var a model.Article
-	tx := NewTx(ar.DB)
-	err := tx.Delete(&a, id).Error
+func (a *ArticleRepo) DeleteById(id string) error {
+	var article model.Article
+	tx := NewTx(a.DB)
+	err := tx.Delete(&article, id).Error
 	if err != nil {
-		ar.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
+		a.Logger.Error(logging.Mysql, logging.Delete, err.Error(), nil)
 		return err
 	}
-	err = ar.deleteChacheById(id)
+	err = a.deleteChacheById(id)
 	if err != nil {
 		tx.Rollback()
-		ar.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
-		ar.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		a.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
+		a.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return err
 	}
-	ar.Logger.Info(logging.Mysql, logging.Delete, "", nil)
+	a.Logger.Info(logging.Mysql, logging.Delete, "", nil)
 	return nil
 }
 
-func (ar *ArticleRepo) CreateChacheById(a model.Article) error {
-	redisRes := database.RDB.HMSet(context.Background(), fmt.Sprintf("article:%d", a.Id), map[string]interface{}{
-		"title":     a.Title,
-		"content":   a.Content,
-		"createdAt": a.CreatedAt,
-		"updatedAt": a.UpdatedAt,
-		"authorId":  a.AuthorId,
+func (a *ArticleRepo) CreateChacheById(article model.Article) error {
+	redisRes := a.RDB.HMSet(context.Background(), fmt.Sprintf("article:%d", article.Id), map[string]interface{}{
+		"title":     article.Title,
+		"content":   article.Content,
+		"createdAt": article.CreatedAt,
+		"updatedAt": article.UpdatedAt,
+		"authorId":  article.AuthorId,
 	})
 	return redisRes.Err()
 }
-func (ar *ArticleRepo) deleteChacheById(id string) error {
-	redisRes := database.RDB.Del(context.Background(), fmt.Sprintf("article:%s", id))
+func (a *ArticleRepo) deleteChacheById(id string) error {
+	redisRes := a.RDB.Del(context.Background(), fmt.Sprintf("article:%s", id))
 	return redisRes.Err()
 }

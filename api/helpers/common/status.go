@@ -21,8 +21,8 @@ func IsAdmin(ctx *gin.Context) bool {
 	return uint(role) == uint(model.AdminRole)
 }
 func GetUserFromRedisById(id string) (map[string]string, error) {
-	ur := repository.NewUserRepo()
-	return ur.GetById(id)
+	u := repository.NewUserRepo()
+	return u.GetById(id)
 }
 func GetUserStatus(ctx *gin.Context) bool {
 	is_logged := ctx.GetBool("is_logged")

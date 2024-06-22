@@ -31,186 +31,186 @@ var (
 
 func NewUserRepo() *UserRepo {
 	return &UserRepo{
-		DB:     database.DB,
-		RDB:    database.RDB,
+		DB:     database.GetMysqlDB(),
+		RDB:    database.GetRedisDB(),
 		Logger: logging.MyLogger,
 	}
 }
-func (ur *UserRepo) GetAll() ([]map[string]string, error) {
+func (u *UserRepo) GetAll() ([]map[string]string, error) {
 	var users []map[string]string
-	keys, err := ur.RDB.Keys(context.Background(), "user:*").Result()
+	keys, err := u.RDB.Keys(context.Background(), "user:*").Result()
 	if err != nil {
-		ur.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
+		u.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 		return users, err
 	}
 	for _, key := range keys {
-		userMap, err := ur.RDB.HGetAll(context.Background(), key).Result()
+		userMap, err := u.RDB.HGetAll(context.Background(), key).Result()
 		if err != nil {
-			ur.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
+			u.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 			return []map[string]string{}, err
 		}
 		users = append(users, userMap)
 	}
-	ur.Logger.Info(logging.Redis, logging.Get, "", nil)
+	u.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return users, nil
 }
-func (ur *UserRepo) GetById(id string) (map[string]string, error) {
-	exists := ur.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", id))
+func (u *UserRepo) GetById(id string) (map[string]string, error) {
+	exists := u.RDB.Exists(context.Background(), fmt.Sprintf("user:%s", id))
 	if exists.Val() == 0 {
-		ur.Logger.Error(logging.Redis, logging.Get, ErrUserNotFound.Error(), nil)
+		u.Logger.Error(logging.Redis, logging.Get, ErrUserNotFound.Error(), nil)
 		return map[string]string{}, ErrUserNotFound
 	}
-	redisMapRes := ur.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
+	redisMapRes := u.RDB.HGetAll(context.Background(), fmt.Sprintf("user:%s", id))
 	if redisMapRes.Err() != nil {
-		ur.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
+		u.Logger.Error(logging.Redis, logging.Get, redisMapRes.Err().Error(), nil)
 		return map[string]string{}, redisMapRes.Err()
 	}
-	ur.Logger.Info(logging.Redis, logging.Get, "", nil)
+	u.Logger.Info(logging.Redis, logging.Get, "", nil)
 	return redisMapRes.Val(), nil
 }
-func (ur *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error) {
-	var u model.User
-	u.Firstname = firstname
-	u.Lastname = lastname
-	u.Biography = biography
-	u.Username = username
-	u.Email = email
-	u.PhoneNumber = phonenumber
+func (u *UserRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error) {
+	var user model.User
+	user.Firstname = firstname
+	user.Lastname = lastname
+	user.Biography = biography
+	user.Username = username
+	user.Email = email
+	user.PhoneNumber = phonenumber
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
-		ur.Logger.Error(logging.Internal, logging.HashPassword, err.Error(), nil)
-		return u, nil, err
+		u.Logger.Error(logging.Internal, logging.HashPassword, err.Error(), nil)
+		return user, nil, err
 	}
-	u.Password = hashedPassword
-	tx := NewTx(ur.DB)
+	user.Password = hashedPassword
+	tx := NewTx(u.DB)
 	err = tx.Create(&u).Error
 	if err != nil {
 		if utils.CheckErrorForWord(err, "email") {
-			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil, ErrEmailAlreadyExits
+			u.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
+			return user, nil, ErrEmailAlreadyExits
 		} else if utils.CheckErrorForWord(err, "username") {
-			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil, ErrUsernameAlreadyExits
+			u.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
+			return user, nil, ErrUsernameAlreadyExits
 		} else if utils.CheckErrorForWord(err, "phone_number") {
-			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil, ErrPhoneNumberAlreadyExits
+			u.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
+			return user, nil, ErrPhoneNumberAlreadyExits
 		} else {
-			ur.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
-			return u, nil, err
+			u.Logger.Error(logging.Mysql, logging.Insert, err.Error(), nil)
+			return user, nil, err
 		}
 	}
-	err = ur.CreateChache(u)
+	err = u.CreateChache(user)
 	if err != nil {
 		tx.Rollback()
-		ur.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
-		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return u, nil, err
+		u.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		u.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return user, nil, err
 	}
 	txj := tx.Commit()
-	ur.Logger.Info(logging.Mysql, logging.Insert, "", nil)
+	u.Logger.Info(logging.Mysql, logging.Insert, "", nil)
 	//retrun tx for rollback if jwt token can not be set
-	return u, txj, nil
+	return user, txj, nil
 }
-func (ur *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (model.User, error) {
-	var u model.User
-	tx := NewTx(ur.DB)
+func (u *UserRepo) UpdateById(id, firstname, lastname, biography, username string) (model.User, error) {
+	var user model.User
+	tx := NewTx(u.DB)
 	err := tx.First(&u, id).Error
 	if err != nil {
-		ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
-		return u, err
+		u.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+		return user, err
 	}
-	u.Firstname = firstname
-	u.Lastname = lastname
-	u.Biography = biography
-	u.Username = username
+	user.Firstname = firstname
+	user.Lastname = lastname
+	user.Biography = biography
+	user.Username = username
 	err = tx.Save(&u).Error
 	if err != nil {
 		tx.Rollback()
-		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return u, err
+		u.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return user, err
 	}
-	err = ur.CreateChache(u)
+	err = u.CreateChache(user)
 	if err != nil {
 		tx.Rollback()
-		ur.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
-		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
-		return u, err
+		u.Logger.Error(logging.Redis, logging.Set, err.Error(), nil)
+		u.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		return user, err
 	}
-	ur.Logger.Info(logging.Mysql, logging.Update, "", nil)
-	return u, nil
+	u.Logger.Info(logging.Mysql, logging.Update, "", nil)
+	return user, nil
 }
-func (ur *UserRepo) DeleteById(id string) error {
-	var u model.User
-	tx := NewTx(ur.DB)
+func (u *UserRepo) DeleteById(id string) error {
+	var user model.User
+	tx := NewTx(u.DB)
 	err := tx.Delete(&u, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+			u.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
 			return ErrUserNotFound
 		}
 	}
-	id = strconv.Itoa(int(u.Id))
-	err = ur.DeleteChacheById(id)
+	id = strconv.Itoa(int(user.Id))
+	err = u.DeleteChacheById(id)
 	if err != nil {
 		tx.Rollback()
-		ur.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
-		ur.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
+		u.Logger.Error(logging.Redis, logging.Delete, err.Error(), nil)
+		u.Logger.Error(logging.Mysql, logging.Rollback, err.Error(), nil)
 		return err
 	}
-	ur.Logger.Info(logging.Mysql, logging.Delete, "", nil)
+	u.Logger.Info(logging.Mysql, logging.Delete, "", nil)
 	return nil
 }
-func (ur *UserRepo) Verify(username, password string) (model.User, error) {
-	var u model.User
-	err := ur.DB.First(&u, "username=?", username).Error
+func (u *UserRepo) Verify(username, password string) (model.User, error) {
+	var user model.User
+	err := u.DB.First(&u, "username=?", username).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
-			return u, ErrUserNotFound
+			u.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+			return user, ErrUserNotFound
 		}
-		ur.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
-		return u, err
+		u.Logger.Error(logging.Mysql, logging.Select, err.Error(), nil)
+		return user, err
 	}
-	err = utils.CheckPassword(password, u.Password)
+	err = utils.CheckPassword(password, user.Password)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "crypto/bcrypt") {
-			ur.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
-			return u, ErrUsernameOrPasswordWrong
+			u.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
+			return user, ErrUsernameOrPasswordWrong
 		}
-		ur.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
-		return u, err
+		u.Logger.Error(logging.Mysql, logging.Verify, err.Error(), nil)
+		return user, err
 	}
-	err = ur.CreateChache(u)
+	err = u.CreateChache(user)
 	if err != nil {
-		ur.Logger.Info(logging.Mysql, logging.Verify, err.Error(), nil)
-		return u, err
+		u.Logger.Info(logging.Mysql, logging.Verify, err.Error(), nil)
+		return user, err
 	}
-	ur.Logger.Info(logging.Mysql, logging.Verify, "", nil)
-	return u, nil
+	u.Logger.Info(logging.Mysql, logging.Verify, "", nil)
+	return user, nil
 }
 
-func (ur *UserRepo) CreateChache(u model.User) error {
-	redisRes := database.RDB.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
-		"firstname":   u.Firstname,
-		"lastname":    u.Lastname,
-		"biography":   u.Biography,
-		"username":    u.Username,
-		"email":       u.Email,
-		"phonenumber": u.PhoneNumber,
-		"role":        u.Role,
-		"createdAt":   u.CreatedAt,
-		"updatedAt":   u.UpdatedAt,
+func (u *UserRepo) CreateChache(user model.User) error {
+	redisRes := u.RDB.HMSet(context.Background(), fmt.Sprintf("user:%d", user.Id), map[string]interface{}{
+		"firstname":   user.Firstname,
+		"lastname":    user.Lastname,
+		"biography":   user.Biography,
+		"username":    user.Username,
+		"email":       user.Email,
+		"phonenumber": user.PhoneNumber,
+		"role":        user.Role,
+		"createdAt":   user.CreatedAt,
+		"updatedAt":   user.UpdatedAt,
 	})
 	return redisRes.Err()
 }
-func (ur *UserRepo) DeleteChacheById(id string) error {
-	redisRes := database.RDB.Del(context.Background(), fmt.Sprintf("user:%s", id))
+func (u *UserRepo) DeleteChacheById(id string) error {
+	redisRes := u.RDB.Del(context.Background(), fmt.Sprintf("user:%s", id))
 	return redisRes.Err()
 }
-func (ur *UserRepo) GetUsernameById(id string) (string, error) {
-	user, err := ur.GetById(id)
+func (u *UserRepo) GetUsernameById(id string) (string, error) {
+	user, err := u.GetById(id)
 	if err != nil {
-		ur.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
+		u.Logger.Error(logging.Redis, logging.Get, err.Error(), nil)
 		return "", err
 	}
 	return user["username"], err
