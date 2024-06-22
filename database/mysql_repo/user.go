@@ -1,8 +1,8 @@
-package db
+package mysql_repository
 
 import (
-	"blog/pkg/data/database"
-	"blog/pkg/data/model"
+	"blog/database"
+	"blog/internal/model"
 	"blog/pkg/logging"
 	"blog/utils"
 	"errors"
@@ -32,7 +32,7 @@ var (
 func NewUserRepo() *UserRepo {
 	return &UserRepo{
 		DB:     database.DB,
-		RDB:    database.Rdb,
+		RDB:    database.RDB,
 		Logger: logging.MyLogger,
 	}
 }
@@ -190,7 +190,7 @@ func (ur *UserRepo) Verify(username, password string) (model.User, error) {
 }
 
 func (ur *UserRepo) CreateChache(u model.User) error {
-	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
+	redisRes := database.RDB.HMSet(context.Background(), fmt.Sprintf("user:%d", u.Id), map[string]interface{}{
 		"firstname":   u.Firstname,
 		"lastname":    u.Lastname,
 		"biography":   u.Biography,
@@ -204,7 +204,7 @@ func (ur *UserRepo) CreateChache(u model.User) error {
 	return redisRes.Err()
 }
 func (ur *UserRepo) DeleteChacheById(id string) error {
-	redisRes := database.Rdb.Del(context.Background(), fmt.Sprintf("user:%s", id))
+	redisRes := database.RDB.Del(context.Background(), fmt.Sprintf("user:%s", id))
 	return redisRes.Err()
 }
 func (ur *UserRepo) GetUsernameById(id string) (string, error) {

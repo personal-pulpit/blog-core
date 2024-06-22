@@ -3,12 +3,11 @@ package routers
 import (
 	"blog/api/handlers"
 	"blog/api/middlewares"
-	"blog/pkg/data/repo"
 
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouters()*gin.Engine{
+func InitRouters() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.CustomLogger())
@@ -26,7 +25,7 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/user":
 		{
 			u := &handlers.User{
-				UserRepo: repo.NewUserDB(),
+				
 			}
 			r.GET("", u.GetAll)
 			r.GET("/:id", u.GetById)
@@ -34,24 +33,21 @@ func praseRouters(r *gin.RouterGroup) {
 			r.POST("", middlewares.EnsureNotLoggedIn(), u.Create)
 			r.POST("/login", middlewares.EnsureNotLoggedIn(), u.Verify)
 			r.PATCH("", middlewares.EnsureLoggedIn(), u.UpdateById)
-			r.DELETE("/:id",middlewares.EnsureAdmin(),u.DeleteById)
+			r.DELETE("/:id", middlewares.EnsureAdmin(), u.DeleteById)
 		}
 	case "/api/v1/article":
 		{
-			p := &handlers.Article{
-				ArticleRepo: repo.NewArticleDB(),
-				UserRepo: repo.NewUserDB(),
-			}
+			p := &handlers.Article{}
 			r.GET("", p.GetAll)
 			r.GET("/:id", p.GetById)
-			r.POST("", middlewares.EnsureLoggedIn(),middlewares.EnsureAdmin(), p.Create)
-			r.PATCH("",middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.UpdateById)
-			r.DELETE("/:id",middlewares.EnsureLoggedIn(),middlewares.EnsureAdmin(),p.DeleteById)
+			r.POST("", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.Create)
+			r.PATCH("", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.UpdateById)
+			r.DELETE("/:id", middlewares.EnsureLoggedIn(), middlewares.EnsureAdmin(), p.DeleteById)
 		}
 	}
 
 }
-func InitRoutersForTest()*gin.Engine{
+func InitRoutersForTest() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.LimitByRequest())

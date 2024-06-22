@@ -1,8 +1,8 @@
-package db
+package mysql_repository
 
 import (
-	"blog/pkg/data/database"
-	"blog/pkg/data/model"
+	"blog/database"
+	"blog/internal/model"
 	"blog/pkg/logging"
 	"errors"
 
@@ -27,7 +27,7 @@ var (
 func NewArticleRepo() *ArticleRepo {
 	return &ArticleRepo{
 		DB:     database.DB,
-		RDB:    database.Rdb,
+		RDB:    database.RDB,
 		Logger: logging.MyLogger,
 	}
 }
@@ -137,7 +137,7 @@ func (ar *ArticleRepo) DeleteById(id string) error {
 }
 
 func (ar *ArticleRepo) CreateChacheById(a model.Article) error {
-	redisRes := database.Rdb.HMSet(context.Background(), fmt.Sprintf("article:%d", a.Id), map[string]interface{}{
+	redisRes := database.RDB.HMSet(context.Background(), fmt.Sprintf("article:%d", a.Id), map[string]interface{}{
 		"title":     a.Title,
 		"content":   a.Content,
 		"createdAt": a.CreatedAt,
@@ -147,6 +147,6 @@ func (ar *ArticleRepo) CreateChacheById(a model.Article) error {
 	return redisRes.Err()
 }
 func (ar *ArticleRepo) deleteChacheById(id string) error {
-	redisRes := database.Rdb.Del(context.Background(), fmt.Sprintf("article:%s", id))
+	redisRes := database.RDB.Del(context.Background(), fmt.Sprintf("article:%s", id))
 	return redisRes.Err()
 }

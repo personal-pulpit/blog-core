@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	"blog/pkg/data/repo"
-	db "blog/pkg/data/repo/DB"
+	"blog/database/mysql_repo"
+	"blog/internal/repository"
+
 	"blog/utils"
 	"errors"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 
 type (
 	User struct {
-		UserRepo repo.UserDB
+		UserRepo repository.UserRepo
 	}
 	UpdateInput struct {
 		Firstname string `form:"firstname" binding:"required"`
@@ -60,7 +61,7 @@ func (u *User) GetById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		user, err := u.UserRepo.GetById(id)
 		if err != nil {
-			if errors.Is(err, db.ErrUserNotFound) {
+			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
 				return
 			}
@@ -109,7 +110,7 @@ func (u *User) Verify(ctx *gin.Context) {
 		}
 		user, err := u.UserRepo.Verify(li.Username, li.Password)
 		if err != nil {
-			if errors.Is(err, db.ErrUserNotFound) || errors.Is(err, db.ErrUsernameOrPasswordWrong) {
+			if errors.Is(err, mysql_repository.ErrUserNotFound) || errors.Is(err, mysql_repository.ErrUsernameOrPasswordWrong) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
 				return
 			}
@@ -180,9 +181,9 @@ func (u *User) Create(ctx *gin.Context) {
 			si.PhoneNumber,
 		)
 		if err != nil {
-			if errors.Is(err, db.ErrEmailAlreadyExits) ||
-				errors.Is(err, db.ErrUsernameAlreadyExits) ||
-				errors.Is(err, db.ErrPhoneNumberAlreadyExits) {
+			if errors.Is(err, mysql_repository.ErrEmailAlreadyExits) ||
+				errors.Is(err, mysql_repository.ErrUsernameAlreadyExits) ||
+				errors.Is(err, mysql_repository.ErrPhoneNumberAlreadyExits) {
 				userResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
@@ -265,7 +266,7 @@ func (u *User) DeleteById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		err := u.UserRepo.DeleteById(id)
 		if err != nil {
-			if errors.Is(err, db.ErrUserNotFound) {
+			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return

@@ -1,12 +1,14 @@
-package repo
+package repository
 
 import (
-	db "blog/pkg/data/repo/DB"
+	"blog/database/mysql_repo"
 	"blog/internal/model"
+
 	"gorm.io/gorm"
+
 )
 
-type UserDB interface {
+type UserRepo interface {
 	GetAll() ([]map[string]string, error)
 	GetById(id string) (map[string]string, error)
 	Verify(username, password string) (model.User, error)
@@ -16,17 +18,7 @@ type UserDB interface {
 	GetUsernameById(id string) (string, error)
 	DeleteChacheById(id string) error
 }
-type ArticleDB interface {
-	GetAll() ([]map[string]string, error)
-	GetById(id string) (map[string]string, error)
-	Create(sAuthorId, title, content string) (model.Article, error)
-	UpdateById(id, title, content string) (model.Article, error)
-	DeleteById(id string) error
-}
 
-func NewUserDB() UserDB {
-	return db.NewUserRepo()
-}
-func NewArticleDB() ArticleDB {
-	return db.NewArticleRepo()
+func NewUserRepo() UserRepo {
+	return mysql_repository.NewUserRepo()
 }

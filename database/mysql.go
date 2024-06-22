@@ -21,11 +21,11 @@ func ConnectDB() {
 		config.Cfg.Mysql.DBname,
 		config.Cfg.Mysql.ParseTime,
 	)
-	db, err := gorm.Open(mysql.Open(dns))
+	DB, err := gorm.Open(mysql.Open(dns))
 	if err != nil {
 		logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
 	}
-	DB = db
+	DB = DB
 	Migration(model.User{})
 	Migration(model.Article{})
 }

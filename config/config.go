@@ -10,18 +10,18 @@ var Cfg = Config{}
 
 type (
 	Config struct {
-		Redis MyRedisConfig
+		Redis  MyRedisConfig
 		Mysql  MysqlConfig
 		Jwt    JwtConfig
 		Server ServerConfig
 		Logger LoggerConfig
 	}
 	MysqlConfig struct {
-		Host     string
-		Username string
-		Password string
-		Port     string
-		DBname   string
+		Host      string
+		Username  string
+		Password  string
+		Port      string
+		DBname    string
 		ParseTime bool
 	}
 	JwtConfig struct {
@@ -30,7 +30,7 @@ type (
 	ServerConfig struct {
 		Port string
 	}
-	MyRedisConfig struct{
+	MyRedisConfig struct {
 		Host     string
 		Username string
 		Password string
@@ -40,9 +40,9 @@ type (
 	}
 	LoggerConfig struct {
 		LogFilePath string
-		LoggerName string
-		Level    string
-		Encoding string
+		LoggerName  string
+		Level       string
+		Encoding    string
 	}
 )
 

@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var Rdb *redis.Client
+var RDB *redis.Client
 
 func ConnectRedis() {
 	url := fmt.Sprintf("redis://%s:%s@%s:%s/%s?protocol=%s",
@@ -23,10 +23,10 @@ func ConnectRedis() {
 	if err != nil {
 		logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
 	}
-	Rdb = redis.NewClient(opts)
+	RDB = redis.NewClient(opts)
 }
 func CloseRedis() {
-	err := Rdb.Close()
+	err := RDB.Close()
 	if err != nil {
 		logging.MyLogger.Fatal(logging.General, logging.Down, err.Error(), nil)
 	}

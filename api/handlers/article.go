@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	"blog/pkg/data/repo"
-	db "blog/pkg/data/repo/DB"
+	"blog/internal/repository"
+	 "blog/database/mysql_repo"
+	
+
+	
 	"blog/utils"
 	"errors"
 	"net/http"
@@ -19,8 +22,8 @@ var (
 
 type (
 	Article struct {
-		ArticleRepo repo.ArticleDB
-		UserRepo    repo.UserDB
+		ArticleRepo repository.ArticleRepo
+		UserRepo    repository.UserRepo
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`
@@ -49,7 +52,7 @@ func (a *Article) GetById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		article, err := a.ArticleRepo.GetById(id)
 		if err != nil {
-			if errors.Is(err, db.ErrArticleNotFound) {
+			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
@@ -148,7 +151,7 @@ func (a *Article) UpdateById(ctx *gin.Context) {
 			ai.Content,
 		)
 		if err != nil {
-			if errors.Is(err, db.ErrArticleNotFound) {
+			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
@@ -181,7 +184,7 @@ func (a *Article) DeleteById(ctx *gin.Context) {
 		id := ctx.Param("id")
 		err := a.ArticleRepo.DeleteById(id)
 		if err != nil {
-			if errors.Is(err, db.ErrArticleNotFound) {
+			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
