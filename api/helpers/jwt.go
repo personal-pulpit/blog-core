@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"blog/config"
+	"blog/internal/model"
 	"errors"
 	"fmt"
 
@@ -14,7 +15,7 @@ var (
 	errUnexpectedSigningMethod = errors.New("unexpected signin method")
 )
 
-func CreateToken(ID uint) (string, error) {
+func CreateToken(ID model.ID) (string, error) {
 	fmt.Println("secret:", secret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"ID": ID,

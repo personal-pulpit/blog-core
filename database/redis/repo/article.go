@@ -1,7 +1,7 @@
 package redis_repository
 
 import (
-	db "blog/database/redis"
+	"blog/internal/model"
 	"blog/internal/repository"
 	"context"
 	"fmt"
@@ -13,9 +13,9 @@ type articleRedisRepo struct {
 	redisClient *redis.Client
 }
 
-func NewArticleRedisRepository() repository.ArticleRedisRepository {
+func NewArticleRedisRepository(redisCLI *redis.Client) repository.ArticleRedisRepository {
 	return &articleRedisRepo{
-		redisClient: db.GetRedisDB(),
+		redisClient: redisCLI,
 	}
 }
 func (a *articleRedisRepo) GetCaches() ([]map[string]string, error) {
@@ -33,7 +33,7 @@ func (a *articleRedisRepo) GetCaches() ([]map[string]string, error) {
 	}
 	return articles, nil
 }
-func (a *articleRedisRepo) GetCacheByID(ID string) (map[string]string, error) {
+func (a *articleRedisRepo) GetCacheByID(ID model.ID) (map[string]string, error) {
 	exists := a.redisClient.Exists(context.Background(), fmt.Sprintf("article:%s", ID))
 	if exists.Val() == 0 {
 		return map[string]string{}, ErrArticleNotFound
@@ -44,12 +44,12 @@ func (a *articleRedisRepo) GetCacheByID(ID string) (map[string]string, error) {
 	}
 	return redisMapRes.Val(), nil
 }
-func (a *articleRedisRepo) CreateCache(ID  uint,title,content,createdAt,updatedAt string,athurID uint) error {
+func (a *articleRedisRepo) CreateCache(ID uint, title, content, createdAt, updatedAt string, athurID uint) error {
 	redisRes := a.redisClient.HMSet(context.Background(), fmt.Sprintf("article:%d", ID), map[string]interface{}{
 		"title":     title,
 		"content":   content,
 		"createdAt": createdAt,
-		"updatedAt":updatedAt,
+		"updatedAt": updatedAt,
 		"authorId":  athurID,
 	})
 	return redisRes.Err()
@@ -58,4 +58,3 @@ func (a *articleRedisRepo) DeleteCacheByID(ID string) error {
 	redisRes := a.redisClient.Del(context.Background(), fmt.Sprintf("article:%s", ID))
 	return redisRes.Err()
 }
-

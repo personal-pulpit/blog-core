@@ -3,17 +3,16 @@ package main
 import (
 	"blog/api/server"
 	"blog/config"
-	"blog/database/redis"
+	redis "blog/database/redis"
+	mysql "blog/database/mysql"
 	"blog/pkg/logging"
 )
 
 func main() {
 	config.InitConfig()
 	logging.InitZapLogger()
-	logging.MyLogger.Info(logging.General, logging.Initialized, "configs initialized!", nil)
-	logging.MyLogger.Info(logging.General, logging.Initialized, "logger initialized!", nil)
-
-	logging.MyLogger.Info(logging.General, logging.Startup, "redis connected!", nil)
-	defer database.CloseRedis()
-	server.InitServer()
+	mysqlCLI := mysql.GetMysqlDB()
+	redisCLI := redis.GetRedisDB()	
+	defer redis.CloseRedis()
+	server.InitServer(mysqlCLI,redisCLI)
 }

@@ -1,7 +1,6 @@
 package redis_repository
 
 import (
-	db "blog/database/redis"
 	"blog/internal/repository"
 	"context"
 	"fmt"
@@ -13,9 +12,9 @@ type userRedisRepo struct {
 	redisClient *redis.Client
 }
 
-func NewUserRedisRepository()repository.UserRedisRepository  {
+func NewUserRedisRepository(redisCLI *redis.Client) repository.UserRedisRepository {
 	return &userRedisRepo{
-		redisClient: db.GetRedisDB(),
+		redisClient: redisCLI,
 	}
 }
 func (u *userRedisRepo) GetCaches() ([]map[string]string, error) {

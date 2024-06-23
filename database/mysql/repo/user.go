@@ -1,7 +1,6 @@
 package mysql_repository
 
 import (
-	database "blog/database/mysql"
 	"blog/internal/model"
 	"blog/internal/repository"
 	"blog/utils"
@@ -14,9 +13,9 @@ type userMysqlRepo struct {
 	mysqlClient *gorm.DB
 }
 
-func NewUserMysqlRepository() repository.UserMysqlRepository {
+func NewUserMysqlRepository(mysqlCLI *gorm.DB) repository.UserMysqlRepository {
 	return &userMysqlRepo{
-		mysqlClient: database.GetMysqlDB(),
+		mysqlClient: mysqlCLI,
 	}
 }
 func (u *userMysqlRepo) Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error) {

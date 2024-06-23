@@ -2,6 +2,7 @@ package common
 
 import (
 	"blog/api/helpers"
+	database "blog/database/redis"
 	redis_repository "blog/database/redis/repo"
 
 	"blog/internal/model"
@@ -22,7 +23,8 @@ func IsAdmin(ctx *gin.Context) bool {
 	return uint(role) == uint(model.AdminRole)
 }
 func GetUserFromRedisByID(ID string) (map[string]string, error) {
-	u := redis_repository.NewUserRedisRepository()
+	redisCLI := database.GetRedisDB()
+	u := redis_repository.NewUserRedisRepository(redisCLI)
 	return u.GetCacheByID(ID)
 }
 func GetUserStatus(ctx *gin.Context) bool {

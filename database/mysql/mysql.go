@@ -36,5 +36,6 @@ func GetMysqlDB() *gorm.DB {
 	}
 	Migration(model.User{})
 	Migration(model.Article{})
+	Migration(model.Auth{})
 	return mysqlInstance
 }

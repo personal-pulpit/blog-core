@@ -4,12 +4,12 @@ import (
 	"blog/api/helpers"
 	mysql_repository "blog/database/mysql/repo"
 
+	"blog/internal/model"
 	"blog/internal/repository"
 
 	"blog/utils"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,7 +50,7 @@ func (a *Article) GetAll(ctx *gin.Context) {
 func (a *Article) GetByID(ctx *gin.Context) {
 	go func() {
 		ID := ctx.Param("ID")
-		article, err := a.ArticleRedisRepo.GetCacheByID(ID)
+		article, err := a.ArticleRedisRepo.GetCacheByID(model.ID(ID))
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
@@ -100,14 +100,14 @@ func (a *Article) Create(ctx *gin.Context) {
 		//check
 		authorId := helpers.GetIdFromToken(ctx)
 		article, err := a.ArticleMysqlRepo.Create(
-			authorId, ai.Title, ai.Content,
+			model.ID(authorId), ai.Title, ai.Content,
 		)
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusBadRequest, err.Error(), nil)
 			return
 		}
-		user, err := a.ArticleRedisRepo.GetCacheByID(authorId)
+		user, err := a.ArticleRedisRepo.GetCacheByID(model.ID(authorId))
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusInternalServerError, err.Error(), nil)
@@ -160,7 +160,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 				http.StatusBadRequest, err.Error(), nil)
 			return
 		}
-		user, err := a.ArticleRedisRepo.GetCacheByID(strconv.Itoa(int(article.AuthorId)))
+		user, err := a.ArticleRedisRepo.GetCacheByID(model.ID(ID))
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusInternalServerError, err.Error(), nil)

@@ -1,9 +1,9 @@
 package model
 
 import "time"
-
+type ID string
 type Base struct {
-	ID        uint `gorm:"primaryKey"`
+	ID        ID `gorm:"primaryKey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

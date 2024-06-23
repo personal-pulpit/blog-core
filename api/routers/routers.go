@@ -7,9 +7,11 @@ import (
 	redis_repository "blog/database/redis/repo"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
-func InitRouters() *gin.Engine {
+func InitRouters(mysqlCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.CustomLogger())
@@ -17,18 +19,18 @@ func InitRouters() *gin.Engine {
 	r.GET("/", middlewares.SetUserStatus(), handlers.Index)
 	v1 := r.Group("/api/v1", middlewares.SetUserStatus())
 	{
-		praseRouters(v1.Group("/user"))
-		praseRouters(v1.Group("/article"))
+		praseRouters(v1.Group("/user"),mysqlCLI,redisCLI)
+		praseRouters(v1.Group("/article"),mysqlCLI,redisCLI)
 	}
 	return r
 }
-func praseRouters(r *gin.RouterGroup) {
+func praseRouters(r *gin.RouterGroup,mysqlCLI *gorm.DB, redisCLI *redis.Client) {
 	switch r.BasePath() {
 	case "/api/v1/user":
 		{
 			u := &handlers.User{
-				UserMysqlRepo: mysql_repository.NewUserMysqlRepository(),
-				UserRedisRepo: redis_repository.NewUserRedisRepository(),
+				UserMysqlRepo: mysql_repository.NewUserMysqlRepository(mysqlCLI),
+				UserRedisRepo: redis_repository.NewUserRedisRepository(redisCLI),
 			}
 			r.GET("", u.GetAll)
 			r.GET("/:ID", u.GetByID)
@@ -41,9 +43,9 @@ func praseRouters(r *gin.RouterGroup) {
 	case "/api/v1/article":
 		{
 			p := &handlers.Article{
-				ArticleMysqlRepo:    mysql_repository.NewArticleMysqlRepo(),
-				ArticleRedisRepo: redis_repository.NewArticleRedisRepository(),
-				UserRedisRepo: redis_repository.NewUserRedisRepository(),
+				ArticleMysqlRepo: mysql_repository.NewArticleMysqlRepo(mysqlCLI),
+				ArticleRedisRepo: redis_repository.NewArticleRedisRepository(redisCLI),
+				UserRedisRepo:    redis_repository.NewUserRedisRepository(redisCLI),
 			}
 			r.GET("", p.GetAll)
 			r.GET("/:ID", p.GetByID)
@@ -54,15 +56,4 @@ func praseRouters(r *gin.RouterGroup) {
 	}
 
 }
-func InitRoutersForTest() *gin.Engine {
-	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(middlewares.LimitByRequest())
-	r.GET("/", middlewares.SetUserStatus(), handlers.Index)
-	v1 := r.Group("/api/v1", middlewares.SetUserStatus())
-	{
-		praseRouters(v1.Group("/user"))
-		praseRouters(v1.Group("/article"))
-	}
-	return r
-}
+

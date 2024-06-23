@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"blog/internal/model"
 	"errors"
 	"strconv"
 
@@ -10,8 +11,8 @@ import (
 
 var errFailedSettingToken = errors.New("failed setting token")
 
-func SetToken(ctx *gin.Context, ID uint) error {
-	if ID == 0 {
+func SetToken(ctx *gin.Context, ID model.ID) error {
+	if ID == "" {
 		return errFailedSettingToken
 	}
 	token, err := CreateToken(ID)

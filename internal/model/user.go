@@ -1,10 +1,11 @@
 package model
 
-type Role uint
+
+type Role int
 
 const (
-	UserRole  Role = 1
-	AdminRole Role = 2
+	UserRole Role = iota +1
+	AdminRole 
 )
 
 type User struct {
@@ -16,5 +17,16 @@ type User struct {
 	Email       string `gorm:"unique;size:50;NOT NULL"`
 	PhoneNumber string `gorm:"unique;size:11;NOT NULL"`
 	Biography   string `gorm:"type:text;size:500;NOT NULL"`
-	Role        uint   `gorm:"default:1;NOT NULL"`
+	Role        Role   `gorm:"default:1;NOT NULL"`
+}
+func NewUser(firtsname,lastname,username,email,phoneNumber,biography string,role Role)*User{
+	return &User{
+		Firstname: firtsname,
+		Lastname: lastname,
+		Username: username,
+		Email: email,
+		PhoneNumber: phoneNumber,
+		Biography: biography,
+		Role: role,
+	}
 }

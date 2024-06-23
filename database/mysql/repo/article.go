@@ -1,38 +1,33 @@
 package mysql_repository
 
 import (
-	database "blog/database/mysql"
 	"blog/internal/model"
 	"blog/internal/repository"
 
-
 	"errors"
-
-	"strconv"
 
 	"gorm.io/gorm"
 )
 
 type articleMysqlRepo struct {
-	mysqlClient     *gorm.DB
+	mysqlClient *gorm.DB
 }
 
 var (
 	ErrArticleNotFound = errors.New("article not found")
 )
 
-func NewArticleMysqlRepo() repository.ArticleMysqlRepository {
+func NewArticleMysqlRepo(mysqlCLI *gorm.DB) repository.ArticleMysqlRepository {
 	return &articleMysqlRepo{
-		mysqlClient: database.GetMysqlDB(),
+		mysqlClient: mysqlCLI,
 	}
 }
 
-func (a *articleMysqlRepo) Create(sAuthorId, title, content string) (model.Article, error) {
-	iAuthorId, _ := strconv.Atoi(sAuthorId)
+func (a *articleMysqlRepo) Create(authorID model.ID, title, content string) (model.Article, error) {
 	var article model.Article
 	article.Title = title
 	article.Content = content
-	article.AuthorId = uint(iAuthorId)
+	article.AuthorId = authorID
 	tx := NewTx(a.mysqlClient)
 	err := tx.Create(&article).Error
 	if err != nil {
