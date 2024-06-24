@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"blog/api/helpers"
+	"blog/api/helpers/auth_helper"
 	mysql_repository "blog/database/mysql/repo"
+	"blog/pkg/auth_manager"
 
-	"blog/internal/repository"
+	"blog/internal/service/authentication"
+	"blog/internal/service/user"
 
 	"blog/utils"
 	"errors"
@@ -15,26 +18,28 @@ import (
 
 type (
 	User struct {
-		UserMysqlRepo repository.UserMysqlRepository
-		UserRedisRepo repository.UserRedisRepository
+		AuthHelper auth_helper.AuthHeaderHelper
+		AuthService authentication.AuthService
+		UserService user.UserService
 	}
 	UpdateInput struct {
-		Firstname string `form:"firstname" binding:"required"`
-		Lastname  string `form:"lastname" binding:"required"`
-		Username  string `form:"username" binding:"required,usernamevalidaitor"`
+		FirstName string `form:"FirstName" binding:"required"`
+		LastName  string `form:"lastname" binding:"required"`
 		Biography string `form:"biography" binding:"required"`
 	}
 	SigninInput struct {
-		Firstname   string `form:"firstname" binding:"required"`
-		Lastname    string `form:"lastname" binding:"required"`
+		FirstName   string `form:"FirstName" binding:"required"`
+		LastName    string `form:"lastname" binding:"required"`
 		Username    string `form:"username" binding:"required,usernamevalidaitor"`
 		Password    string `form:"password" binding:"required"`
 		Email       string `form:"email" binding:"required,emailvalidatior"`
-		PhoneNumber string `form:"phonenumber" binding:"required,phonenumbervalidaitor"`
 		Biography   string `form:"biography" binding:"required"`
 	}
 	LoginInput struct {
-		Username string `form:"username" binding:"required,usernamevalidaitor"`
+		Email string `form:"email" binding:"required,emailvalidatior"`
+		Password string `form:"password" binding:"required"`
+	}
+	DeleteAccountInput struct{
 		Password string `form:"password" binding:"required"`
 	}
 )
@@ -46,22 +51,10 @@ var (
 	ErrInvalidEmail            = errors.New("email is invalid")
 	ErrInvalidPhonenumber      = errors.New("phonenumber is invalid")
 )
-
-func (u *User) GetAll(ctx *gin.Context) {
-	go func() {
-		users, err := u.UserRedisRepo.GetCaches()
-		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
-			return
-		}
-		userResponseChannel <- helpers.NewHttpResponse(http.StatusOK, "users got!", map[string]interface{}{"users": users})
-	}()
-	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
-}
 func (u *User) GetByID(ctx *gin.Context) {
 	go func() {
 		ID := ctx.Param("ID")
-		user, err := u.UserRedisRepo.GetCacheByID(ID)
+		user, err := u.UserService.GetUserProfile(ID)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
@@ -72,14 +65,7 @@ func (u *User) GetByID(ctx *gin.Context) {
 		}
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusCreated, "user Got!", map[string]interface{}{
-				"firstname":    user["firstname"],
-				"lastname":     user["lastname"],
-				"biography":    user["biography"],
-				"username":     user["username"],
-				"email":        user["email"],
-				"phone number": user["phonenumber"],
-				"created at":   user["createdAt"],
-				"updated at":   user["updatedAt"],
+				"user":user,
 			},
 		)
 
@@ -110,7 +96,7 @@ func (u *User) Verify(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, err := u.UserMysqlRepo.Verify(li.Username, li.Password)
+		user,accessToken,refreshToken,err := u.AuthService.Login(li.Email, li.Password)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) || errors.Is(err, mysql_repository.ErrUsernameOrPasswordWrong) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
@@ -119,19 +105,11 @@ func (u *User) Verify(ctx *gin.Context) {
 			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
-		err = helpers.SetToken(ctx, user.ID)
-		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
-			return
-		}
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "welcome back!", map[string]interface{}{
-				"firstname":    user.Firstname,
-				"lastname":     user.Lastname,
-				"biography":    user.Biography,
-				"username":     user.Username,
-				"email":        user.Email,
-				"phone number": user.PhoneNumber,
+				"user":user,
+				"access_token":accessToken,
+				"refresh_token":refreshToken,
 			},
 		)
 	}()
@@ -148,22 +126,10 @@ func (u *User) Create(ctx *gin.Context) {
 					utils.GetValidationError(ErrPleaseCompleteAllFields),
 					nil)
 				return
-			} else if utils.CheckErrorForWord(err, "usernamevalidaitor") {
-				userResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest,
-					utils.GetValidationError(ErrUsernameShouldContain),
-					nil)
-				return
-			} else if utils.CheckErrorForWord(err, "emailvalidatior") {
+			}  else if utils.CheckErrorForWord(err, "emailvalidatior") {
 				userResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest,
 					utils.GetValidationError(ErrInvalidEmail),
-					nil)
-				return
-			} else if utils.CheckErrorForWord(err, "phonenumbervalidaitor") {
-				userResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest,
-					utils.GetValidationError(ErrInvalidPhonenumber),
 					nil)
 				return
 			}
@@ -173,14 +139,12 @@ func (u *User) Create(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, tx, err := u.UserMysqlRepo.Create(
-			si.Firstname,
-			si.Lastname,
-			si.Biography,
-			si.Username,
-			si.Password,
+		user, verifyEmailToken, err := u.AuthService.Register(
+			si.FirstName,
+			si.LastName,
 			si.Email,
-			si.PhoneNumber,
+			si.Biography,
+			si.Password,
 		)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrEmailAlreadyExits) ||
@@ -194,22 +158,10 @@ func (u *User) Create(ctx *gin.Context) {
 				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
-		err = helpers.SetToken(ctx, user.ID)
-		if err != nil {
-			tx.Rollback()
-			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusInternalServerError, err.Error(), nil)
-			return
-		}
-		tx.Commit()
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusCreated, "user created!", map[string]interface{}{
-				"firstname":    user.Firstname,
-				"lastname":     user.Lastname,
-				"biography":    user.Biography,
-				"username":     user.Username,
-				"email":        user.Email,
-				"phone number": user.PhoneNumber,
+				"user":user,
+				"verifyEmailToken":verifyEmailToken,
 			},
 		)
 	}()
@@ -217,20 +169,25 @@ func (u *User) Create(ctx *gin.Context) {
 }
 func (u *User) UpdateByID(ctx *gin.Context) {
 	go func() {
-		ID := helpers.GetIdFromToken(ctx)
+		token,err := u.AuthHelper.GetHeader(ctx)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+		id,err := auth_helper.GetIdByToken(token,auth_manager.AccessToken)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
 		var ui UpdateInput
-		err := ctx.ShouldBind(&ui)
+		err = ctx.ShouldBind(&ui)
 		if err != nil {
 			if utils.CheckErrorForWord(err, "required") {
 				userResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest,
 					utils.GetValidationError(ErrPleaseCompleteAllFields),
-					nil)
-				return
-			} else if utils.CheckErrorForWord(err, "usernamevalidaitor") {
-				userResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest,
-					utils.GetValidationError(ErrUsernameShouldContain),
 					nil)
 				return
 			}
@@ -240,12 +197,11 @@ func (u *User) UpdateByID(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, err := u.UserMysqlRepo.UpdateByID(
-			ID,
-			ui.Firstname,
-			ui.Lastname,
+		user,err := u.UserService.UpdateProfile(
+			id,
+			ui.FirstName,
+			ui.LastName,
 			ui.Biography,
-			ui.Username,
 		)
 		if err != nil {
 			userResponseChannel <- helpers.NewHttpResponse(
@@ -254,10 +210,7 @@ func (u *User) UpdateByID(ctx *gin.Context) {
 		}
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "user updated!", map[string]interface{}{
-				"firstname": user.Firstname,
-				"lastname":  user.Lastname,
-				"biography": user.Biography,
-				"username":  user.Username,
+				"user":user,
 			},
 		)
 	}()
@@ -266,7 +219,9 @@ func (u *User) UpdateByID(ctx *gin.Context) {
 func (u *User) DeleteByID(ctx *gin.Context) {
 	go func() {
 		ID := ctx.Param("ID")
-		err := u.UserMysqlRepo.DeleteByID(ID)
+		var si SigninInput
+		err := ctx.ShouldBind(&si)
+		err = u.UserService.DeleteAccount(ID,si.Password)
 		if err != nil {
 			if errors.Is(err, mysql_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(
@@ -285,8 +240,19 @@ func (u *User) DeleteByID(ctx *gin.Context) {
 }
 func (u *User) Logout(ctx *gin.Context) {
 	go func() {
-		u.UserRedisRepo.DeleteCacheByID(helpers.GetIdFromToken(ctx))
-		helpers.DestroyToken(ctx)
+		token ,err := u.AuthHelper.GetHeader(ctx)
+		if err != nil{
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		err = u.AuthService.Logout(token)
+		if err != nil {
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		u.AuthHelper.DeleteHeader(ctx)
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "user logouted!", map[string]interface{}{},
 		)

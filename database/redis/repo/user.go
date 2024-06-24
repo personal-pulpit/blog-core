@@ -32,9 +32,9 @@ func (u *userRedisRepo) GetCaches() ([]map[string]string, error) {
 	}
 	return users, nil
 }
-func (u *userRedisRepo) CreateCache(ID uint, firstname, lastname, biography, username, email, phonenumber string, role int, createdAt, updatedAt string) error {
+func (u *userRedisRepo) CreateCache(ID uint, FirstName, lastname, biography, username, email, phonenumber string, role int, createdAt, updatedAt string) error {
 	redisRes := u.redisClient.HMSet(context.Background(), fmt.Sprintf("user:%d", ID), map[string]interface{}{
-		"firstname":   firstname,
+		"FirstName":   FirstName,
 		"lastname":    lastname,
 		"biography":   biography,
 		"username":    username,

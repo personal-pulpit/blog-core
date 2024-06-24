@@ -1,9 +1,10 @@
 package common
 
 import (
-	"blog/api/helpers"
+	"blog/api/helpers/auth_helper"
 	database "blog/database/redis"
 	redis_repository "blog/database/redis/repo"
+	"blog/pkg/auth_manager"
 
 	"blog/internal/model"
 
@@ -12,9 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func IsAdmin(ctx *gin.Context) bool {
-	ID := helpers.GetIdFromToken(ctx)
-	user, err := GetUserFromRedisByID(ID)
+func IsAdmin(token string, tokenType auth_manager.TokenType) bool {
+	id, _ := auth_helper.GetIdByToken(token, tokenType)
+	user, err := GetUserFromRedisByID(id)
 	if err != nil {
 		panic(err)
 	}
@@ -22,10 +23,10 @@ func IsAdmin(ctx *gin.Context) bool {
 	role, _ := strconv.Atoi(sRole)
 	return uint(role) == uint(model.AdminRole)
 }
-func GetUserFromRedisByID(ID string) (map[string]string, error) {
+func GetUserFromRedisByID(id string) (map[string]string, error) {
 	redisCLI := database.GetRedisDB()
 	u := redis_repository.NewUserRedisRepository(redisCLI)
-	return u.GetCacheByID(ID)
+	return u.GetCacheByID(id)
 }
 func GetUserStatus(ctx *gin.Context) bool {
 	is_logged := ctx.GetBool("is_logged")

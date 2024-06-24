@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"blog/api/helpers"
+	"blog/api/helpers/auth_helper"
 	mysql_repository "blog/database/mysql/repo"
+	"blog/pkg/auth_manager"
 
 	"blog/internal/model"
 	"blog/internal/repository"
@@ -24,6 +26,7 @@ type (
 		ArticleMysqlRepo repository.ArticleMysqlRepository
 		ArticleRedisRepo repository.ArticleRedisRepository
 		UserRedisRepo    repository.UserRedisRepository
+		AuthHelper auth_helper.AuthHeaderHelper
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`
@@ -97,8 +100,18 @@ func (a *Article) Create(ctx *gin.Context) {
 				nil)
 			return
 		}
-		//check
-		authorId := helpers.GetIdFromToken(ctx)
+		token,err := a.AuthHelper.GetHeader(ctx)
+		if err != nil {
+			articleResponseChannel <- helpers.NewHttpResponse(
+				http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+		authorId,err := auth_helper.GetIdByToken(token,auth_manager.AccessToken)
+		if err != nil {
+			articleResponseChannel <- helpers.NewHttpResponse(
+				http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
 		article, err := a.ArticleMysqlRepo.Create(
 			model.ID(authorId), ai.Title, ai.Content,
 		)

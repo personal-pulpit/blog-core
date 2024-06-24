@@ -5,14 +5,16 @@ import (
 
 	"gorm.io/gorm"
 )
+
 type UserMysqlRepository interface {
-	Create(firstname, lastname, biography, username, password, email, phonenumber string) (model.User, *gorm.DB, error)
-	Verify(username, password string) (model.User, error)
-	UpdateByID(ID, firstname, lastname, biography, username string) (model.User, error)
-	DeleteByID(ID string) error
+	Create(*model.User) (*model.User, *gorm.DB, error)
+	UpdateByID(ID, firstName, lastName, biography string) (*model.User, error)
+	DeleteByID(ID model.ID) error
+	GetUserByEmail(email string) (*model.User, error)
+	GetUserByID(ID model.ID) (*model.User, error)
 }
 type UserRedisRepository interface {
-	CreateCache(ID uint, firstname, lastname, biography, username, email, phonenumber string, role int, createdAt, updatedAt string) error
+	CreateCache(ID uint, firstName, lastName, biography, username, email, phonenumber string, role int, createdAt, updatedAt string) error
 	GetCaches() ([]map[string]string, error)
 	GetCacheByID(ID string) (map[string]string, error)
 	DeleteCacheByID(ID string) error
