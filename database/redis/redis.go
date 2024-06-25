@@ -18,7 +18,7 @@ func GetRedisDB(cfg config.Redis) *redis.Client{
 	redisMutex.Lock()
 	defer redisMutex.Unlock()
 	if redisInstance == nil {
-		url := fmt.Sprintf("redis://%s:%s@%s:%s/%s?protocol=%s",
+		url := fmt.Sprintf("redis://%s:%s@%s:%d/%d?protocol=%s",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,

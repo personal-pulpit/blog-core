@@ -3,6 +3,8 @@ package config
 import (
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -21,8 +23,7 @@ type (
 	}
 
 	Server struct {
-		Host string `koanf:"host"`
-		Port int    `koanf:"port"`
+		Port int `koanf:"port"`
 	}
 
 	Mysql struct {
@@ -31,7 +32,7 @@ type (
 		Username  string `koanf:"username"`
 		DBName    string `koanf:"db_name"`
 		Port      int    `koanf:"port"`
-		ParseTime bool   `koanf:"prase_time"`
+		ParseTime bool   `koanf:"parse_time"`
 	}
 	Logger struct {
 		LogFilePath string `koanf:"log_file_path"`
@@ -43,7 +44,7 @@ type (
 		Host     string `koanf:"host"`
 		DB       int    `koanf:"db"`
 		Port     int    `koanf:"port"`
-		Username string `koanf:"username "`
+		Username string `koanf:"username"`
 		Password string `koanf:"password"`
 		Protocol string `koanf:"protocol"`
 	}
@@ -58,7 +59,7 @@ var (
 	env       Env
 )
 
-type Env string
+type Env = string
 
 const (
 	Development Env = "development"
@@ -66,26 +67,35 @@ const (
 	Test        Env = "test"
 )
 
+func ConfigsDirPath() string {
+	_, f, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("Error in generating env dir")
+	}
+
+	return filepath.Dir(f)
+}
 func GetConfigInstance() *Config {
 	mu.Lock()
 	defer mu.Unlock()
 	if configIns == nil {
-		k := koanf.New("../config")
-		if err := k.Load(file.Provider("config.yaml"), yaml.Parser()); err != nil {
+		path := ConfigsDirPath()
+		k := koanf.New(path)
+		if err := k.Load(file.Provider(path+"/config.yaml"), yaml.Parser()); err != nil {
 			log.Fatalf("error loading config: %v", err)
 		}
-		var config Config
-		if err := k.Unmarshal("", &config); err != nil {
+		var config = &Config{}
+		if err := k.Unmarshal("", config); err != nil {
 			log.Fatalf("error unmarshaling config: %v", err)
 		}
 		env = getEnv()
-		configIns = &config
+		configIns = config
 	}
 	return configIns
 }
 
 func getEnv() Env {
-	env := strings.ToLower(os.Getenv("ENV"))
+	env = strings.ToLower(os.Getenv("ENV"))
 	if env == string(Development) || env == "" {
 		return Development
 	} else if env == string(Production) {

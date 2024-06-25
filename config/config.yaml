@@ -1,0 +1,23 @@
+server:
+  port: 8000
+mysql:
+  port: 3306
+  host: 127.0.0.1
+  username: user
+  password: password
+  db_name: blog
+  parse_time: true
+jwt:
+  secret: mysecretkey
+redis:
+  port: 6379
+  host: 127.0.0.1
+  username: ""
+  password: ""
+  db:       0
+  protocol: 3
+logger:
+  log_file_path: ../logs/log.log   
+  logger_name: zap
+  level: debug
+  encoding: json

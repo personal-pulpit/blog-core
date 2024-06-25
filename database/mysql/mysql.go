@@ -20,7 +20,7 @@ func GetMysqlDB(cfg config.Mysql) *gorm.DB {
 	mysqlMutex.Lock()
 	defer mysqlMutex.Unlock()
 	if mysqlInstance == nil {
-		var dns = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=%t",
+		var dns = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=%t",
 			cfg.Username,
 			cfg.Password,
 			cfg.Host,
