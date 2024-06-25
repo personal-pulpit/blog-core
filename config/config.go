@@ -1,74 +1,99 @@
 package config
 
 import (
-	"fmt"
+	"log"
+	"os"
+	"strings"
 	"sync"
 
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 )
-
-
 
 type (
 	Config struct {
-		Redis  MyRedisConfig
-		Mysql  MysqlConfig
-		Jwt    JwtConfig
-		Server ServerConfig
-		Logger LoggerConfig
+		Jwt    Jwt    `koanf:"jwt"`
+		Server Server `koanf:"server"`
+		Mysql  Mysql  `koanf:"mysql"`
+		Redis  Redis  `koanf:"redis"`
+		Logger Logger `koanf:"logger"`
 	}
-	MysqlConfig struct {
-		Host      string
-		Username  string
-		Password  string
-		Port      string
-		DBname    string
-		ParseTime bool
+
+	Server struct {
+		Host string `koanf:"host"`
+		Port int    `koanf:"port"`
 	}
-	JwtConfig struct {
-		Secret string
+
+	Mysql struct {
+		Host      string `koanf:"host"`
+		Password  string `koanf:"password"`
+		Username  string `koanf:"username"`
+		DBName    string `koanf:"db_name"`
+		Port      int    `koanf:"port"`
+		ParseTime bool   `koanf:"prase_time"`
 	}
-	ServerConfig struct {
-		Port string
+	Logger struct {
+		LogFilePath string `koanf:"log_file_path"`
+		LoggerName  string `koanf:"logger_name"`
+		Level       string `koanf:"level"`
+		Encoding    string `koanf:"encoding"`
 	}
-	MyRedisConfig struct {
-		Host     string
-		Username string
-		Password string
-		Port     string
-		DBname   string
-		Protocol string
+	Redis struct {
+		Host     string `koanf:"host"`
+		DB       int    `koanf:"db"`
+		Port     int    `koanf:"port"`
+		Username string `koanf:"username "`
+		Password string `koanf:"password"`
+		Protocol string `koanf:"protocol"`
 	}
-	LoggerConfig struct {
-		LogFilePath string
-		LoggerName  string
-		Level       string
-		Encoding    string
+	Jwt struct {
+		Secret string `koanf:"secret"`
 	}
 )
+
 var (
-	cfg *Config
-	mu = &sync.Mutex{}
+	configIns *Config
+	mu        = new(sync.Mutex)
+	env       Env
 )
-func ReadConfigs()*Config{
+
+type Env string
+
+const (
+	Development Env = "development"
+	Production  Env = "production"
+	Test        Env = "test"
+)
+
+func GetConfigInstance() *Config {
 	mu.Lock()
 	defer mu.Unlock()
-	if cfg == nil{
-		newConfig := &Config{}
-		viper.SetConfigName("config")
-		viper.SetConfigType("yaml")
-		viper.AddConfigPath("../config/")
-		viper.AutomaticEnv()
-		err := viper.ReadInConfig()
-		if err != nil {
-			panic(fmt.Errorf("fatal error config file: %v", err))
+	if configIns == nil {
+		k := koanf.New("../config")
+		if err := k.Load(file.Provider("config.yaml"), yaml.Parser()); err != nil {
+			log.Fatalf("error loading config: %v", err)
 		}
-		if err := viper.Unmarshal(&cfg); err != nil {
-			panic(fmt.Errorf("error unmarshaling config: %s", err))
-			
+		var config Config
+		if err := k.Unmarshal("", &config); err != nil {
+			log.Fatalf("error unmarshaling config: %v", err)
 		}
-		cfg = newConfig
+		env = getEnv()
+		configIns = &config
 	}
-	return cfg
-	
+	return configIns
+}
+
+func getEnv() Env {
+	env := strings.ToLower(os.Getenv("ENV"))
+	if env == string(Development) || env == "" {
+		return Development
+	} else if env == string(Production) {
+		return Production
+
+	} else if env == string(Test) {
+		return Test
+	} else {
+		panic("invalid env:" + env)
+	}
 }

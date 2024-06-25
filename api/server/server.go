@@ -12,5 +12,5 @@ import (
 func InitServer(cfg *config.Config,mysqlCLI *gorm.DB,redisCLI *redis.Client) {
 	validation.InitValidations()
 	router := routers.InitRouters(cfg.Jwt,mysqlCLI,redisCLI)
-	router.Run(":" + cfg.Server.Port)
+	router.Run(":" + string(cfg.Server.Port))
 }

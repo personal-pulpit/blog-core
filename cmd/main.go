@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	config := config.ReadConfigs()
+	config := config.GetConfigInstance()
 	logging.InitZapLogger(config.Logger)
 	mysqlCLI := mysql.GetMysqlDB(config.Mysql)
 	redisCLI := redis.GetRedisDB(config.Redis)	

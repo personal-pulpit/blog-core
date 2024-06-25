@@ -14,7 +14,7 @@ var (
 	redisMutex    = &sync.Mutex{}
 )
 
-func GetRedisDB(cfg config.MyRedisConfig) *redis.Client{
+func GetRedisDB(cfg config.Redis) *redis.Client{
 	redisMutex.Lock()
 	defer redisMutex.Unlock()
 	if redisInstance == nil {
@@ -23,7 +23,7 @@ func GetRedisDB(cfg config.MyRedisConfig) *redis.Client{
 		cfg.Password,
 		cfg.Host,
 		cfg.Port,
-		cfg.DBname,
+		cfg.DB,
 		cfg.Protocol,
 		)
 		opts, err := redis.ParseURL(url)

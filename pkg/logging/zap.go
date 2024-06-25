@@ -21,7 +21,7 @@ var logLevelMapping = map[string]zapcore.Level{
 	"fatal": zapcore.FatalLevel,
 }
 
-func InitZapLogger(loggerCfg config.LoggerConfig) {
+func InitZapLogger(loggerCfg config.Logger) {
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   loggerCfg.LogFilePath,
 		MaxSize:    1,

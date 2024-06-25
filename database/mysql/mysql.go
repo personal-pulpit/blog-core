@@ -16,7 +16,7 @@ var (
 	mysqlMutex    = &sync.Mutex{}
 )
 
-func GetMysqlDB(cfg config.MysqlConfig) *gorm.DB {
+func GetMysqlDB(cfg config.Mysql) *gorm.DB {
 	mysqlMutex.Lock()
 	defer mysqlMutex.Unlock()
 	if mysqlInstance == nil {
@@ -25,7 +25,7 @@ func GetMysqlDB(cfg config.MysqlConfig) *gorm.DB {
 			cfg.Password,
 			cfg.Host,
 			cfg.Port,
-			cfg.DBname,
+			cfg.DBName,
 			cfg.ParseTime)
 		db, err := gorm.Open(mysql.Open(dns))
 		if err != nil {

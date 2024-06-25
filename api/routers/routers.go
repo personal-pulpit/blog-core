@@ -25,7 +25,7 @@ var (
 	hashManager    *hash.HashManager
 )
 
-func InitRouters(jwtCfg config.JwtConfig, mysqlCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
+func InitRouters(jwtCfg config.Jwt, mysqlCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
 	authMysqlRepo = mysql_repository.NewAuthMysqlRepository(mysqlCLI)
 	userMysqlRepo = mysql_repository.NewUserMysqlRepository(mysqlCLI)
 	hashManager = hash.NewHashManager(hash.DefaultHashParams)
