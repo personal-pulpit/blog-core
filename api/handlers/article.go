@@ -4,7 +4,6 @@ import (
 	"blog/api/helpers"
 	"blog/api/helpers/auth_helper"
 	mysql_repository "blog/database/mysql/repo"
-	"blog/pkg/auth_manager"
 
 	"blog/internal/model"
 	"blog/internal/repository"
@@ -17,7 +16,7 @@ import (
 )
 
 var (
-	ErrNoIdDetected        = errors.New("no ID detected")
+	ErrNoIdDetected        = errors.New("no id detected")
 	articleResponseChannel = make(chan helpers.HttpResponse)
 )
 
@@ -26,7 +25,7 @@ type (
 		ArticleMysqlRepo repository.ArticleMysqlRepository
 		ArticleRedisRepo repository.ArticleRedisRepository
 		UserRedisRepo    repository.UserRedisRepository
-		AuthHelper auth_helper.AuthHeaderHelper
+		AuthHelper       auth_helper.AuthHeaderHelper
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`
@@ -100,18 +99,7 @@ func (a *Article) Create(ctx *gin.Context) {
 				nil)
 			return
 		}
-		token,err := a.AuthHelper.GetHeader(ctx)
-		if err != nil {
-			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusInternalServerError, err.Error(), nil)
-			return
-		}
-		authorId,err := auth_helper.GetIdByToken(token,auth_manager.AccessToken)
-		if err != nil {
-			articleResponseChannel <- helpers.NewHttpResponse(
-				http.StatusInternalServerError, err.Error(), nil)
-			return
-		}
+		authorId := ctx.GetString("id")
 		article, err := a.ArticleMysqlRepo.Create(
 			model.ID(authorId), ai.Title, ai.Content,
 		)

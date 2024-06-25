@@ -55,6 +55,7 @@ func CustomLogger() gin.HandlerFunc {
 		keys[logging.BodySize] = param.BodySize
 		keys[logging.RequestBody] = string(bodyByte)
 		keys[logging.ResponseBody] = blw.body.String()
+		keys[logging.Path] = param.Path
 		logging.MyLogger.Info(logging.RequestResponse, logging.Api, "", keys)
 	}
 }

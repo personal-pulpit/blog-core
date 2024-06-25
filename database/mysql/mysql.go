@@ -16,17 +16,17 @@ var (
 	mysqlMutex    = &sync.Mutex{}
 )
 
-func GetMysqlDB() *gorm.DB {
+func GetMysqlDB(cfg config.MysqlConfig) *gorm.DB {
 	mysqlMutex.Lock()
 	defer mysqlMutex.Unlock()
 	if mysqlInstance == nil {
 		var dns = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=%t",
-			config.Cfg.Mysql.Username,
-			config.Cfg.Mysql.Password,
-			config.Cfg.Mysql.Host,
-			config.Cfg.Mysql.Port,
-			config.Cfg.Mysql.DBname,
-			config.Cfg.Mysql.ParseTime)
+			cfg.Username,
+			cfg.Password,
+			cfg.Host,
+			cfg.Port,
+			cfg.DBname,
+			cfg.ParseTime)
 		db, err := gorm.Open(mysql.Open(dns))
 		if err != nil {
 			logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)

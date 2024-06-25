@@ -1,6 +1,7 @@
 package redis_repository
 
 import (
+	"blog/internal/model"
 	"blog/internal/repository"
 	"context"
 	"fmt"
@@ -17,29 +18,13 @@ func NewUserRedisRepository(redisCLI *redis.Client) repository.UserRedisReposito
 		redisClient: redisCLI,
 	}
 }
-func (u *userRedisRepo) GetCaches() ([]map[string]string, error) {
-	var users []map[string]string
-	keys, err := u.redisClient.Keys(context.Background(), "user:*").Result()
-	if err != nil {
-		return users, err
-	}
-	for _, key := range keys {
-		userMap, err := u.redisClient.HGetAll(context.Background(), key).Result()
-		if err != nil {
-			return []map[string]string{}, err
-		}
-		users = append(users, userMap)
-	}
-	return users, nil
-}
-func (u *userRedisRepo) CreateCache(ID uint, FirstName, lastname, biography, username, email, phonenumber string, role int, createdAt, updatedAt string) error {
-	redisRes := u.redisClient.HMSet(context.Background(), fmt.Sprintf("user:%d", ID), map[string]interface{}{
-		"FirstName":   FirstName,
-		"lastname":    lastname,
+
+func (u *userRedisRepo) CreateCache(ID model.ID, FirstName, lastname, biography, email string, role model.Role, createdAt, updatedAt string) error {
+	redisRes := u.redisClient.HMSet(context.Background(), fmt.Sprintf("user:%s", ID), map[string]interface{}{
+		"firstName":   FirstName,
+		"lastName":    lastname,
 		"biography":   biography,
-		"username":    username,
 		"email":       email,
-		"phonenumber": phonenumber,
 		"role":        role,
 		"createdAt":   createdAt,
 		"updatedAt":   updatedAt,

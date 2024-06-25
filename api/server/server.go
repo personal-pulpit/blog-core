@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitServer(mysqlCLI *gorm.DB,redisCLI *redis.Client) {
+func InitServer(cfg *config.Config,mysqlCLI *gorm.DB,redisCLI *redis.Client) {
 	validation.InitValidations()
-	router := routers.InitRouters(mysqlCLI,redisCLI)
-	router.Run(":" + config.Cfg.Server.Port)
+	router := routers.InitRouters(cfg.Jwt,mysqlCLI,redisCLI)
+	router.Run(":" + cfg.Server.Port)
 }

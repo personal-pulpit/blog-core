@@ -21,9 +21,9 @@ var logLevelMapping = map[string]zapcore.Level{
 	"fatal": zapcore.FatalLevel,
 }
 
-func InitZapLogger() {
+func InitZapLogger(loggerCfg config.LoggerConfig) {
 	w := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   config.Cfg.Logger.LogFilePath,
+		Filename:   loggerCfg.LogFilePath,
 		MaxSize:    1,
 		MaxAge:     5,
 		MaxBackups: 10,
@@ -34,14 +34,14 @@ func InitZapLogger() {
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(config),
 		w,
-		getLogLevel(),
+		getLogLevel(loggerCfg.Level),
 	)
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.ErrorLevel)).Sugar()
 	logger = logger.With("AppName", "MyApp", "LoggerName", "ZeroLog")
 	MyLogger.logger = logger
 }
-func getLogLevel() zapcore.Level {
-	level, exists := logLevelMapping[config.Cfg.Logger.Level]
+func getLogLevel(logLevel string) zapcore.Level {
+	level, exists := logLevelMapping[logLevel]
 	if !exists {
 		return zapcore.DebugLevel
 	}

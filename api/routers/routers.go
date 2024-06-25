@@ -6,7 +6,7 @@ import (
 	"blog/api/middlewares"
 	"blog/config"
 	mysql_repository "blog/database/mysql/repo"
-	redis_repository "blog/database/redis/repo"
+	"blog/internal/repository"
 	"blog/internal/service/authentication"
 	"blog/internal/service/user"
 	"blog/pkg/auth_manager"
@@ -17,78 +17,86 @@ import (
 	"gorm.io/gorm"
 )
 
-var authMiddleware middlewares.UserAuthMiddleware
-var authManager auth_manager.AuthManager
+var (
+	authMysqlRepo  repository.AuthMysqlRepository
+	userMysqlRepo  repository.UserMysqlRepository
+	authMiddleware *middlewares.UserAuthMiddleware
+	authManager    auth_manager.AuthManager
+	hashManager    *hash.HashManager
+)
 
-func InitRouters(mysqlCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
-	authManager = auth_manager.NewAuthManager(redisCLI, auth_manager.AuthManagerOpts{PrivateKey: config.Cfg.Jwt.Secret})
+func InitRouters(jwtCfg config.JwtConfig, mysqlCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
+	authMysqlRepo = mysql_repository.NewAuthMysqlRepository(mysqlCLI)
+	userMysqlRepo = mysql_repository.NewUserMysqlRepository(mysqlCLI)
+	hashManager = hash.NewHashManager(hash.DefaultHashParams)
+	authManager = auth_manager.NewAuthManager(redisCLI, auth_manager.AuthManagerOpts{PrivateKey: jwtCfg.Secret})
 	authHelper := auth_helper.NewAuthHeaderHelper()
-	authMiddleware = *middlewares.NewUserAuthMiddelware(authManager, authHelper)
-	
-	
+	authMiddleware = middlewares.NewUserAuthMiddelware(authManager, authHelper)
+
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.CustomLogger())
 	r.Use(middlewares.LimitByRequest())
 
-
 	v1 := r.Group("/api/v1", authMiddleware.SetUserStatus())
 	{
-		praseRouters(v1.Group(""), mysqlCLI, redisCLI)
-		praseRouters(v1.Group("/user"), mysqlCLI, redisCLI)
-		praseRouters(v1.Group("/article"), mysqlCLI, redisCLI)
+		praseRouters(v1.Group(""))
+		praseRouters(v1.Group("/user"))
+		praseRouters(v1.Group("/article"))
 	}
 
 	return r
 }
-func praseRouters(r *gin.RouterGroup, mysqlCLI *gorm.DB, redisCLI *redis.Client) {
+func praseRouters(r *gin.RouterGroup,) {
 
 	switch r.BasePath() {
 	case "":
 		{
-			authHelper := auth_helper.NewAuthHeaderHelper()
-			h := &handlers.Main{
-				AuthHelper: authHelper,
+			mainHandler := &handlers.Main{
+				UserService: user.NewUserService(
+					userMysqlRepo,
+					authMysqlRepo,
+				),
 			}
-			r.GET("",authMiddleware.SetUserStatus(),h.Main)
+			r.GET("", authMiddleware.SetUserStatus(), mainHandler.Main)
 		}
 	case "/api/v1/user":
 		{
-			authMysqlRepo := mysql_repository.NewAuthMysqlRepository(mysqlCLI)
-			userMysqlRepo := mysql_repository.NewUserMysqlRepository(mysqlCLI)
-			hashe_manager := hash.NewHashManager(hash.DefaultHashParams)
-			u := &handlers.User{
+			userHandler := &handlers.User{
 				AuthService: authentication.NewAuthenticateService(
 					authMysqlRepo,
 					userMysqlRepo,
 					authManager,
-					hashe_manager,
+					hashManager,
 				),
 				UserService: user.NewUserService(
 					userMysqlRepo,
 					authMysqlRepo,
 				),
 			}
-			r.GET("/:ID", u.GetByID)
-			// r.GET("/logout", middlewares.EnsureLoggedIn(), u.Logout)
-			r.POST("", authMiddleware.EnsureNotLoggedIn(), u.Create)
-			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), u.Verify)
-			r.PATCH("", authMiddleware.EnsureLoggedIn(), u.UpdateByID)
-			r.DELETE("/:ID", authMiddleware.EnsureAdmin(), u.DeleteByID)
-		}
-	case "/api/v1/article":
-		{
-			p := &handlers.Article{
-				ArticleMysqlRepo: mysql_repository.NewArticleMysqlRepo(mysqlCLI),
-				ArticleRedisRepo: redis_repository.NewArticleRedisRepository(redisCLI),
-				UserRedisRepo:    redis_repository.NewUserRedisRepository(redisCLI),
-			}
-			r.GET("", p.GetAll)
-			r.GET("/:ID", p.GetByID)
-			r.POST("", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), p.Create)
-			r.PATCH("", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), p.UpdateByID)
-			r.DELETE("/:ID", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), p.DeleteByID)
+			r.GET("/:id", userHandler.GetProfile)
+			r.POST("", authMiddleware.EnsureNotLoggedIn(), userHandler.Register)
+			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), userHandler.Login)
+			r.PATCH("", authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
+			r.DELETE("", authMiddleware.EnsureAdmin(), userHandler.DeleteAccount)
+			r.GET("/logout", authMiddleware.EnsureLoggedIn(), userHandler.Logout)
 		}
 	}
-
 }
+
+// case "/api/v1/article":
+// 	{
+// 		articleHandler := &handlers.Article{
+// 			ArticleMysqlRepo: mysql_repository.NewArticleMysqlRepo(mysqlCLI),
+// 			ArticleRedisRepo: redis_repository.NewArticleRedisRepository(redisCLI),
+// 			UserRedisRepo:    redis_repository.NewUserRedisRepository(redisCLI),
+// 		}
+// 		r.GET("", articleHandler.GetAll)
+// 		r.GET("/:ID", articleHandler.GetByID)
+// 		r.POST("", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.Create)
+// 		r.PATCH("", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.UpdateByID)
+// 		r.DELETE("/:ID", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.DeleteByID)
+// 	}
+// }
+
+// }

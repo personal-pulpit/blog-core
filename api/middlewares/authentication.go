@@ -27,13 +27,22 @@ func NewUserAuthMiddelware(authManger auth_manager.AuthManager,authHelper auth_h
 }
 func (m *UserAuthMiddleware)SetUserStatus() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		token := ctx.GetHeader("Authorize")
+		token := ctx.GetHeader("Authorizetion")
 		if token == "" {
 			ctx.Set("is_logged", false)
 			ctx.Next()
 		} else {
+			cliams, err := m.AuthManager.DecodeToken(token,auth_manager.AccessToken)
+			if err != nil{
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError,
+					helpers.NewHttpResponse(
+						http.StatusInternalServerError, err.Error(), nil))
+				return
+			}
+			ctx.Set("id",cliams.ID)
+			ctx.Set("role",cliams.Role)
 			ctx.Set("is_logged", true)
-			ctx.Set("is_admin", common.IsAdmin(token,auth_manager.AccessToken))
+			ctx.Set("is_admin", common.IsAdmin(cliams.Role))
 			ctx.Next()
 		}
 	}
@@ -66,8 +75,7 @@ func (m *UserAuthMiddleware)EnsureNotLoggedIn() gin.HandlerFunc {
 }
 func (m *UserAuthMiddleware)EnsureAdmin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		token,_ := m.AuthHelper.GetHeader(ctx)
-		if !common.IsAdmin(token,auth_manager.AccessToken) {
+		if ctx.GetBool("is_admin"){
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
 				helpers.NewHttpResponse(
 					http.StatusUnauthorized, ErrYouAreUnAuthorized.Error(), nil))

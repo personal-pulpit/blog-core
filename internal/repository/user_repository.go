@@ -14,8 +14,7 @@ type UserMysqlRepository interface {
 	GetUserByID(ID model.ID) (*model.User, error)
 }
 type UserRedisRepository interface {
-	CreateCache(ID uint, firstName, lastName, biography, username, email, phonenumber string, role int, createdAt, updatedAt string) error
-	GetCaches() ([]map[string]string, error)
+	CreateCache(ID model.ID, firstName, lastName, biography, email string, role model.Role, createdAt, updatedAt string) error
 	GetCacheByID(ID string) (map[string]string, error)
 	DeleteCacheByID(ID string) error
 }

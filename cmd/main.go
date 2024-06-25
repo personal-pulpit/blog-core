@@ -9,10 +9,10 @@ import (
 )
 
 func main() {
-	config.InitConfig()
-	logging.InitZapLogger()
-	mysqlCLI := mysql.GetMysqlDB()
-	redisCLI := redis.GetRedisDB()	
+	config := config.ReadConfigs()
+	logging.InitZapLogger(config.Logger)
+	mysqlCLI := mysql.GetMysqlDB(config.Mysql)
+	redisCLI := redis.GetRedisDB(config.Redis)	
 	defer redis.CloseRedis()
-	server.InitServer(mysqlCLI,redisCLI)
+	server.InitServer(config,mysqlCLI,redisCLI)
 }

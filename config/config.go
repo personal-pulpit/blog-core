@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/spf13/viper"
 )
 
-var Cfg = Config{}
+
 
 type (
 	Config struct {
@@ -45,20 +46,29 @@ type (
 		Encoding    string
 	}
 )
-
-func InitConfig() {
-	cfg := Config{}
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("../config/")
-	viper.AutomaticEnv()
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %v", err))
+var (
+	cfg *Config
+	mu = &sync.Mutex{}
+)
+func ReadConfigs()*Config{
+	mu.Lock()
+	defer mu.Unlock()
+	if cfg == nil{
+		newConfig := &Config{}
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath("../config/")
+		viper.AutomaticEnv()
+		err := viper.ReadInConfig()
+		if err != nil {
+			panic(fmt.Errorf("fatal error config file: %v", err))
+		}
+		if err := viper.Unmarshal(&cfg); err != nil {
+			panic(fmt.Errorf("error unmarshaling config: %s", err))
+			
+		}
+		cfg = newConfig
 	}
-	if err := viper.Unmarshal(&cfg); err != nil {
-		fmt.Printf("Error unmarshaling config: %s\n", err)
-		return
-	}
-	Cfg = cfg
+	return cfg
+	
 }

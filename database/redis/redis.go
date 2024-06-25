@@ -14,17 +14,17 @@ var (
 	redisMutex    = &sync.Mutex{}
 )
 
-func GetRedisDB() *redis.Client{
+func GetRedisDB(cfg config.MyRedisConfig) *redis.Client{
 	redisMutex.Lock()
 	defer redisMutex.Unlock()
 	if redisInstance == nil {
 		url := fmt.Sprintf("redis://%s:%s@%s:%s/%s?protocol=%s",
-			config.Cfg.Redis.Username,
-			config.Cfg.Redis.Password,
-			config.Cfg.Redis.Host,
-			config.Cfg.Redis.Port,
-			config.Cfg.Redis.DBname,
-			config.Cfg.Redis.Protocol,
+		cfg.Username,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.DBname,
+		cfg.Protocol,
 		)
 		opts, err := redis.ParseURL(url)
 		if err != nil {
