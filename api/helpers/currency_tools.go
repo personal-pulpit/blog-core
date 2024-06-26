@@ -13,7 +13,7 @@ func NewContextWithTimeout(ctx *gin.Context, timeout time.Duration) (context.Con
 	return context.WithTimeout(ctx.Request.Context(), timeout*time.Second)
 }
 func GetResponse(ctx *gin.Context, baseCode int, ResponseChannel <-chan HttpResponse) {
-	ctxWithTimeout, cancel := NewContextWithTimeout(ctx, 5)
+	ctxWithTimeout, cancel := NewContextWithTimeout(ctx, 1000)
 	defer cancel()
 	select {
 	case response := <-ResponseChannel:

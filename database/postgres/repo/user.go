@@ -35,14 +35,10 @@ func (u *userPostgresRepo) GetUserByID(ID model.ID) (*model.User, error) {
 	return user, nil
 }
 func (u *userPostgresRepo) Create(user *model.User) (*model.User, *gorm.DB, error) {
-	tx := u.postgresCLI.Create(&u)
+	tx := u.postgresCLI.Create(&user)
 	if tx.Error != nil {
 		if utils.CheckErrorForWord(tx.Error, "email") {
 			return user, nil, ErrEmailAlreadyExits
-		} else if utils.CheckErrorForWord(tx.Error, "username") {
-			return user, nil, ErrUsernameAlreadyExits
-		} else if utils.CheckErrorForWord(tx.Error, "phone_number") {
-			return user, nil, ErrPhoneNumberAlreadyExits
 		} else {
 			return user, nil, tx.Error
 		}

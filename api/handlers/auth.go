@@ -21,15 +21,15 @@ type AuthHandler struct {
 
 type (
 	signinInput struct {
-		firstName string `form:"firstName" binding:"required"`
-		lastName  string `form:"lastName" binding:"required"`
-		password  string `form:"password" binding:"required"`
-		email     string `form:"email" binding:"required,emailvalidatior"`
-		biography string `form:"biography" binding:"required"`
+		FirstName string `form:"firstName" binding:"required"`
+		LastName  string `form:"lastName" binding:"required"`
+		Password  string `form:"password" binding:"required"`
+		Email     string `form:"email" binding:"required,emailvalidatior"`
+		Biography string `form:"biography" binding:"required"`
 	}
 	loginInput struct {
-		email    string `form:"email" binding:"required,emailvalidatior"`
-		password string `form:"password" binding:"required"`
+		Email    string `form:"email" binding:"required,emailvalidatior"`
+		Password string `form:"password" binding:"required"`
 	}
 )
 
@@ -57,9 +57,9 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 				nil)
 			return
 		}
-		user, accessToken, refreshToken, err := h.AuthService.Login(li.email, li.password)
+		user, accessToken, refreshToken, err := h.AuthService.Login(li.Email, li.Password)
 		if err != nil {
-			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrUsernameOrPasswordWrong) {
+			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
 				return
 			}
@@ -101,11 +101,11 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 			return
 		}
 		user, verifyEmailToken, err := h.AuthService.Register(
-			si.firstName,
-			si.lastName,
-			si.email,
-			si.biography,
-			si.password,
+			si.FirstName,
+			si.LastName,
+			si.Email,
+			si.Biography,
+			si.Password,
 		)
 		if err != nil {
 			if errors.Is(err, postgres_repository.ErrEmailAlreadyExits) ||

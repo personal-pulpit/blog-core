@@ -48,8 +48,8 @@ func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, 
 	}
 }
 
-func (a *authenticateManager) Register(FirstName, lastName, email, biography, password string) (*model.User, string, error) {
-	userModel := model.NewUser(FirstName, lastName, email, biography, model.UserRole)
+func (a *authenticateManager) Register(firstName, lastName, email, biography, password string) (*model.User, string, error) {
+	userModel := model.NewUser(firstName, lastName, email, biography, model.UserRole)
 	savedUser, tx, err := a.userPostgresRepo.Create(userModel)
 	if errors.Is(err, repository.ErrUniqueConstraint) {
 		return nil, "", repository.ErrUniqueConstraint
