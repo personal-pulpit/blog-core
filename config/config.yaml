@@ -1,7 +1,7 @@
 server:
   port: 8000
 postgres:
-  port: 3306
+  port: 5432
   host: 127.0.0.1
   username: user
   password: password

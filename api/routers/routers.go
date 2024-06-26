@@ -23,6 +23,7 @@ var (
 	authMiddleware   *middlewares.UserAuthMiddleware
 	authManager      auth_manager.AuthManager
 	hashManager      *hash.HashManager
+	authHelper auth_helper.AuthHeaderHelper
 )
 
 func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
@@ -30,7 +31,7 @@ func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client
 	userPostgresRepo = postgres_repository.NewUserPostgresRepository(postgresCLI)
 	hashManager = hash.NewHashManager(hash.DefaultHashParams)
 	authManager = auth_manager.NewAuthManager(redisCLI, auth_manager.AuthManagerOpts{PrivateKey: jwtCfg.Secret})
-	authHelper := auth_helper.NewAuthHeaderHelper()
+	authHelper = auth_helper.NewAuthHeaderHelper()
 	authMiddleware = middlewares.NewUserAuthMiddelware(authManager, authHelper)
 
 	r := gin.New()
@@ -41,6 +42,7 @@ func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client
 	v1 := r.Group("/api/v1", authMiddleware.SetUserStatus())
 	{
 		praseRouters(v1.Group(""))
+		praseRouters(v1.Group("/auth"))
 		praseRouters(v1.Group("/user"))
 		praseRouters(v1.Group("/article"))
 	}
@@ -50,7 +52,7 @@ func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client
 func praseRouters(r *gin.RouterGroup) {
 
 	switch r.BasePath() {
-	case "":
+	case "/api/v1":
 		{
 			mainHandler := &handlers.Main{
 				UserService: user.NewUserService(
@@ -60,26 +62,33 @@ func praseRouters(r *gin.RouterGroup) {
 			}
 			r.GET("", authMiddleware.SetUserStatus(), mainHandler.Main)
 		}
-	case "/api/v1/user":
+
+	case "/api/v1/auth":
 		{
-			userHandler := &handlers.User{
+			authHandler := &handlers.AuthHandler{
 				AuthService: authentication.NewAuthenticateService(
 					authPostgresRepo,
 					userPostgresRepo,
 					authManager,
 					hashManager,
 				),
+				AuthHelper: authHelper,
+			}
+			r.POST("/register", authMiddleware.EnsureNotLoggedIn(), authHandler.Register)
+			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
+			r.GET("/logout", authMiddleware.EnsureLoggedIn(), authHandler.Logout)
+		}
+	case "/api/v1/user":
+		{
+			userHandler := &handlers.UserHandler{
 				UserService: user.NewUserService(
 					userPostgresRepo,
 					authPostgresRepo,
 				),
 			}
 			r.GET("/:id", userHandler.GetProfile)
-			r.POST("", authMiddleware.EnsureNotLoggedIn(), userHandler.Register)
-			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), userHandler.Login)
-			r.PATCH("", authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
-			r.DELETE("", authMiddleware.EnsureAdmin(), userHandler.DeleteAccount)
-			r.GET("/logout", authMiddleware.EnsureLoggedIn(), userHandler.Logout)
+			r.PATCH("/update", authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
+			r.DELETE("/delete", authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
 		}
 	}
 }
