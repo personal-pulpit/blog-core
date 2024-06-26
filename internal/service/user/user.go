@@ -12,25 +12,25 @@ type UserService interface {
 	Logout(token string)error
 }
 type UserManager struct {
-	userMysqRepo  repository.UserMysqlRepository
-	authMysqlRepo repository.AuthMysqlRepository
+	userPostgresRepo  repository.UserPostgresRepository
+	authPostgresRepo repository.AuthPostgresRepository
 }
 
-func NewUserService(userMysqlRepo repository.UserMysqlRepository, authMysqlRepo repository.AuthMysqlRepository) UserService {
+func NewUserService(userPostgresRepo repository.UserPostgresRepository, authPostgresRepo repository.AuthPostgresRepository) UserService {
 	return &UserManager{
-		userMysqRepo:  userMysqlRepo,
-		authMysqlRepo: authMysqlRepo,
+		userPostgresRepo:  userPostgresRepo,
+		authPostgresRepo: authPostgresRepo,
 	}
 }
 func (u *UserManager) GetUserProfile(ID model.ID)(*model.User,error){
-	userModel,err := u.userMysqRepo.GetUserByID(ID)
+	userModel,err := u.userPostgresRepo.GetUserByID(ID)
 	if err != nil{
 		return nil,ErrNotFound
 	}
 	return userModel,nil
 }
 func (u *UserManager) UpdateProfile(ID model.ID, FirstName, lastName, biography string) (*model.User,error) {
-	user, err := u.userMysqRepo.GetUserByID(ID)
+	user, err := u.userPostgresRepo.GetUserByID(ID)
 	if err != nil {
 		return nil,ErrNotFound
 	}
@@ -38,7 +38,7 @@ func (u *UserManager) UpdateProfile(ID model.ID, FirstName, lastName, biography 
 	user.LastName = lastName
 	user.Biography = biography
 
-	userModel, err := u.userMysqRepo.UpdateByID(ID, user.FirstName, user.LastName, user.Biography)
+	userModel, err := u.userPostgresRepo.UpdateByID(ID, user.FirstName, user.LastName, user.Biography)
 	if err != nil {
 		return nil,ErrUpdateUser
 	}
@@ -46,18 +46,18 @@ func (u *UserManager) UpdateProfile(ID model.ID, FirstName, lastName, biography 
 }
 
 func (u *UserManager) DeleteAccount(ID model.ID, password string) error {
-	auth, err := u.authMysqlRepo.GetUserAuth(ID)
+	auth, err := u.authPostgresRepo.GetUserAuth(ID)
 	if err != nil {
 		return ErrNotFound
 	}
 	if !auth.EmailVerified {
 		return ErrDeleteUser
 	}
-	err = u.authMysqlRepo.DeleteByID(ID)
+	err = u.authPostgresRepo.DeleteByID(ID)
 	if err != nil{
 		return ErrDeleteUser
 	}
-	err = u.userMysqRepo.DeleteByID(ID)
+	err = u.userPostgresRepo.DeleteByID(ID)
 	if err != nil {
 		return ErrDeleteUser
 	}

@@ -3,7 +3,7 @@ package handlers
 import (
 	"blog/api/helpers"
 	"blog/api/helpers/auth_helper"
-	mysql_repository "blog/database/mysql/repo"
+	postgres_repository "blog/database/postgres/repo"
 
 	"blog/internal/service/authentication"
 	"blog/internal/service/user"
@@ -55,7 +55,7 @@ func (u *User) GetProfile(ctx *gin.Context) {
 		id := ctx.Param("id")
 		user, err := u.UserService.GetUserProfile(id)
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrUserNotFound) {
+			if errors.Is(err, postgres_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
 				return
 			}
@@ -97,7 +97,7 @@ func (u *User) Login(ctx *gin.Context) {
 		}
 		user, accessToken, refreshToken, err := u.AuthService.Login(li.email, li.password)
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrUserNotFound) || errors.Is(err, mysql_repository.ErrUsernameOrPasswordWrong) {
+			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrUsernameOrPasswordWrong) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
 				return
 			}
@@ -146,9 +146,9 @@ func (u *User) Register(ctx *gin.Context) {
 			si.password,
 		)
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrEmailAlreadyExits) ||
-				errors.Is(err, mysql_repository.ErrUsernameAlreadyExits) ||
-				errors.Is(err, mysql_repository.ErrPhoneNumberAlreadyExits) {
+			if errors.Is(err, postgres_repository.ErrEmailAlreadyExits) ||
+				errors.Is(err, postgres_repository.ErrUsernameAlreadyExits) ||
+				errors.Is(err, postgres_repository.ErrPhoneNumberAlreadyExits) {
 				userResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
@@ -210,13 +210,13 @@ func (u *User) DeleteAccount(ctx *gin.Context) {
 		var si deleteAccountInput
 		err := ctx.ShouldBind(&si)
 		if err != nil {
-				userResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest, err.Error(), nil)
-				return
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest, err.Error(), nil)
+			return
 		}
 		err = u.UserService.DeleteAccount(id, si.password)
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrUserNotFound) {
+			if errors.Is(err, postgres_repository.ErrUserNotFound) {
 				userResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return

@@ -5,7 +5,7 @@ import (
 	"blog/api/helpers/auth_helper"
 	"blog/api/middlewares"
 	"blog/config"
-	mysql_repository "blog/database/mysql/repo"
+	postgres_repository "blog/database/postgres/repo"
 	"blog/internal/repository"
 	"blog/internal/service/authentication"
 	"blog/internal/service/user"
@@ -18,16 +18,16 @@ import (
 )
 
 var (
-	authMysqlRepo  repository.AuthMysqlRepository
-	userMysqlRepo  repository.UserMysqlRepository
-	authMiddleware *middlewares.UserAuthMiddleware
-	authManager    auth_manager.AuthManager
-	hashManager    *hash.HashManager
+	authPostgresRepo repository.AuthPostgresRepository
+	userPostgresRepo repository.UserPostgresRepository
+	authMiddleware   *middlewares.UserAuthMiddleware
+	authManager      auth_manager.AuthManager
+	hashManager      *hash.HashManager
 )
 
-func InitRouters(jwtCfg config.Jwt, mysqlCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
-	authMysqlRepo = mysql_repository.NewAuthMysqlRepository(mysqlCLI)
-	userMysqlRepo = mysql_repository.NewUserMysqlRepository(mysqlCLI)
+func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
+	authPostgresRepo = postgres_repository.NewAuthPostgresRepository(postgresCLI)
+	userPostgresRepo = postgres_repository.NewUserPostgresRepository(postgresCLI)
 	hashManager = hash.NewHashManager(hash.DefaultHashParams)
 	authManager = auth_manager.NewAuthManager(redisCLI, auth_manager.AuthManagerOpts{PrivateKey: jwtCfg.Secret})
 	authHelper := auth_helper.NewAuthHeaderHelper()
@@ -47,15 +47,15 @@ func InitRouters(jwtCfg config.Jwt, mysqlCLI *gorm.DB, redisCLI *redis.Client) *
 
 	return r
 }
-func praseRouters(r *gin.RouterGroup,) {
+func praseRouters(r *gin.RouterGroup) {
 
 	switch r.BasePath() {
 	case "":
 		{
 			mainHandler := &handlers.Main{
 				UserService: user.NewUserService(
-					userMysqlRepo,
-					authMysqlRepo,
+					userPostgresRepo,
+					authPostgresRepo,
 				),
 			}
 			r.GET("", authMiddleware.SetUserStatus(), mainHandler.Main)
@@ -64,14 +64,14 @@ func praseRouters(r *gin.RouterGroup,) {
 		{
 			userHandler := &handlers.User{
 				AuthService: authentication.NewAuthenticateService(
-					authMysqlRepo,
-					userMysqlRepo,
+					authPostgresRepo,
+					userPostgresRepo,
 					authManager,
 					hashManager,
 				),
 				UserService: user.NewUserService(
-					userMysqlRepo,
-					authMysqlRepo,
+					userPostgresRepo,
+					authPostgresRepo,
 				),
 			}
 			r.GET("/:id", userHandler.GetProfile)
@@ -87,7 +87,7 @@ func praseRouters(r *gin.RouterGroup,) {
 // case "/api/v1/article":
 // 	{
 // 		articleHandler := &handlers.Article{
-// 			ArticleMysqlRepo: mysql_repository.NewArticleMysqlRepo(mysqlCLI),
+// 			ArticlePostgresRepo: postgres_repository.NewArticlePostgresRepo(PostgresCLI),
 // 			ArticleRedisRepo: redis_repository.NewArticleRedisRepository(redisCLI),
 // 			UserRedisRepo:    redis_repository.NewUserRedisRepository(redisCLI),
 // 		}

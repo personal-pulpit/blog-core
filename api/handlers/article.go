@@ -3,7 +3,7 @@ package handlers
 import (
 	"blog/api/helpers"
 	"blog/api/helpers/auth_helper"
-	mysql_repository "blog/database/mysql/repo"
+	postgres_repository "blog/database/postgres/repo"
 
 	"blog/internal/model"
 	"blog/internal/repository"
@@ -22,10 +22,10 @@ var (
 
 type (
 	Article struct {
-		ArticleMysqlRepo repository.ArticleMysqlRepository
-		ArticleRedisRepo repository.ArticleRedisRepository
-		UserRedisRepo    repository.UserRedisRepository
-		AuthHelper       auth_helper.AuthHeaderHelper
+		ArticlePostgresRepo repository.ArticlePostgresRepository
+		ArticleRedisRepo    repository.ArticleRedisRepository
+		UserRedisRepo       repository.UserRedisRepository
+		AuthHelper          auth_helper.AuthHeaderHelper
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`
@@ -54,7 +54,7 @@ func (a *Article) GetByID(ctx *gin.Context) {
 		ID := ctx.Param("ID")
 		article, err := a.ArticleRedisRepo.GetCacheByID(model.ID(ID))
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
+			if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
@@ -100,7 +100,7 @@ func (a *Article) Create(ctx *gin.Context) {
 			return
 		}
 		authorId := ctx.GetString("id")
-		article, err := a.ArticleMysqlRepo.Create(
+		article, err := a.ArticlePostgresRepo.Create(
 			model.ID(authorId), ai.Title, ai.Content,
 		)
 		if err != nil {
@@ -146,13 +146,13 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 				nil)
 			return
 		}
-		article, err := a.ArticleMysqlRepo.UpdateByID(
+		article, err := a.ArticlePostgresRepo.UpdateByID(
 			ID,
 			ai.Title,
 			ai.Content,
 		)
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
+			if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return
@@ -183,9 +183,9 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 func (a *Article) DeleteByID(ctx *gin.Context) {
 	go func() {
 		ID := ctx.Param("ID")
-		err := a.ArticleMysqlRepo.DeleteByID(ID)
+		err := a.ArticlePostgresRepo.DeleteByID(ID)
 		if err != nil {
-			if errors.Is(err, mysql_repository.ErrArticleNotFound) {
+			if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
 					http.StatusBadRequest, err.Error(), nil)
 				return

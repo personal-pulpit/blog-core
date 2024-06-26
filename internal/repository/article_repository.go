@@ -4,7 +4,7 @@ import (
 	"blog/internal/model"
 )
 
-type ArticleMysqlRepository interface {
+type ArticlePostgresRepository interface {
 	Create(authorID model.ID, title, content string) (model.Article, error)
 	UpdateByID(ID, title, content string) (model.Article, error)
 	DeleteByID(ID string) error

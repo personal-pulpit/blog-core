@@ -1,12 +1,11 @@
 server:
   port: 8000
-mysql:
+postgres:
   port: 3306
   host: 127.0.0.1
   username: user
   password: password
   db_name: blog
-  parse_time: true
 jwt:
   secret: mysecretkey
 redis:

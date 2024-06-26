@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type AuthMysqlRepository interface {
+type AuthPostgresRepository interface {
 	Create(authModel *model.Auth) (*model.Auth, error)
 	GetUserAuth(ID model.ID) (*model.Auth, error)
 	ChangePassword(ID model.ID, hashedPassword string) error

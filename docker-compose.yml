@@ -29,7 +29,7 @@ services:
 
 
 volumes:
-  mysql:
+  postgres:
   redis:
 networks:
   webapi_network:

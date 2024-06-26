@@ -5,9 +5,9 @@ type SubCategory string
 type ExtraKey string
 
 const (
-	General Category = "General"
+	General         Category = "General"
 	Internal        Category = "Internal"
-	Mysql        Category = "MySql"
+	Postgres        Category = "Postgres"
 	Redis           Category = "Redis"
 	Validation      Category = "Validation"
 	RequestResponse Category = "RequestResponse"
@@ -15,14 +15,14 @@ const (
 
 const (
 	// General
-	Initialized SubCategory = "Initialized"
+	Initialized     SubCategory = "Initialized"
 	Startup         SubCategory = "Startup"
 	ExternalService SubCategory = "ExternalService"
-	Down SubCategory = "Down"
+	Down            SubCategory = "Down"
 	//Redis
 	Set SubCategory = "Set"
 	Get SubCategory = "Get"
-	// Mysql
+	// postgres
 	Migration SubCategory = "Migration"
 	Select    SubCategory = "Select"
 	Rollback  SubCategory = "Rollback"
@@ -32,13 +32,13 @@ const (
 	Verify    SubCategory = "Verify"
 
 	// Internal
-	Api                 SubCategory = "Api"
-	HashPassword        SubCategory = "HashPassword"
+	Api          SubCategory = "Api"
+	HashPassword SubCategory = "HashPassword"
 
 	// Validation
-	EmailValidation SubCategory = "EmailValidation"
+	EmailValidation       SubCategory = "EmailValidation"
 	PhonenumberValidation SubCategory = "PhonenumberValidation"
-	UsernameValidation SubCategory = "UsernameValidation"
+	UsernameValidation    SubCategory = "UsernameValidation"
 )
 
 const (

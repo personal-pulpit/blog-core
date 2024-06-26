@@ -1,4 +1,4 @@
-package mysql_repository
+package postgres_repository
 
 import "gorm.io/gorm"
 

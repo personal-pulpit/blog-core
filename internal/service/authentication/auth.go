@@ -33,16 +33,16 @@ type AuthService interface {
 	Logout(token string)error
 }
 type authenticateManager struct {
-	userMysqlRepo repository.UserMysqlRepository
-	authMysqlRepo repository.AuthMysqlRepository
+	userPostgresRepo repository.UserPostgresRepository
+	authPostgresRepo repository.AuthPostgresRepository
 	authManager   auth_manager.AuthManager
 	hashManager   *hash.HashManager
 }
 
-func NewAuthenticateService(authMysqlRepo repository.AuthMysqlRepository, userMysqlRepo repository.UserMysqlRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager) AuthService {
+func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, userPostgresRepo repository.UserPostgresRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager) AuthService {
 	return &authenticateManager{
-		authMysqlRepo: authMysqlRepo,
-		userMysqlRepo: userMysqlRepo,
+		authPostgresRepo: authPostgresRepo,
+		userPostgresRepo: userPostgresRepo,
 		authManager:   authManager,
 		hashManager:   hashManager,
 	}
@@ -50,7 +50,7 @@ func NewAuthenticateService(authMysqlRepo repository.AuthMysqlRepository, userMy
 
 func (a *authenticateManager) Register(FirstName, lastName, email, biography, password string) (*model.User, string, error) {
 	userModel := model.NewUser(FirstName, lastName, email, biography, model.UserRole)
-	savedUser, tx, err := a.userMysqlRepo.Create(userModel)
+	savedUser, tx, err := a.userPostgresRepo.Create(userModel)
 	if errors.Is(err, repository.ErrUniqueConstraint) {
 		return nil, "", repository.ErrUniqueConstraint
 	} else if err != nil {
@@ -63,7 +63,7 @@ func (a *authenticateManager) Register(FirstName, lastName, email, biography, pa
 	}
 
 	authModel := model.NewAuth(savedUser.ID, passwordHash)
-	_, err = a.authMysqlRepo.Create(authModel)
+	_, err = a.authPostgresRepo.Create(authModel)
 	if err != nil {
 		return nil, "", ErrCreateAuthStore
 	}
@@ -85,7 +85,7 @@ func (a *authenticateManager) VerifyEmail(verifyEmailToken string) error {
 		return ErrAccessDenied
 	}
 
-	err = a.authMysqlRepo.VerifyEmail(tokenClaims.ID)
+	err = a.authPostgresRepo.VerifyEmail(tokenClaims.ID)
 	if err != nil {
 		return ErrVerifyEmail
 	}
@@ -98,13 +98,13 @@ func (a *authenticateManager) VerifyEmail(verifyEmailToken string) error {
 	return nil
 }
 func (a *authenticateManager) Login(email string, password string) (*model.User, string, string, error) {
-	userModel, err := a.userMysqlRepo.GetUserByEmail(email)
+	userModel, err := a.userPostgresRepo.GetUserByEmail(email)
 	if errors.Is(err, repository.ErrUniqueConstraint) {
 		return nil, "", "", repository.ErrUniqueConstraint
 	} else if err != nil {
 		return nil, "", "", ErrCreateUser
 	}
-	auth, err := a.authMysqlRepo.GetUserAuth(userModel.ID)
+	auth, err := a.authPostgresRepo.GetUserAuth(userModel.ID)
 	if err != nil {
 		return nil, "", "", ErrInvalidEmailOrPassword
 	}
@@ -117,12 +117,12 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 		now := time.Now()
 		lockTime := time.Unix(auth.AccountLockedUntil, 0)
 		if now.After(lockTime) {
-			err = a.authMysqlRepo.UnlockAccount(auth.ID)
+			err = a.authPostgresRepo.UnlockAccount(auth.ID)
 			if err != nil {
 				return nil, "", "", ErrUnlockAccount
 			}
 
-			err = a.authMysqlRepo.ClearFailedLoginAttempts(auth.ID)
+			err = a.authPostgresRepo.ClearFailedLoginAttempts(auth.ID)
 			if err != nil {
 				return nil, "", "", ErrClearFailedLoginAttempts
 			}
@@ -137,7 +137,7 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 	}
 
 	if auth.FailedLoginAttempts+1 == MaximumFailedLoginAttempts {
-		err = a.authMysqlRepo.LockAccount(auth.ID, LockAccountDuration)
+		err = a.authPostgresRepo.LockAccount(auth.ID, LockAccountDuration)
 		if err != nil {
 			return nil, "", "", ErrLockAccount
 		}
@@ -145,7 +145,7 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 
 	validPassword := a.hashManager.CheckPasswordHash(password, auth.HashedPassword)
 	if !validPassword {
-		err = a.authMysqlRepo.IncrementFailedLoginAttempts(userModel.ID)
+		err = a.authPostgresRepo.IncrementFailedLoginAttempts(userModel.ID)
 		if err != nil {
 			return nil, "", "", ErrInvalidEmailOrPassword
 		}
@@ -163,7 +163,7 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 		return nil, "", "", ErrGenerateToken
 	}
 
-	err = a.authMysqlRepo.ClearFailedLoginAttempts(auth.ID)
+	err = a.authPostgresRepo.ClearFailedLoginAttempts(auth.ID)
 	if err != nil {
 		return nil, "", "", ErrClearFailedLoginAttempts
 	}
@@ -181,7 +181,7 @@ func (a *authenticateManager) Authenticate(accessToken string) (*model.User, err
 		return nil, ErrAccessDenied
 	}
 
-	user, err := a.userMysqlRepo.GetUserByID(tokenClaims.ID)
+	user, err := a.userPostgresRepo.GetUserByID(tokenClaims.ID)
 	if err != nil {
 		return nil, ErrAccessDenied
 	}
@@ -194,7 +194,7 @@ func (a *authenticateManager) ChangePassword(accessToken string, oldPassword str
 		return err
 	}
 
-	auth, err := a.authMysqlRepo.GetUserAuth(user.ID)
+	auth, err := a.authPostgresRepo.GetUserAuth(user.ID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -209,7 +209,7 @@ func (a *authenticateManager) ChangePassword(accessToken string, oldPassword str
 		return ErrHashingPassword
 	}
 
-	err = a.authMysqlRepo.ChangePassword(user.ID, newPasswordHash)
+	err = a.authPostgresRepo.ChangePassword(user.ID, newPasswordHash)
 	if err != nil {
 		return ErrChangePassword
 	}
@@ -228,7 +228,7 @@ func (a *authenticateManager) RefreshToken(refreshToken string, accessToken stri
 		return "", ErrAccessDenied
 	}
 
-	_, err = a.authMysqlRepo.GetUserAuth(rftClaims.ID)
+	_, err = a.authPostgresRepo.GetUserAuth(rftClaims.ID)
 	if err != nil {
 		return "", ErrAccessDenied
 	}
@@ -247,12 +247,12 @@ func (a *authenticateManager) RefreshToken(refreshToken string, accessToken stri
 }
 
 func (a *authenticateManager) SendResetPasswordVerification(email string) (token string, timeout time.Duration, _ error) {
-	user, err := a.userMysqlRepo.GetUserByEmail(email)
+	user, err := a.userPostgresRepo.GetUserByEmail(email)
 	if err != nil {
 		return "", 0, err
 	}
 
-	auth, err := a.authMysqlRepo.GetUserAuth(user.ID)
+	auth, err := a.authPostgresRepo.GetUserAuth(user.ID)
 	if err != nil {
 		return "", 0, err
 	}
@@ -279,7 +279,7 @@ func (a *authenticateManager) SubmitResetPassword(token string, newPassword stri
 		return ErrAccessDenied
 	}
 
-	auth, err := a.authMysqlRepo.GetUserAuth(tokenClaims.ID)
+	auth, err := a.authPostgresRepo.GetUserAuth(tokenClaims.ID)
 	if err != nil {
 		return ErrAccessDenied
 	}
@@ -289,7 +289,7 @@ func (a *authenticateManager) SubmitResetPassword(token string, newPassword stri
 		return ErrHashingPassword
 	}
 
-	err = a.authMysqlRepo.ChangePassword(auth.ID, newPasswordHash)
+	err = a.authPostgresRepo.ChangePassword(auth.ID, newPasswordHash)
 	if err != nil {
 		return ErrChangePassword
 	}
@@ -298,7 +298,7 @@ func (a *authenticateManager) SubmitResetPassword(token string, newPassword stri
 }
 
 func (a *authenticateManager) DeleteAccount(ID model.ID, password string) error {
-	auth, err := a.authMysqlRepo.GetUserAuth(ID)
+	auth, err := a.authPostgresRepo.GetUserAuth(ID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -308,12 +308,12 @@ func (a *authenticateManager) DeleteAccount(ID model.ID, password string) error 
 		return ErrDeleteUser
 	}
 
-	err = a.authMysqlRepo.DeleteByID(ID)
+	err = a.authPostgresRepo.DeleteByID(ID)
 	if err != nil {
 		return ErrDeleteUser
 	}
 
-	err = a.userMysqlRepo.DeleteByID(ID)
+	err = a.userPostgresRepo.DeleteByID(ID)
 	if err != nil {
 		return ErrDeleteUser
 	}

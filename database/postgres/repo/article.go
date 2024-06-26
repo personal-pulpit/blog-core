@@ -1,4 +1,4 @@
-package mysql_repository
+package postgres_repository
 
 import (
 	"blog/internal/model"
@@ -9,26 +9,26 @@ import (
 	"gorm.io/gorm"
 )
 
-type articleMysqlRepo struct {
-	mysqlClient *gorm.DB
+type articlePostgresRepo struct {
+	postgresCLI *gorm.DB
 }
 
 var (
 	ErrArticleNotFound = errors.New("article not found")
 )
 
-func NewArticleMysqlRepo(mysqlCLI *gorm.DB) repository.ArticleMysqlRepository {
-	return &articleMysqlRepo{
-		mysqlClient: mysqlCLI,
+func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticlePostgresRepository {
+	return &articlePostgresRepo{
+		postgresCLI: postgresCLI,
 	}
 }
 
-func (a *articleMysqlRepo) Create(authorID model.ID, title, content string) (model.Article, error) {
+func (a *articlePostgresRepo) Create(authorID model.ID, title, content string) (model.Article, error) {
 	var article model.Article
 	article.Title = title
 	article.Content = content
 	article.AuthorId = authorID
-	tx := NewTx(a.mysqlClient)
+	tx := NewTx(a.postgresCLI)
 	err := tx.Create(&article).Error
 	if err != nil {
 		return article, err
@@ -36,9 +36,9 @@ func (a *articleMysqlRepo) Create(authorID model.ID, title, content string) (mod
 	tx.Commit()
 	return article, nil
 }
-func (a *articleMysqlRepo) UpdateByID(ID, title, content string) (model.Article, error) {
+func (a *articlePostgresRepo) UpdateByID(ID, title, content string) (model.Article, error) {
 	var article model.Article
-	err := a.mysqlClient.First(&article, ID).Error
+	err := a.postgresCLI.First(&article, ID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return article, ErrArticleNotFound
@@ -47,7 +47,7 @@ func (a *articleMysqlRepo) UpdateByID(ID, title, content string) (model.Article,
 	}
 	article.Title = title
 	article.Content = content
-	tx := NewTx(a.mysqlClient)
+	tx := NewTx(a.postgresCLI)
 	err = tx.Save(&article).Error
 	if err != nil {
 		return article, err
@@ -55,9 +55,9 @@ func (a *articleMysqlRepo) UpdateByID(ID, title, content string) (model.Article,
 	tx.Commit()
 	return article, err
 }
-func (a *articleMysqlRepo) DeleteByID(ID string) error {
+func (a *articlePostgresRepo) DeleteByID(ID string) error {
 	var article model.Article
-	tx := NewTx(a.mysqlClient)
+	tx := NewTx(a.postgresCLI)
 	err := tx.Delete(&article, ID).Error
 	if err != nil {
 		return err

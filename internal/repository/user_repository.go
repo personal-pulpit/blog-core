@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserMysqlRepository interface {
+type UserPostgresRepository interface {
 	Create(*model.User) (*model.User, *gorm.DB, error)
 	UpdateByID(ID, firstName, lastName, biography string) (*model.User, error)
 	DeleteByID(ID model.ID) error

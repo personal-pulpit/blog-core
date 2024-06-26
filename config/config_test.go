@@ -1,7 +1,6 @@
 package config
 
 import (
-	
 	"os"
 	"testing"
 
@@ -25,11 +24,11 @@ var _ = Describe("Get Config", func() {
 		Context("when checking the fileds of config", func() {
 			It("should match a specific string value", func() {
 				config := GetConfigInstance()
-				Expect(config.Mysql.Username).To(Equal("user"))
-				Expect(config.Mysql.Password).To(Equal("password"))
-				Expect(config.Mysql.DBName).To(Equal("blog"))
-				Expect(config.Mysql.Host).To(Equal("127.0.0.1"))
-				Expect(config.Mysql.Port).To(Equal(3306))
+				Expect(config.Postgres.Username).To(Equal("user"))
+				Expect(config.Postgres.Password).To(Equal("password"))
+				Expect(config.Postgres.DBName).To(Equal("blog"))
+				Expect(config.Postgres.Host).To(Equal("127.0.0.1"))
+				Expect(config.Postgres.Port).To(Equal(3306))
 				Expect(config.Redis.DB).To(Equal(0))
 				Expect(config.Redis.Port).To(Equal(6379))
 				Expect(config.Redis.Host).To(Equal("127.0.0.1"))

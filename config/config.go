@@ -15,24 +15,23 @@ import (
 
 type (
 	Config struct {
-		Jwt    Jwt    `koanf:"jwt"`
-		Server Server `koanf:"server"`
-		Mysql  Mysql  `koanf:"mysql"`
-		Redis  Redis  `koanf:"redis"`
-		Logger Logger `koanf:"logger"`
+		Jwt      Jwt      `koanf:"jwt"`
+		Server   Server   `koanf:"server"`
+		Postgres  Postgres`koanf:"postgres"`
+		Redis    Redis    `koanf:"redis"`
+		Logger   Logger   `koanf:"logger"`
 	}
 
 	Server struct {
 		Port int `koanf:"port"`
 	}
 
-	Mysql struct {
+	Postgres struct {
 		Host      string `koanf:"host"`
 		Password  string `koanf:"password"`
 		Username  string `koanf:"username"`
 		DBName    string `koanf:"db_name"`
 		Port      int    `koanf:"port"`
-		ParseTime bool   `koanf:"parse_time"`
 	}
 	Logger struct {
 		LogFilePath string `koanf:"log_file_path"`

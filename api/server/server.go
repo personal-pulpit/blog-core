@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitServer(cfg *config.Config,mysqlCLI *gorm.DB,redisCLI *redis.Client) {
+func InitServer(cfg *config.Config, PostgresCLI *gorm.DB, redisCLI *redis.Client) {
 	validation.InitValidations()
-	router := routers.InitRouters(cfg.Jwt,mysqlCLI,redisCLI)
-	router.Run(fmt.Sprintf(":%d",cfg.Server.Port))
+	router := routers.InitRouters(cfg.Jwt, PostgresCLI, redisCLI)
+	router.Run(fmt.Sprintf(":%d", cfg.Server.Port))
 }
