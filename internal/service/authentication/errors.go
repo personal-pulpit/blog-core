@@ -6,7 +6,6 @@ var (
 	ErrInvalidValidation = errors.New("failed to validate arguments")
 
 	ErrInvalidPassword          = errors.New("invalid password")
-	ErrInvalidOtpCode           = errors.New("invalid otp code")
 	ErrNotFound                 = errors.New("user not found")
 	ErrInvalidEmailOrPassword   = errors.New("invalid email or password")
 	ErrAccessDenied             = errors.New("access denied")

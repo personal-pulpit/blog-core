@@ -11,8 +11,8 @@ import (
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/joho/godotenv"
 )
-
 type (
 	Config struct {
 		Jwt      Jwt      `koanf:"jwt"`
@@ -20,6 +20,7 @@ type (
 		Postgres  Postgres`koanf:"postgres"`
 		Redis    Redis    `koanf:"redis"`
 		Logger   Logger   `koanf:"logger"`
+		Email Email `koanf:"email"`
 	}
 
 	Server struct {
@@ -50,12 +51,17 @@ type (
 	Jwt struct {
 		Secret string `koanf:"secret"`
 	}
+	Email struct {
+		SenderEmail string `koanf:"sender_email"` 
+		Password string `koanf:"password"`
+		Host        string `koanf:"host"`
+		Port        string `koanf:"port"`
+	}
 )
 
 var (
 	configIns *Config
 	mu        = new(sync.Mutex)
-	env       Env
 )
 
 type Env = string
@@ -63,7 +69,6 @@ type Env = string
 const (
 	Development Env = "development"
 	Production  Env = "production"
-	Test        Env = "test"
 )
 
 func ConfigsDirPath() string {
@@ -78,31 +83,41 @@ func GetConfigInstance() *Config {
 	mu.Lock()
 	defer mu.Unlock()
 	if configIns == nil {
+		filename := getConfigFile(GetEnv())
 		path := ConfigsDirPath()
 		k := koanf.New(path)
-		if err := k.Load(file.Provider(path+"/config.yaml"), yaml.Parser()); err != nil {
+		if err := k.Load(file.Provider(path+"/"+filename), yaml.Parser()); err != nil {
 			log.Fatalf("error loading config: %v", err)
 		}
 		var config = &Config{}
 		if err := k.Unmarshal("", config); err != nil {
 			log.Fatalf("error unmarshaling config: %v", err)
 		}
-		env = getEnv()
 		configIns = config
 	}
 	return configIns
 }
-
-func getEnv() Env {
-	env = strings.ToLower(os.Getenv("ENV"))
-	if env == string(Development) || env == "" {
+func GetEnv()Env{
+	err :=godotenv.Load()
+		if err != nil{
+			panic(err)
+	}
+	env := strings.ToLower(os.Getenv("ENV"))
+	if env == Development || env == "" {
 		return Development
-	} else if env == string(Production) {
+	}else if env == Production {
 		return Production
-
-	} else if env == string(Test) {
-		return Test
 	} else {
 		panic("invalid env:" + env)
 	}
 }
+func getConfigFile(env Env) string {
+	if env == Development {
+		return "config-development.yaml"
+	}else if env == Production {
+		return "config-development.yaml"
+	} else {
+		panic("invalid env:" + env)
+	}
+}
+

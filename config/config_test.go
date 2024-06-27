@@ -21,18 +21,20 @@ var _ = Describe("Get Config", func() {
 				Expect(config).NotTo(BeNil())
 			})
 		})
-		Context("when checking the fileds of config", func() {
+		Context("when checking the fileds of config-development", func() {
 			It("should match a specific string value", func() {
-				config := GetConfigInstance()
-				Expect(config.Postgres.Username).To(Equal("user"))
-				Expect(config.Postgres.Password).To(Equal("password"))
-				Expect(config.Postgres.DBName).To(Equal("blog"))
-				Expect(config.Postgres.Host).To(Equal("127.0.0.1"))
-				Expect(config.Postgres.Port).To(Equal(3306))
-				Expect(config.Redis.DB).To(Equal(0))
-				Expect(config.Redis.Port).To(Equal(6379))
-				Expect(config.Redis.Host).To(Equal("127.0.0.1"))
-				Expect(config.Server.Port).To(Equal(8000))
+				if GetEnv() == Development {
+					config := GetConfigInstance()
+					Expect(config.Postgres.Username).To(Equal("user"))
+					Expect(config.Postgres.Password).To(Equal("password"))
+					Expect(config.Postgres.DBName).To(Equal("blog"))
+					Expect(config.Postgres.Host).To(Equal("127.0.0.1"))
+					Expect(config.Postgres.Port).To(Equal(3306))
+					Expect(config.Redis.DB).To(Equal(0))
+					Expect(config.Redis.Port).To(Equal(6379))
+					Expect(config.Redis.Host).To(Equal("127.0.0.1"))
+					Expect(config.Server.Port).To(Equal(8000))
+				}
 			})
 		})
 	})
@@ -40,7 +42,7 @@ var _ = Describe("Get Config", func() {
 		Context("when ENV is set to Development", func() {
 			It("should return Development environment", func() {
 				os.Setenv("ENV", "Development")
-				env := getEnv()
+				env := GetEnv()
 				Expect(env).To(Equal(Development))
 			})
 		})
@@ -48,21 +50,14 @@ var _ = Describe("Get Config", func() {
 		Context("when ENV is set to Production", func() {
 			It("should return Production environment", func() {
 				os.Setenv("ENV", "Production")
-				env := getEnv()
+				env := GetEnv()
 				Expect(env).To(Equal(Production))
-			})
-		})
-		Context("when ENV is set to Test", func() {
-			It("should return Test environment", func() {
-				os.Setenv("ENV", "Test")
-				env := getEnv()
-				Expect(env).To(Equal(Test))
 			})
 		})
 		Context("when ENV is set to an invalid value", func() {
 			It("should panic with an error message", func() {
 				os.Setenv("ENV", "Invalid")
-				Expect(func() { getEnv() }).To(Panic())
+				Expect(func() { GetEnv() }).To(Panic())
 			})
 		})
 	})
