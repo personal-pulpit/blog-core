@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	"blog/api/helpers/auth_helper"
 	postgres_repository "blog/database/postgres/repo"
 
 	"blog/internal/service/authentication"
@@ -15,11 +14,13 @@ import (
 )
 
 type AuthHandler struct {
-	AuthHelper  auth_helper.AuthHeaderHelper
 	AuthService authentication.AuthService
 }
 
 type (
+	verifyEmailInput struct {
+		otp string `form:"otp" binding:"required"`
+	}
 	signinInput struct {
 		FirstName string `form:"firstName" binding:"required"`
 		LastName  string `form:"lastName" binding:"required"`
@@ -33,49 +34,6 @@ type (
 	}
 )
 
-func (h *AuthHandler) Login(ctx *gin.Context) {
-	go func() {
-		var li loginInput
-		err := ctx.ShouldBind(&li)
-		if err != nil {
-			if utils.CheckErrorForWord(err, "required") {
-				userResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest,
-					utils.GetValidationError(ErrPleaseCompleteAllFields),
-					nil)
-				return
-			} else if utils.CheckErrorForWord(err, "usernamevalidaitor") {
-				userResponseChannel <- helpers.NewHttpResponse(
-					http.StatusBadRequest,
-					utils.GetValidationError(ErrUsernameShouldContain),
-					nil)
-				return
-			}
-			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest,
-				utils.GetValidationError(err),
-				nil)
-			return
-		}
-		user, accessToken, refreshToken, err := h.AuthService.Login(li.Email, li.Password)
-		if err != nil {
-			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
-				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
-				return
-			}
-			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
-			return
-		}
-		userResponseChannel <- helpers.NewHttpResponse(
-			http.StatusOK, "welcome back!", map[string]interface{}{
-				"user":          user,
-				"access_token":  accessToken,
-				"refresh_token": refreshToken,
-			},
-		)
-	}()
-	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
-}
 func (h *AuthHandler) Register(ctx *gin.Context) {
 	go func() {
 		var si signinInput
@@ -128,24 +86,88 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusCreated, userResponseChannel)
 }
+
+func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
+	go func() {
+		var input verifyEmailInput
+		err := ctx.ShouldBind(&input)
+		if err != nil {
+			if utils.CheckErrorForWord(err, "required") {
+				userResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest,
+					utils.GetValidationError(ErrPleaseCompleteAllFields),
+					nil)
+				return
+			}
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				utils.GetValidationError(err),
+				nil)
+			return
+		}
+		err = h.AuthService.VerifyEmail(input.otp, ctx.GetString("id"))
+		if err != nil {
+			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
+				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+				return
+			}
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "welcome back!", map[string]interface{}{
+				"emailVerified": true,
+			},
+		)
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
+}
+
+func (h *AuthHandler) Login(ctx *gin.Context) {
+	go func() {
+		var li loginInput
+		err := ctx.ShouldBind(&li)
+		if err != nil {
+			if utils.CheckErrorForWord(err, "required") {
+				userResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest,
+					utils.GetValidationError(ErrPleaseCompleteAllFields),
+					nil)
+				return
+			}
+			userResponseChannel <- helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				utils.GetValidationError(err),
+				nil)
+			return
+		}
+		user, accessToken, refreshToken, err := h.AuthService.Login(li.Email, li.Password)
+		if err != nil {
+			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
+				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
+				return
+			}
+			userResponseChannel <- helpers.NewHttpResponse(http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+		userResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "welcome back!", map[string]interface{}{
+				"user":          user,
+				"access_token":  accessToken,
+				"refresh_token": refreshToken,
+			},
+		)
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
+}
+
+
 func (h *AuthHandler) Logout(ctx *gin.Context) {
 	go func() {
-		token, err := h.AuthHelper.GetHeader(ctx)
-		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
-			return
-		}
-		err = h.AuthService.Logout(token)
-		if err != nil {
-			userResponseChannel <- helpers.NewHttpResponse(
-				http.StatusBadRequest, err.Error(), nil)
-			return
-		}
-		h.AuthHelper.DeleteHeader(ctx)
 		userResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "user logouted!", map[string]interface{}{},
 		)
 	}()
+
 	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }

@@ -1,4 +1,4 @@
-package email_manager
+package email
 
 import (
 	"blog/config"
@@ -6,48 +6,135 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-
 	"net/smtp"
+	"path/filepath"
+	"runtime"
 )
-type EmailManager interface {
-	SendVerificationEmail(recipientEmail string, otp string) error
-}
-var verificationTemplate *template.Template
 
-func init() {
-	var err error
-	verificationTemplate, err = template.ParseFiles("template/verification_code.html")
-	if err != nil {
-		panic(err)
+type EmailService interface {
+	sendEmail(msg *emailMessage) error
+	readTemplate(template string) *template.Template
+	SendWelcomeEmail(recipientEmail, name string) error
+	SendResetPasswordEmail(recipientEmail, url, name, exp string) error
+	SendVerificationEmail(recipientEmail, otp string) error
+}
+
+func templatesDirPath() string {
+	_, f, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("Error in generating env dir")
+	}
+
+	return filepath.Dir(f)
+}
+
+type emailOtp struct {
+	Configs *config.Email
+}
+
+type emailMessage struct {
+	tmplateFileName string
+	receiver        []string
+	args            interface{}
+	subject         string
+}
+
+func NewEmailService(Configs *config.Email) EmailService {
+	return &emailOtp{Configs}
+}
+
+func newEmailMessage(tmplFileName, subject string,args interface{}, reciver []string) *emailMessage {
+	return &emailMessage{
+		tmplateFileName: tmplFileName,
+		subject:         subject,
+		args:            args,
+		receiver:        reciver,
 	}
 }
 
-type EmailOpts struct {
-	configs *config.Email
+func (s *emailOtp) readTemplate(templFileName string) *template.Template {
+	templFileNameFullAddres := templatesDirPath() + "/" + templFileName
+
+	tpl := template.Must(template.ParseFiles(templFileNameFullAddres))
+
+	return tpl
 }
 
-func NewEmailService(configs *config.Email) EmailManager {
-	return &EmailOpts{configs}
-}
-func (e *EmailOpts) SendVerificationEmail(recipientEmail string, otp string) error {
-	currentENV := config.GetEnv()
-	if currentENV == config.Production {
-		var buffer bytes.Buffer
-		err := verificationTemplate.Execute(&buffer, struct{ Code string }{Code: otp})
-		if err != nil {
-			return err
-		}
-		body := buffer.String()
-		message := []byte(fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: Verification Code\r\n\r\n%s", "Blog", recipientEmail, body))
-
-		auth := smtp.PlainAuth("", e.configs.SenderEmail, e.configs.Password, e.configs.Host)
-		err = smtp.SendMail(e.configs.Host+":"+e.configs.Port, auth, e.configs.SenderEmail, []string{recipientEmail}, message)
-		if err != nil {
-			return err
-		}
-		log.Println("Verification code email sent successfully!")
+func (s *emailOtp) sendEmail(msg *emailMessage) error {
+	if config.GetEnv() == config.Development {
+		log.Println("Email sent")
+		log.Println(msg)
 		return nil
 	}
-	log.Println("Email sent")
+
+	template := s.readTemplate(msg.tmplateFileName)
+
+	var body bytes.Buffer
+	err := template.Execute(&body, msg.args)
+	
+	if err != nil {
+		return err
+	}
+
+	emailMessage := fmt.Sprintf("Subject: %s\r\n"+
+		"Content-Type: text/html; charset=UTF-8\r\n"+
+		"\r\n"+body.String(), msg.subject)
+	
+	auth := smtp.PlainAuth("", s.Configs.SenderEmail, s.Configs.Password, s.Configs.Host)
+	err = smtp.SendMail(s.Configs.Host+":"+s.Configs.Port, auth, s.Configs.SenderEmail, msg.receiver, []byte(emailMessage))
+	if err != nil {
+		return err
+	}
+	
+	log.Println("Verification code email sent successfully!")
+	
+	return nil
+}
+
+func (s *emailOtp) SendWelcomeEmail(recipientEmail, name string) error {
+	msg := newEmailMessage(
+		"welcome.html",
+		"Welcome",
+		struct {Name string}{Name: name},
+		[]string{recipientEmail},
+	)
+	
+	err := s.sendEmail(msg)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
+func (s *emailOtp) SendVerificationEmail(recipientEmail, otp string) error {
+	msg := newEmailMessage(
+		"verification_code.html",
+		"Verify Account",
+		struct {OTP string}{OTP: otp},
+		[]string{recipientEmail},
+	)
+	
+	err := s.sendEmail(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *emailOtp) SendResetPasswordEmail(recipientEmail, url, name, exp string) error {
+	msg := newEmailMessage(
+		"submit_reset_password.html",
+		"Reset Password",
+		struct {Name,RecipientEmail,URL,EXP string}{Name: name,RecipientEmail: recipientEmail,URL: url,EXP: exp},
+		[]string{recipientEmail},
+	)
+
+	err := s.sendEmail(msg)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

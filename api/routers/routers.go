@@ -10,6 +10,7 @@ import (
 	"blog/internal/service/authentication"
 	"blog/internal/service/user"
 	"blog/pkg/auth_manager"
+	email "blog/pkg/email_manager"
 	"blog/utils/hash"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,12 @@ import (
 	"gorm.io/gorm"
 )
 
+func init(){
+	emailConfigs := config.GetConfigInstance().Email
+	emailService = email.NewEmailService(&emailConfigs)
+}
 var (
+	emailService email.EmailService
 	authPostgresRepo repository.AuthPostgresRepository
 	userPostgresRepo repository.UserPostgresRepository
 	authMiddleware   *middlewares.UserAuthMiddleware
@@ -33,7 +39,7 @@ func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client
 	authManager = auth_manager.NewAuthManager(redisCLI, auth_manager.AuthManagerOpts{PrivateKey: jwtCfg.Secret})
 	authHelper = auth_helper.NewAuthHeaderHelper()
 	authMiddleware = middlewares.NewUserAuthMiddelware(authManager, authHelper)
-
+	
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.CustomLogger())
@@ -71,12 +77,12 @@ func praseRouters(r *gin.RouterGroup) {
 					userPostgresRepo,
 					authManager,
 					hashManager,
+					emailService,
 				),
-				AuthHelper: authHelper,
 			}
 			r.POST("/register", authMiddleware.EnsureNotLoggedIn(), authHandler.Register)
 			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
-			r.GET("/logout", authMiddleware.EnsureLoggedIn(), authHandler.Logout)
+			r.GET("/logout", authMiddleware.EnsureLoggedIn(),authMiddleware.Logout(), authHandler.Logout)
 		}
 	case "/api/v1/user":
 		{

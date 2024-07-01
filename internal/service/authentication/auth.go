@@ -4,7 +4,9 @@ import (
 	"blog/internal/model"
 	"blog/internal/repository"
 	"blog/pkg/auth_manager"
+	email "blog/pkg/email_manager"
 	"blog/utils/hash"
+	"blog/utils/random"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,6 +14,7 @@ import (
 )
 
 const (
+	OTPExpr                    = time.Minute * 2     //120 second
 	ResetPasswordTokenExpr     = time.Minute * 10    // 10 minutes
 	VerifyEmailTokenExpr       = time.Minute * 5     // 5 minutes
 	AccessTokenExpr            = time.Hour * 24 * 2  // 2 days
@@ -23,28 +26,31 @@ const (
 type AuthService interface {
 	Register(FirstName, lastName, email, biography, password string) (*model.User, string, error)
 	Login(email string, password string) (*model.User, string, string, error)
-	VerifyEmail(verifyEmailToken string) error
+	VerifyEmail(otp string,userID model.ID) error
 	SendResetPasswordVerification(email string) (string, time.Duration, error)
 	SubmitResetPassword(token string, newPassword string) error
 	ChangePassword(accessToken string, oldPassword string, newPassword string) error
 	Authenticate(accessToken string) (*model.User, error)
 	RefreshToken(refreshToken string, accessToken string) (string, error)
 	DeleteAccount(ID model.ID, password string) error
-	Logout(token string)error
+	Logout(token string) error
 }
 type authenticateManager struct {
+	uniqueId         string
 	userPostgresRepo repository.UserPostgresRepository
 	authPostgresRepo repository.AuthPostgresRepository
-	authManager   auth_manager.AuthManager
-	hashManager   *hash.HashManager
+	authManager      auth_manager.AuthManager
+	hashManager      *hash.HashManager
+	emailService     email.EmailService
 }
 
-func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, userPostgresRepo repository.UserPostgresRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager) AuthService {
+func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, userPostgresRepo repository.UserPostgresRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager, emailService email.EmailService) AuthService {
 	return &authenticateManager{
 		authPostgresRepo: authPostgresRepo,
 		userPostgresRepo: userPostgresRepo,
-		authManager:   authManager,
-		hashManager:   hashManager,
+		authManager:      authManager,
+		hashManager:      hashManager,
+		emailService:     emailService,
 	}
 }
 
@@ -53,6 +59,7 @@ func (a *authenticateManager) Register(firstName, lastName, email, biography, pa
 	savedUser, tx, err := a.userPostgresRepo.Create(userModel)
 	if errors.Is(err, repository.ErrUniqueConstraint) {
 		return nil, "", repository.ErrUniqueConstraint
+
 	} else if err != nil {
 		return nil, "", ErrCreateUser
 	}
@@ -68,31 +75,46 @@ func (a *authenticateManager) Register(firstName, lastName, email, biography, pa
 		return nil, "", ErrCreateAuthStore
 	}
 
+	a.uniqueId = fmt.Sprintf("%d", random.GenerateUniqueID())
+
 	verifyEmailToken, err := a.authManager.GenerateToken(
 		auth_manager.VerifyEmail,
-		auth_manager.NewTokenClaims(savedUser.ID, userModel.Role, auth_manager.VerifyEmail),
+		auth_manager.NewTokenClaims(savedUser.ID, model.UserRole, auth_manager.VerifyEmail),
 		VerifyEmailTokenExpr,
 	)
+
 	if err != nil {
 		return nil, "", ErrCreateEmailToken
 	}
 
-	return savedUser, verifyEmailToken, nil
-}
-func (a *authenticateManager) VerifyEmail(verifyEmailToken string) error {
-	tokenClaims, err := a.authManager.DecodeToken(verifyEmailToken, auth_manager.VerifyEmail)
+	otp, err := a.authManager.SetOTP(a.uniqueId, OTPExpr)
+
 	if err != nil {
-		return ErrAccessDenied
+		return nil, "", err
 	}
 
-	err = a.authPostgresRepo.VerifyEmail(tokenClaims.ID)
+	err = a.emailService.SendVerificationEmail(userModel.Email, otp)
+
 	if err != nil {
+		return nil, "",err
+	}
+
+	return savedUser,verifyEmailToken,nil
+}
+func (a *authenticateManager) VerifyEmail(otp string,userId model.ID) error {
+	savedOTP, err := a.authManager.GetOTP(a.uniqueId)
+
+	if err != nil {
+		return err
+	}
+
+	if savedOTP != otp {
 		return ErrVerifyEmail
 	}
 
-	err = a.authManager.Destroy(verifyEmailToken)
+	err = a.authPostgresRepo.VerifyEmail(userId)
 	if err != nil {
-		return ErrDestroyToken
+		return ErrVerifyEmail
 	}
 
 	return nil

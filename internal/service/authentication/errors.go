@@ -4,7 +4,6 @@ import "errors"
 
 var (
 	ErrInvalidValidation = errors.New("failed to validate arguments")
-
 	ErrInvalidPassword          = errors.New("invalid password")
 	ErrNotFound                 = errors.New("user not found")
 	ErrInvalidEmailOrPassword   = errors.New("invalid email or password")
