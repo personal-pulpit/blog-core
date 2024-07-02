@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	"blog/api/helpers/auth_helper"
 	postgres_repository "blog/database/postgres/repo"
 
-	"blog/internal/model"
-	"blog/internal/repository"
+	"blog/internal/service/article"
+	"blog/internal/service/user"
 
 	"blog/utils"
 	"errors"
@@ -22,10 +21,8 @@ var (
 
 type (
 	Article struct {
-		ArticlePostgresRepo repository.ArticlePostgresRepository
-		ArticleRedisRepo    repository.ArticleRedisRepository
-		UserRedisRepo       repository.UserRedisRepository
-		AuthHelper          auth_helper.AuthHeaderHelper
+		UserService    user.UserService
+		ArticleService article.ArticleService
 	}
 	ArticleInput struct {
 		Title   string `form:"title" binding:"required"`
@@ -35,7 +32,7 @@ type (
 
 func (a *Article) GetAll(ctx *gin.Context) {
 	go func() {
-		articles, err := a.ArticleRedisRepo.GetCaches()
+		articles, err := a.ArticleService.GetAll()
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusBadRequest, err.Error(), nil)
@@ -49,10 +46,10 @@ func (a *Article) GetAll(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 }
-func (a *Article) GetByID(ctx *gin.Context) {
+func (a *Article) GetById(ctx *gin.Context) {
 	go func() {
-		ID := ctx.Param("ID")
-		article, err := a.ArticleRedisRepo.GetCacheByID(model.ID(ID))
+		id := ctx.Param("id")
+		article, err := a.ArticleService.GetArticleById(id)
 		if err != nil {
 			if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(
@@ -63,7 +60,7 @@ func (a *Article) GetByID(ctx *gin.Context) {
 				http.StatusInternalServerError, err.Error(), nil)
 			return
 		}
-		user, err := a.UserRedisRepo.GetCacheByID(article["authorId"])
+		user, err := a.UserService.GetUserProfile(article.AuthorId)
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusInternalServerError, err.Error(), nil)
@@ -71,11 +68,11 @@ func (a *Article) GetByID(ctx *gin.Context) {
 		}
 		articleResponseChannel <- helpers.NewHttpResponse(
 			http.StatusOK, "article Got!", map[string]interface{}{
-				"title":      article["title"],
-				"content":    article["content"],
-				"author":     user["username"],
-				"created at": article["createdAt"],
-				"updated at": article["updatedAt"],
+				"title":      article.Title,
+				"content":    article.Content,
+				"author":     user.FirstName + " " + user.LastName,
+				"created at": article.CreatedAt,
+				"updated at": article.UpdatedAt,
 			},
 		)
 	}()
@@ -100,15 +97,15 @@ func (a *Article) Create(ctx *gin.Context) {
 			return
 		}
 		authorId := ctx.GetString("id")
-		article, err := a.ArticlePostgresRepo.Create(
-			model.ID(authorId), ai.Title, ai.Content,
+		article, err := a.ArticleService.Create(
+			authorId, ai.Title, ai.Content,
 		)
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusBadRequest, err.Error(), nil)
 			return
 		}
-		user, err := a.ArticleRedisRepo.GetCacheByID(model.ID(authorId))
+		user, err := a.UserService.GetUserProfile(authorId)
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusInternalServerError, err.Error(), nil)
@@ -118,7 +115,7 @@ func (a *Article) Create(ctx *gin.Context) {
 			http.StatusOK, "article created!", map[string]interface{}{
 				"title":      article.Title,
 				"content":    article.Content,
-				"author":     user["username"],
+				"author":     user.FirstName + " " + user.LastName,
 				"created at": article.CreatedAt,
 				"updated at": article.UpdatedAt,
 			},
@@ -129,7 +126,7 @@ func (a *Article) Create(ctx *gin.Context) {
 }
 func (a *Article) UpdateByID(ctx *gin.Context) {
 	go func() {
-		ID := ctx.Param("ID")
+		id := ctx.Param("id")
 		var ai ArticleInput
 		err := ctx.ShouldBind(&ai)
 		if err != nil {
@@ -146,8 +143,8 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 				nil)
 			return
 		}
-		article, err := a.ArticlePostgresRepo.UpdateByID(
-			ID,
+		article, err := a.ArticleService.Update(
+			id,
 			ai.Title,
 			ai.Content,
 		)
@@ -161,7 +158,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 				http.StatusBadRequest, err.Error(), nil)
 			return
 		}
-		user, err := a.ArticleRedisRepo.GetCacheByID(model.ID(ID))
+		user, err := a.UserService.GetUserProfile(article.AuthorId)
 		if err != nil {
 			articleResponseChannel <- helpers.NewHttpResponse(
 				http.StatusInternalServerError, err.Error(), nil)
@@ -171,7 +168,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 			http.StatusOK, "article updated!", map[string]interface{}{
 				"title":      article.Title,
 				"content":    article.Content,
-				"author":     user["username"],
+				"author":     user.ID,
 				"created at": article.CreatedAt,
 				"updated at": article.UpdatedAt,
 			},
@@ -182,8 +179,8 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 }
 func (a *Article) DeleteByID(ctx *gin.Context) {
 	go func() {
-		ID := ctx.Param("ID")
-		err := a.ArticlePostgresRepo.DeleteByID(ID)
+		id := ctx.Param("id")
+		err := a.ArticleService.Delete(id)
 		if err != nil {
 			if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 				articleResponseChannel <- helpers.NewHttpResponse(

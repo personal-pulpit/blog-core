@@ -5,9 +5,13 @@ import (
 )
 
 type ArticlePostgresRepository interface {
-	Create(authorID model.ID, title, content string) (model.Article, error)
-	UpdateByID(ID, title, content string) (model.Article, error)
-	DeleteByID(ID string) error
+	GetAll() ([]*model.Article, error)
+	GetArticle(filters map[string]interface{}) (*model.Article, error)
+	GetArticleByTitle(title string) (*model.Article, error)
+	GetArticleById(id model.ID) (*model.Article, error)
+	Create(articleModel *model.Article) (*model.Article, error)
+	UpdateByID(ID model.ID, title, content string) (*model.Article, error)
+	DeleteByID(ID model.ID) error
 }
 type ArticleRedisRepository interface {
 	GetCaches() ([]map[string]string, error)
