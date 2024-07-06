@@ -85,9 +85,13 @@ func (t *authManager) GenerateToken(tokenType TokenType, tokenClaims *TokenClaim
 }
 
 func (t *authManager) DecodeToken(token string, tokenType TokenType) (_ *TokenClaims, _ error) {
-	_, err := t.redisClient.Get(context.TODO(), token).Result()
-	if err != nil {
-		return nil, err
+	exists,err :=t.redisClient.Exists(context.TODO(),token).Result()
+	if err != nil{
+		return nil,err
+	}
+	
+	if exists != 1{
+		return nil,ErrInvalidToken
 	}
 
 	tokenClaims := &TokenClaims{}

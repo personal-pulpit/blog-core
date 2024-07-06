@@ -78,6 +78,44 @@ func (a *Article) GetById(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 }
+
+func (a *Article) GetByTitle(ctx *gin.Context) {
+	go func() {
+		title := ctx.Query("title")
+
+		article, err := a.ArticleService.GetArticleByTitle(title)
+
+		if err != nil {
+			if errors.Is(err, postgres_repository.ErrArticleNotFound) {
+				articleResponseChannel <- helpers.NewHttpResponse(
+					http.StatusBadRequest, err.Error(), nil)
+				return
+			}
+			articleResponseChannel <- helpers.NewHttpResponse(
+				http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+
+		user, err := a.UserService.GetUserProfile(article.AuthorId)
+		
+		if err != nil {
+			articleResponseChannel <- helpers.NewHttpResponse(
+				http.StatusInternalServerError, err.Error(), nil)
+			return
+		}
+		
+		articleResponseChannel <- helpers.NewHttpResponse(
+			http.StatusOK, "article Got!", map[string]interface{}{
+				"title":      article.Title,
+				"content":    article.Content,
+				"author":     user.FirstName + " " + user.LastName,
+				"created at": article.CreatedAt,
+				"updated at": article.UpdatedAt,
+			},
+		)
+	}()
+	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
+}
 func (a *Article) Create(ctx *gin.Context) {
 	go func() {
 		var ai ArticleInput
@@ -124,7 +162,7 @@ func (a *Article) Create(ctx *gin.Context) {
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 
 }
-func (a *Article) UpdateByID(ctx *gin.Context) {
+func (a *Article) UpdateById(ctx *gin.Context) {
 	go func() {
 		id := ctx.Param("id")
 		var ai ArticleInput
@@ -177,7 +215,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 	helpers.GetResponse(ctx, http.StatusOK, articleResponseChannel)
 
 }
-func (a *Article) DeleteByID(ctx *gin.Context) {
+func (a *Article) DeleteById(ctx *gin.Context) {
 	go func() {
 		id := ctx.Param("id")
 		err := a.ArticleService.Delete(id)

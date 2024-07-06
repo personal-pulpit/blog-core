@@ -11,25 +11,25 @@ type UserService interface {
 	DeleteAccount(ID model.ID, password string) error
 	Logout(token string)error
 }
-type UserManager struct {
+type userManager struct {
 	userPostgresRepo  repository.UserPostgresRepository
 	authPostgresRepo repository.AuthPostgresRepository
 }
 
 func NewUserService(userPostgresRepo repository.UserPostgresRepository, authPostgresRepo repository.AuthPostgresRepository) UserService {
-	return &UserManager{
+	return &userManager{
 		userPostgresRepo:  userPostgresRepo,
 		authPostgresRepo: authPostgresRepo,
 	}
 }
-func (u *UserManager) GetUserProfile(ID model.ID)(*model.User,error){
+func (u *userManager) GetUserProfile(ID model.ID)(*model.User,error){
 	userModel,err := u.userPostgresRepo.GetUserByID(ID)
 	if err != nil{
 		return nil,ErrNotFound
 	}
 	return userModel,nil
 }
-func (u *UserManager) UpdateProfile(ID model.ID, FirstName, lastName, biography string) (*model.User,error) {
+func (u *userManager) UpdateProfile(ID model.ID, FirstName, lastName, biography string) (*model.User,error) {
 	user, err := u.userPostgresRepo.GetUserByID(ID)
 	if err != nil {
 		return nil,ErrNotFound
@@ -45,7 +45,7 @@ func (u *UserManager) UpdateProfile(ID model.ID, FirstName, lastName, biography 
 	return userModel,nil
 }
 
-func (u *UserManager) DeleteAccount(ID model.ID, password string) error {
+func (u *userManager) DeleteAccount(ID model.ID, password string) error {
 	auth, err := u.authPostgresRepo.GetUserAuth(ID)
 	if err != nil {
 		return ErrNotFound
@@ -63,6 +63,6 @@ func (u *UserManager) DeleteAccount(ID model.ID, password string) error {
 	}
 	return nil
 }
-func(u *UserManager)Logout(token string)error{
+func(u *userManager)Logout(token string)error{
 	panic("not impl")
 }

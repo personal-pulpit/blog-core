@@ -1,5 +1,11 @@
 package model
 
+import (
+	"blog/utils/random"
+	"fmt"
+	"time"
+)
+
 type Role int
 
 const (
@@ -8,7 +14,9 @@ const (
 )
 
 type User struct {
-	Base
+	ID        ID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	FirstName string `gorm:"size:25;NOT NULL"`
 	LastName  string `gorm:"size:25;NOT NULL"`
 	Email     string `gorm:"unique;size:50;NOT NULL"`
@@ -17,7 +25,10 @@ type User struct {
 }
 
 func NewUser(firtsname, lastname, email, biography string, role Role) *User {
+	id := fmt.Sprintf("%d", random.GenerateId())
+
 	return &User{
+		ID:        id,
 		FirstName: firtsname,
 		LastName:  lastname,
 		Email:     email,

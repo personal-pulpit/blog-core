@@ -53,7 +53,7 @@ func newEmailMessage(tmplFileName, subject string,args interface{}, reciver []st
 }
 
 func (s *emailOtp) readTemplate(templFileName string) *template.Template {
-	templFileNameFullAddres := templatesDirPath() + "/" + templFileName
+	templFileNameFullAddres := fmt.Sprintf("%s/%s/%s",templatesDirPath(),"templates",templFileName)
 
 	tpl := template.Must(template.ParseFiles(templFileNameFullAddres))
 
@@ -82,6 +82,7 @@ func (s *emailOtp) sendEmail(msg *emailMessage) error {
 	
 	auth := smtp.PlainAuth("", s.Configs.SenderEmail, s.Configs.Password, s.Configs.Host)
 	err = smtp.SendMail(s.Configs.Host+":"+s.Configs.Port, auth, s.Configs.SenderEmail, msg.receiver, []byte(emailMessage))
+	
 	if err != nil {
 		return err
 	}

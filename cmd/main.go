@@ -10,9 +10,12 @@ import (
 
 func main() {
 	config := config.GetConfigInstance()
+
 	logging.InitZapLogger(config.Logger)
+
 	PostgresCLI := postgres.GetPostgresqlDB(config.Postgres)
 	redisCLI := redis.GetRedisDB(config.Redis)
 	defer redis.CloseRedis()
+	
 	server.InitServer(config, PostgresCLI, redisCLI)
 }

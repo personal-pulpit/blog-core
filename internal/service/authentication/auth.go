@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	OTPExpr                    = time.Minute * 2     //120 second
+	OTPExpr                    = time.Minute * 10    //120 second
 	ResetPasswordTokenExpr     = time.Minute * 10    // 10 minutes
 	VerifyEmailTokenExpr       = time.Minute * 5     // 5 minutes
 	AccessTokenExpr            = time.Hour * 24 * 2  // 2 days
@@ -26,7 +26,7 @@ const (
 type AuthService interface {
 	Register(FirstName, lastName, email, biography, password string) (*model.User, string, error)
 	Login(email string, password string) (*model.User, string, string, error)
-	VerifyEmail(otp string,userID model.ID) error
+	VerifyEmail(otp string, userID model.ID) error
 	SendResetPasswordVerification(email string) (string, time.Duration, error)
 	SubmitResetPassword(token string, newPassword string) error
 	ChangePassword(accessToken string, oldPassword string, newPassword string) error
@@ -56,26 +56,34 @@ func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, 
 
 func (a *authenticateManager) Register(firstName, lastName, email, biography, password string) (*model.User, string, error) {
 	userModel := model.NewUser(firstName, lastName, email, biography, model.UserRole)
+
 	savedUser, tx, err := a.userPostgresRepo.Create(userModel)
+
 	if errors.Is(err, repository.ErrUniqueConstraint) {
 		return nil, "", repository.ErrUniqueConstraint
 
 	} else if err != nil {
 		return nil, "", ErrCreateUser
 	}
+
 	passwordHash, err := a.hashManager.HashPassword(password)
+
 	if err != nil {
 		tx.Rollback()
 		return nil, "", ErrHashingPassword
 	}
 
 	authModel := model.NewAuth(savedUser.ID, passwordHash)
+
 	_, err = a.authPostgresRepo.Create(authModel)
+
 	if err != nil {
+		tx.Rollback()
+
 		return nil, "", ErrCreateAuthStore
 	}
 
-	a.uniqueId = fmt.Sprintf("%d", random.GenerateUniqueID())
+	a.uniqueId = fmt.Sprintf("%d", random.GenerateUniqueId())
 
 	verifyEmailToken, err := a.authManager.GenerateToken(
 		auth_manager.VerifyEmail,
@@ -84,24 +92,31 @@ func (a *authenticateManager) Register(firstName, lastName, email, biography, pa
 	)
 
 	if err != nil {
+		tx.Rollback()
+
 		return nil, "", ErrCreateEmailToken
 	}
 
 	otp, err := a.authManager.SetOTP(a.uniqueId, OTPExpr)
 
 	if err != nil {
+		tx.Rollback()
+
 		return nil, "", err
 	}
 
 	err = a.emailService.SendVerificationEmail(userModel.Email, otp)
 
 	if err != nil {
-		return nil, "",err
+		tx.Rollback()
+
+		return nil, "", err
 	}
 
-	return savedUser,verifyEmailToken,nil
+	return savedUser, verifyEmailToken, nil
 }
-func (a *authenticateManager) VerifyEmail(otp string,userId model.ID) error {
+
+func (a *authenticateManager) VerifyEmail(otp string, userId model.ID) error {
 	savedOTP, err := a.authManager.GetOTP(a.uniqueId)
 
 	if err != nil {
@@ -188,6 +203,11 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 	err = a.authPostgresRepo.ClearFailedLoginAttempts(auth.ID)
 	if err != nil {
 		return nil, "", "", ErrClearFailedLoginAttempts
+	}
+
+	err = a.emailService.SendWelcomeEmail(email, userModel.FirstName)
+	if err != nil {
+		return nil, "", "", err
 	}
 
 	return userModel, accessToken, refreshToken, nil
@@ -290,6 +310,11 @@ func (a *authenticateManager) SendResetPasswordVerification(email string) (token
 	resetPasswordToken, err := a.authManager.GenerateToken(auth_manager.ResetPassword, auth_manager.NewTokenClaims(auth.ID, user.Role, auth_manager.ResetPassword), ResetPasswordTokenExpr)
 	if err != nil {
 		return "", 0, ErrGenerateToken
+	}
+
+	err = a.emailService.SendResetPasswordEmail(email, "example.com", user.FirstName, "10")
+	if err != nil {
+		return "", 0, err
 	}
 
 	return resetPasswordToken, ResetPasswordTokenExpr, nil

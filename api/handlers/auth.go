@@ -19,7 +19,7 @@ type AuthHandler struct {
 
 type (
 	verifyEmailInput struct {
-		otp string `form:"otp" binding:"required"`
+		OTP string `form:"otp" binding:"required"`
 	}
 	signinInput struct {
 		FirstName string `form:"firstName" binding:"required"`
@@ -37,7 +37,9 @@ type (
 func (h *AuthHandler) Register(ctx *gin.Context) {
 	go func() {
 		var si signinInput
+
 		err := ctx.ShouldBind(&si)
+
 		if err != nil {
 			if utils.CheckErrorForWord(err, "required") {
 				userResponseChannel <- helpers.NewHttpResponse(
@@ -58,6 +60,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 				nil)
 			return
 		}
+
 		user, verifyEmailToken, err := h.AuthService.Register(
 			si.FirstName,
 			si.LastName,
@@ -65,6 +68,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 			si.Biography,
 			si.Password,
 		)
+
 		if err != nil {
 			if errors.Is(err, postgres_repository.ErrEmailAlreadyExits) ||
 				errors.Is(err, postgres_repository.ErrUsernameAlreadyExits) ||
@@ -84,12 +88,14 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 			},
 		)
 	}()
+
 	helpers.GetResponse(ctx, http.StatusCreated, userResponseChannel)
 }
 
 func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 	go func() {
 		var input verifyEmailInput
+
 		err := ctx.ShouldBind(&input)
 		if err != nil {
 			if utils.CheckErrorForWord(err, "required") {
@@ -105,7 +111,7 @@ func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 				nil)
 			return
 		}
-		err = h.AuthService.VerifyEmail(input.otp, ctx.GetString("id"))
+		err = h.AuthService.VerifyEmail(input.OTP, ctx.GetString("id"))
 		if err != nil {
 			if errors.Is(err, postgres_repository.ErrUserNotFound) || errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
 				userResponseChannel <- helpers.NewHttpResponse(http.StatusBadRequest, err.Error(), nil)
@@ -160,7 +166,6 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	}()
 	helpers.GetResponse(ctx, http.StatusOK, userResponseChannel)
 }
-
 
 func (h *AuthHandler) Logout(ctx *gin.Context) {
 	go func() {

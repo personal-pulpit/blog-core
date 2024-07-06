@@ -30,6 +30,9 @@ func generateRandomNumber(length int) int {
 func GenerateOTP() int {
 	return generateRandomNumber(OtpLength)
 }
-func GenerateUniqueID()int{
+func GenerateUniqueId() int {
 	return generateRandomNumber(5)
+}
+func GenerateId() int {
+	return generateRandomNumber(6)
 }

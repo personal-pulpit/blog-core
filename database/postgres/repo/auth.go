@@ -19,9 +19,11 @@ func NewAuthPostgresRepository(postgresCLI *gorm.DB) repository.AuthPostgresRepo
 }
 func (a *authPostgresRepository) Create(authModel *model.Auth) (*model.Auth, error) {
 	tx := a.postgresCLI.Create(authModel)
+
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	
 	return authModel, nil
 }
 func (a *authPostgresRepository) GetUserAuth(ID model.ID) (*model.Auth, error) {

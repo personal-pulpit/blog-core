@@ -8,19 +8,20 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/joho/godotenv"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/joho/godotenv"
 )
+
 type (
 	Config struct {
 		Jwt      Jwt      `koanf:"jwt"`
 		Server   Server   `koanf:"server"`
-		Postgres  Postgres`koanf:"postgres"`
+		Postgres Postgres `koanf:"postgres"`
 		Redis    Redis    `koanf:"redis"`
 		Logger   Logger   `koanf:"logger"`
-		Email Email `koanf:"email"`
+		Email    Email    `koanf:"email"`
 	}
 
 	Server struct {
@@ -28,11 +29,11 @@ type (
 	}
 
 	Postgres struct {
-		Host      string `koanf:"host"`
-		Password  string `koanf:"password"`
-		Username  string `koanf:"username"`
-		DBName    string `koanf:"db_name"`
-		Port      int    `koanf:"port"`
+		Host     string `koanf:"host"`
+		Password string `koanf:"password"`
+		Username string `koanf:"username"`
+		DBName   string `koanf:"db_name"`
+		Port     int    `koanf:"port"`
 	}
 	Logger struct {
 		LogFilePath string `koanf:"log_file_path"`
@@ -52,8 +53,8 @@ type (
 		Secret string `koanf:"secret"`
 	}
 	Email struct {
-		SenderEmail string `koanf:"sender_email"` 
-		Password string `koanf:"password"`
+		SenderEmail string `koanf:"sender_email"`
+		Password    string `koanf:"password"`
 		Host        string `koanf:"host"`
 		Port        string `koanf:"port"`
 	}
@@ -84,28 +85,36 @@ func GetConfigInstance() *Config {
 	defer mu.Unlock()
 	if configIns == nil {
 		filename := getConfigFile(GetEnv())
+
 		path := ConfigsDirPath()
+		
 		k := koanf.New(path)
+		
 		if err := k.Load(file.Provider(path+"/"+filename), yaml.Parser()); err != nil {
 			log.Fatalf("error loading config: %v", err)
 		}
+		
 		var config = &Config{}
+		
 		if err := k.Unmarshal("", config); err != nil {
 			log.Fatalf("error unmarshaling config: %v", err)
 		}
+		
 		configIns = config
 	}
 	return configIns
 }
-func GetEnv()Env{
-	err :=godotenv.Load()
-		if err != nil{
-			panic(err)
+func GetEnv() Env {
+	err := godotenv.Load(ConfigsDirPath()+"/"+".env")
+	if err != nil {
+		panic(err)
 	}
+
 	env := strings.ToLower(os.Getenv("ENV"))
+
 	if env == Development || env == "" {
 		return Development
-	}else if env == Production {
+	} else if env == Production {
 		return Production
 	} else {
 		panic("invalid env:" + env)
@@ -114,10 +123,9 @@ func GetEnv()Env{
 func getConfigFile(env Env) string {
 	if env == Development {
 		return "config-development.yaml"
-	}else if env == Production {
-		return "config-development.yaml"
+	} else if env == Production {
+		return "config-production.yaml"
 	} else {
 		panic("invalid env:" + env)
 	}
 }
-

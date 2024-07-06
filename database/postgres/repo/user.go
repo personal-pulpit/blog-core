@@ -36,6 +36,7 @@ func (u *userPostgresRepo) GetUserByID(ID model.ID) (*model.User, error) {
 }
 func (u *userPostgresRepo) Create(user *model.User) (*model.User, *gorm.DB, error) {
 	tx := u.postgresCLI.Create(&user)
+	
 	if tx.Error != nil {
 		if utils.CheckErrorForWord(tx.Error, "email") {
 			return user, nil, ErrEmailAlreadyExits

@@ -15,7 +15,7 @@ func NewAuthHeaderHelper()AuthHeaderHelper{
 	return &authHelperManager{}
 }
 func (h *authHelperManager) GetHeader(ctx *gin.Context,name string) (string, error) {
-	token := ctx.Writer.Header().Get(name)
+	token := ctx.GetHeader(name)
 	if token == "" {
 		return "", ErrTokenUndefined
 	}
@@ -23,5 +23,5 @@ func (h *authHelperManager) GetHeader(ctx *gin.Context,name string) (string, err
 }
 
 func (h *authHelperManager) DeleteHeader(ctx *gin.Context,name string) {
-	ctx.Writer.Header().Del(name)
+	ctx.Request.Header.Del(name)
 }

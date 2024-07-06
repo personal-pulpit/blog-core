@@ -5,7 +5,6 @@ import (
 	"blog/api/helpers/auth_helper"
 	"blog/api/helpers/common"
 	"blog/pkg/auth_manager"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,11 +15,6 @@ type UserAuthMiddleware struct {
 	AuthHelper  auth_helper.AuthHeaderHelper
 }
 
-var (
-	ErrYouAreUnAuthorized = errors.New("you are unauthorized")
-	ErrSomeTimesWentWrong = errors.New("sometimes went wrong")
-)
-
 func NewUserAuthMiddelware(authManger auth_manager.AuthManager, authHelper auth_helper.AuthHeaderHelper) *UserAuthMiddleware {
 	return &UserAuthMiddleware{
 		AuthManager: authManger,
@@ -29,12 +23,10 @@ func NewUserAuthMiddelware(authManger auth_manager.AuthManager, authHelper auth_
 }
 func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		accessToken,err := m.AuthHelper.GetHeader(ctx,auth_helper.AccessTokenHeader)
-		
+		accessToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.AccessTokenHeader)
+
 		if err != nil {
 			ctx.Set("is_logged", false)
-		
-			ctx.Next()
 		} else {
 			cliams, err := m.AuthManager.DecodeToken(accessToken, auth_manager.AccessToken)
 
@@ -53,11 +45,11 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 			ctx.Next()
 		}
 
-		verifyEmailToken ,err := m.AuthHelper.GetHeader(ctx,auth_helper.AccessTokenHeader)
-		
-		if err != nil{
+		verifyEmailToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.VerifyEmailTokenHeader)
+
+		if err != nil {
 			ctx.Next()
-		}else {
+		} else {
 			cliams, err := m.AuthManager.DecodeToken(verifyEmailToken, auth_manager.VerifyEmail)
 
 			if err != nil {
@@ -71,6 +63,8 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 
 			ctx.Next()
 		}
+		ctx.Next()
+
 	}
 }
 
