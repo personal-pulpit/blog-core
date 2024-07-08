@@ -1,5 +1,3 @@
 package model
 
-type (
-	ID = string
-)
+type ID = string

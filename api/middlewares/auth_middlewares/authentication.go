@@ -1,4 +1,4 @@
-package middlewares
+package auth_middlewares
 
 import (
 	"blog/api/helpers"
