@@ -3,25 +3,24 @@ package random
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateRandom(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Random Suite")
+func TestGenerateOTP(t *testing.T) {
+	otp := GenerateOTP()
+	require.NotZero(t, otp)
+
+	t.Log(otp)
 }
 
-var _ = Describe("generate random numbers", func() {
-	Context("Generate a random number", func() {
-		var num int
+func TestGenerateUniqueId(t *testing.T) {
+	uniqueId := GenerateUniqueId()
 
-		BeforeEach(func() {
-			num = generateRandomNumber(5)
-		})
+	t.Log(uniqueId)
+}
 
-		It("should generate a non-zero number", func() {
-			Expect(num).ToNot(Equal(0))
-		})
-	})
-})
+func TestGenerateId(t *testing.T) {
+	id := GenerateId()
+
+	t.Log(id)
+}

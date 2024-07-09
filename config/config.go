@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/joho/godotenv"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -83,33 +82,29 @@ func ConfigsDirPath() string {
 func GetConfigInstance() *Config {
 	mu.Lock()
 	defer mu.Unlock()
+	
 	if configIns == nil {
 		filename := getConfigFile(GetEnv())
 
 		path := ConfigsDirPath()
-		
+
 		k := koanf.New(path)
-		
+
 		if err := k.Load(file.Provider(path+"/"+filename), yaml.Parser()); err != nil {
 			log.Fatalf("error loading config: %v", err)
 		}
-		
+
 		var config = &Config{}
-		
+
 		if err := k.Unmarshal("", config); err != nil {
 			log.Fatalf("error unmarshaling config: %v", err)
 		}
-		
+
 		configIns = config
 	}
 	return configIns
 }
 func GetEnv() Env {
-	err := godotenv.Load(ConfigsDirPath()+"/"+".env")
-	if err != nil {
-		panic(err)
-	}
-
 	env := strings.ToLower(os.Getenv("ENV"))
 
 	if env == Development || env == "" {
