@@ -3,7 +3,6 @@ package database
 import (
 	"blog/config"
 	"blog/internal/model"
-	"blog/pkg/logging"
 	"fmt"
 	"sync"
 
@@ -16,9 +15,10 @@ var (
 	mu      = &sync.Mutex{}
 )
 
-func GetPostgresqlDB(cfg config.Postgres) *gorm.DB {
+func GetPostgresqlDB(cfg *config.Postgres) (*gorm.DB,error) {
 	mu.Lock()
 	defer mu.Unlock()
+	
 	if postgresInstance == nil {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable", 
 		cfg.Host, 
@@ -29,13 +29,15 @@ func GetPostgresqlDB(cfg config.Postgres) *gorm.DB {
 
 		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
-			logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
+			return nil,err
 		}
 
 		postgresInstance = db
 	}
+	
 	Migration(model.User{})
 	Migration(model.Article{})
 	Migration(model.Auth{})
-	return postgresInstance
+
+	return postgresInstance,nil
 }

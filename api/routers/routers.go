@@ -14,6 +14,7 @@ import (
 	"blog/internal/service/user"
 	"blog/pkg/auth_manager"
 	email "blog/pkg/email_manager"
+	"blog/pkg/logger"
 	"blog/utils/hash"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,7 @@ var (
 	authHelper auth_helper.AuthHeaderHelper
 )
 
-func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client) *gin.Engine {
+func InitRouters(jwtCfg config.Jwt, postgresCLI *gorm.DB, redisCLI *redis.Client,logger logger.Logger) *gin.Engine {
 	articlePostgresRepo = postgres_repository.NewArticlePostgresRepo(postgresCLI)
 	authPostgresRepo = postgres_repository.NewAuthPostgresRepository(postgresCLI)
 	userPostgresRepo = postgres_repository.NewUserPostgresRepository(postgresCLI)

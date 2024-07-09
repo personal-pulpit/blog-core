@@ -1,4 +1,4 @@
-package logging
+package logger
 
 type Category string
 type SubCategory string

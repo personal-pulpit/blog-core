@@ -2,7 +2,6 @@ package database
 
 import (
 	"blog/config"
-	"blog/pkg/logging"
 	"fmt"
 	"sync"
 
@@ -14,9 +13,10 @@ var (
 	redisMutex    = &sync.Mutex{}
 )
 
-func GetRedisDB(cfg config.Redis) *redis.Client{
+func GetRedisDB(cfg *config.Redis) (*redis.Client,error){
 	redisMutex.Lock()
 	defer redisMutex.Unlock()
+
 	if redisInstance == nil {
 		url := fmt.Sprintf("redis://%s:%s@%s:%d/%d?protocol=%s",
 		cfg.Username,
@@ -28,15 +28,16 @@ func GetRedisDB(cfg config.Redis) *redis.Client{
 		)
 		opts, err := redis.ParseURL(url)
 		if err != nil {
-			logging.MyLogger.Fatal(logging.General, logging.Startup, err.Error(), nil)
+			return nil,err
 		}
 		redisInstance = redis.NewClient(opts)
 	}
-	return redisInstance
+
+	return redisInstance,nil
 }
-func CloseRedis() {
+func CloseRedis(){
 	err := redisInstance.Close()
 	if err != nil {
-		logging.MyLogger.Fatal(logging.General, logging.Down, err.Error(), nil)
+		panic(err)
 	}
 }

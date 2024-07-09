@@ -1,7 +1,8 @@
 package middlewares
 
 import (
-	"blog/pkg/logging"
+	"blog/config"
+	"blog/pkg/logger"
 	"bytes"
 	"io"
 	"time"
@@ -26,6 +27,8 @@ func (w *bodyLogWrite) WriteString(s string) (int, error) {
 
 func CustomLogger() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		zapLogger := logger.GetZapLoggerInstance(&config.GetConfigInstance().Logger)
+
 		blw := &bodyLogWrite{body: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
 		start := time.Now()
 		path := ctx.FullPath()
@@ -35,6 +38,7 @@ func CustomLogger() gin.HandlerFunc {
 		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bodyByte))
 		ctx.Writer = blw
 		ctx.Next()
+		
 		param := gin.LogFormatterParams{}
 		param.TimeStamp = time.Now()
 		param.Latency = param.TimeStamp.Sub(start)
@@ -46,16 +50,17 @@ func CustomLogger() gin.HandlerFunc {
 			path = path + "?" + raw
 		}
 		param.Path = path
-		keys := map[logging.ExtraKey]interface{}{}
-		keys[logging.ClientIp] = param.ClientIP
-		keys[logging.Method] = param.Method
-		keys[logging.Latency] = param.Latency
-		keys[logging.StatusCode] = param.StatusCode
-		keys[logging.ErrorMessage] = param.ErrorMessage
-		keys[logging.BodySize] = param.BodySize
-		keys[logging.RequestBody] = string(bodyByte)
-		keys[logging.ResponseBody] = blw.body.String()
-		keys[logging.Path] = param.Path
-		logging.MyLogger.Info(logging.RequestResponse, logging.Api, "", keys)
+		keys := map[logger.ExtraKey]interface{}{}
+		keys[logger.ClientIp] = param.ClientIP
+		keys[logger.Method] = param.Method
+		keys[logger.Latency] = param.Latency
+		keys[logger.StatusCode] = param.StatusCode
+		keys[logger.ErrorMessage] = param.ErrorMessage
+		keys[logger.BodySize] = param.BodySize
+		keys[logger.RequestBody] = string(bodyByte)
+		keys[logger.ResponseBody] = blw.body.String()
+		keys[logger.Path] = param.Path
+
+		zapLogger.Info(logger.RequestResponse, logger.Api, "", keys)
 	}
 }
