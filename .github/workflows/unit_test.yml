@@ -13,7 +13,7 @@ jobs:
             - name: Setup Go
               uses: actions/setup-go@v4
               with:
-                go-version: go1.22.5
+                go-version: '1.22.5'
             - name: Installing dependencies
               run: go mod tidy
             - name: Run tests
