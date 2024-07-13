@@ -1,0 +1,20 @@
+name: Unit Test
+
+on: 
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+jobs:
+    build: 
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Go
+              uses: actions/setup-go@v4
+              with:
+                go-version: go1.22.5
+            - name: Installing dependencies
+              run: go mod tidy
+            - name: Run tests
+              run: make unit_test               
