@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"errors"
 	"regexp"
 
 	"github.com/gin-gonic/gin/binding"
@@ -12,7 +13,7 @@ type CustomError struct {
 	Value   string
 	Message string
 }
-
+var ErrInitializeValidations = errors.New("initialize validations failed")
 var (
 	emailValidatior validator.Func = func(fld validator.FieldLevel) bool {
 		email := fld.Field().String()
@@ -21,10 +22,15 @@ var (
 	}
 )
 
-func InitValidations() {
+func InitValidations()error{
 	val, ok := binding.Validator.Engine().(*validator.Validate)
 	if ok {
-		val.RegisterValidation("emailvalidatior", emailValidatior)
+		err := val.RegisterValidation("emailvalidatior", emailValidatior)
+		if err != nil{
+			return err
+		}
+		return nil
 	}
+	return ErrInitializeValidations
 }
 

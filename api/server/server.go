@@ -12,7 +12,10 @@ import (
 )
 
 func InitServer(cfg *config.Config, PostgresCLI *gorm.DB, redisCLI *redis.Client,logger logger.Logger)error{
-	validation.InitValidations()
+	err := validation.InitValidations()
+	if err != nil{
+		return err
+	}
 
 	router := routers.InitRouters(cfg.Jwt, PostgresCLI, redisCLI,logger)
 
