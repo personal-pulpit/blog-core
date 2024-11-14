@@ -4,6 +4,7 @@ import (
 	postgres_repository "blog/database/postgres/repo"
 	"blog/internal/model"
 	"blog/internal/repository"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -20,6 +21,8 @@ func (s *ArticleTestSuite) SetupSuite() {
 }
 
 func (s *ArticleTestSuite) TestA_CreateArticle() {
+	ctx := context.TODO()
+
 	testCases := []struct {
 		article *model.Article
 		Valid   bool
@@ -31,7 +34,7 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 	}
 
 	for _, tc := range testCases {
-		article, err := s.repo.Create(tc.article)
+		article, err := s.repo.Create(ctx,tc.article)
 		if tc.Valid {
 			s.NoError(err)
 			s.article = article
@@ -43,12 +46,16 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 }
 
 func (s *ArticleTestSuite) TestB_GetAllArticles() {
-	articles, err := s.repo.GetAll()
+	ctx := context.TODO()
+
+	articles, err := s.repo.GetAll(ctx)
 	s.NoError(err)
 	s.NotNil(articles)
 }
 
 func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
+	ctx := context.TODO()
+
 	testCases := []struct {
 		Title string
 		Valid bool
@@ -64,14 +71,13 @@ func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
 	}
 
 	for _, tc := range testCases {
-		//fix it
-		articles, err := s.repo.GetArticleByTitle(tc.Title)
+		articles, err := s.repo.GetArticleByTitle(ctx,tc.Title)
 		if tc.Valid {
 			s.NoError(err)
-			s.NotNil(articles)
-			// for _, article := range articles {
-			// 	s.NotNil(article.Genres)
-			// }
+			for _, article := range articles {
+				s.NotNil(article)
+			}
+
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(articles)
@@ -80,8 +86,10 @@ func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
 }
 
 func (s *ArticleTestSuite) TestD_GetArticleByID() {
+	ctx := context.TODO()
+	
 	testCases := []struct {
-		ID    model.ID
+		ID    uint
 		Valid bool
 	}{
 		{
@@ -89,13 +97,13 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 			Valid: true,
 		},
 		{
-			ID:    "invalid",
+			ID:    1000,
 			Valid: false,
 		},
 	}
 
 	for _, tc := range testCases {
-		article, err := s.repo.GetArticleById(tc.ID)
+		article, err := s.repo.GetArticleByID(ctx,tc.ID)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(article)
@@ -107,8 +115,10 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 }
 
 func (s *ArticleTestSuite) TestE_ModifyArticle() {
+	ctx := context.TODO()
+
 	testCases := []struct {
-		articleID model.ID
+		articleID uint
 		title     string
 		content   string
 		authorID  string
@@ -123,7 +133,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 		},
 
 		{
-			articleID: "invalid",
+			articleID: 1000,
 			title:     "article 2",
 			content:   "my fav article",
 			authorID:  "2",
@@ -132,7 +142,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 	}
 
 	for _, tc := range testCases {
-		savedArticle, err := s.repo.UpdateByID(tc.articleID, tc.title, tc.content)
+		savedArticle, err := s.repo.UpdateByID(ctx,tc.articleID, tc.title, tc.content)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(savedArticle)
@@ -144,8 +154,10 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 }
 
 func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
+	ctx := context.TODO()
+	
 	testCases := []struct {
-		articleID model.ID
+		articleID uint
 		Valid     bool
 	}{
 		{
@@ -154,13 +166,13 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 		},
 
 		{
-			articleID: "invalid",
+			articleID: 1000,
 			Valid:     false,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.repo.DeleteByID(tc.articleID)
+		err := s.repo.DeleteByID(ctx,tc.articleID)
 		if tc.Valid {
 			s.NoError(err)
 		} else if !tc.Valid {

@@ -3,4 +3,7 @@ unit_test:
 	go test $(shell go list ./... | grep -v /tests)
 
 integration_test:
-	go test -cover -coverpkg ./internal/repository/... ./tests/integration/repo
+	go test -coverprofile=coverage.out -coverpkg ./database/postgres/repo/... ./tests/integration/repo
+coverage:
+	go tool cover -html="coverage.out"
+

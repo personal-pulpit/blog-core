@@ -2,16 +2,16 @@ package repository
 
 import (
 	"blog/internal/model"
+	"context"
 )
 
 type ArticlePostgresRepository interface {
-	GetAll() ([]*model.Article, error)
-	GetArticle(filters map[string]interface{}) (*model.Article, error)
-	GetArticleByTitle(title string) (*model.Article, error)
-	GetArticleById(id model.ID) (*model.Article, error)
-	Create(articleModel *model.Article) (*model.Article, error)
-	UpdateByID(ID model.ID, title, content string) (*model.Article, error)
-	DeleteByID(ID model.ID) error
+	GetAll(ctx context.Context) ([]model.Article, error)
+	GetArticleByTitle(ctx context.Context,title string) ([]model.Article, error)
+	GetArticleByID(ctx context.Context,ID uint) (*model.Article, error)
+	Create(ctx context.Context,articleModel *model.Article) (*model.Article, error)
+	UpdateByID(ctx context.Context,ID uint, title, content string) (*model.Article, error)
+	DeleteByID(ctx context.Context,ID uint) error
 }
 type ArticleRedisRepository interface {
 	GetCaches() ([]map[string]string, error)

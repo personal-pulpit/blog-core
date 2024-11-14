@@ -3,6 +3,7 @@ package postgres_repository
 import (
 	"blog/internal/model"
 	"blog/internal/repository"
+	"context"
 
 	"errors"
 
@@ -23,70 +24,67 @@ func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticlePostgresRepo
 	}
 }
 
-func (a *articlePostgresRepo) GetAll() ([]*model.Article, error) {
-	var articles = []*model.Article{}
+func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, error) {
+	var articles = []model.Article{}
 
-	if err := a.postgresCLI.Find(articles).Error; err != nil {
+	if err := a.postgresCLI.WithContext(ctx).Find(&articles).Error; err != nil {
 		return nil, err
 	}
 
 	return articles, nil
 }
-func (a *articlePostgresRepo) GetArticle(filters map[string]interface{}) (*model.Article, error) {
-	var article = &model.Article{}
 
-	query := a.postgresCLI
+// func (a *articlePostgresRepo) GetArticle(filters map[string]interface{}) (*model.Article, error) {
+// 	var article = &model.Article{}
 
-	for key, value := range filters {
-		query = query.Where(key, value)
-	}
+// 	query := a.postgresCLI
 
-	if err := query.Find(article).Error; err != nil {
+// 	for key, value := range filters {
+// 		query = query.Where(key, value)
+// 	}
+
+// 	if err := query.Find(article).Error; err != nil {
+// 		return nil, err
+// 	}
+
+// 	return article, nil
+// }
+
+func (a *articlePostgresRepo) GetArticleByTitle(ctx context.Context, title string) ([]model.Article, error) {
+	articles := []model.Article{}
+
+	err := a.postgresCLI.WithContext(ctx).Where("title = ?", title).First(&articles).Error
+	if err != nil {
 		return nil, err
 	}
 
-	return article, nil
+	return articles, nil
 }
-func (a *articlePostgresRepo) GetArticleByTitle(title string) (*model.Article, error) {
-	filter := map[string]interface{}{
-		"title": title,
-	}
 
-	article, err := a.GetArticle(filter)
+func (a *articlePostgresRepo) GetArticleByID(ctx context.Context,ID uint) (*model.Article, error) {
+	article := new(model.Article)
 
+	err := a.postgresCLI.WithContext(ctx).First(article, ID).Error
 	if err != nil {
 		return nil, err
 	}
 
 	return article, nil
 }
-func (a *articlePostgresRepo) GetArticleById(id model.ID) (*model.Article, error) {
-	filter := map[string]interface{}{
-		"id": id,
-	}
 
-	article, err := a.GetArticle(filter)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return article, nil
-}
-func (a *articlePostgresRepo) Create(articleModel *model.Article) (*model.Article, error) {
-	err := a.postgresCLI.Create(&articleModel).Error
-
+func (a *articlePostgresRepo) Create(ctx context.Context,articleModel *model.Article) (*model.Article, error) {
+	err := a.postgresCLI.WithContext(ctx).Create(&articleModel).Error
 	if err != nil {
 		return nil, err
 	}
 
 	return articleModel, nil
 }
-func (a *articlePostgresRepo) UpdateByID(ID model.ID, title, content string) (*model.Article, error) {
-	var article *model.Article
 
-	err := a.postgresCLI.First(&article, ID).Error
+func (a *articlePostgresRepo) UpdateByID(ctx context.Context,ID uint, title, content string) (*model.Article, error) {
+	article := new(model.Article)
 
+	err := a.postgresCLI.WithContext(ctx).First(article, ID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return article, ErrArticleNotFound
@@ -98,21 +96,24 @@ func (a *articlePostgresRepo) UpdateByID(ID model.ID, title, content string) (*m
 	article.Title = title
 	article.Content = content
 
-	err = a.postgresCLI.Save(&article).Error
-
+	err = a.postgresCLI.WithContext(ctx).Save(article).Error
 	if err != nil {
 		return article, err
 	}
 
 	return article, err
 }
-func (a *articlePostgresRepo) DeleteByID(ID model.ID) error {
-	var article *model.Article
 
-	err := a.postgresCLI.Delete(article, ID).Error
+func (a *articlePostgresRepo) DeleteByID(ctx context.Context,ID uint) error {
+	article := new(model.Article)
 
-	if err != nil {
-		return err
+	result := a.postgresCLI.WithContext(ctx).Delete(article, ID)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrArticleNotFound
 	}
 
 	return nil

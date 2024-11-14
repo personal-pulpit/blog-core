@@ -2,3 +2,4 @@ logs/log.log
 .vscode
 config/config-production.yaml
 .env
+coverage.out
