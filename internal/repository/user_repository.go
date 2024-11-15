@@ -2,19 +2,15 @@ package repository
 
 import (
 	"blog/internal/model"
+	"context"
 
 	"gorm.io/gorm"
 )
 
 type UserPostgresRepository interface {
-	Create(*model.User) (*model.User, *gorm.DB, error)
-	UpdateByID(ID, firstName, lastName, biography string) (*model.User, error)
-	DeleteByID(ID model.ID) error
-	GetUserByEmail(email string) (*model.User, error)
-	GetUserByID(ID model.ID) (*model.User, error)
-}
-type UserRedisRepository interface {
-	CreateCache(ID model.ID, firstName, lastName, biography, email string, role model.Role, createdAt, updatedAt string) error
-	GetCacheByID(ID string) (map[string]string, error)
-	DeleteCacheByID(ID string) error
+	Create(ctx context.Context,user *model.User) (*model.User, *gorm.DB, error)
+	UpdateByID(ctx context.Context ,ID uint, firstName, lastName, biography string) (*model.User, error)
+	DeleteByID(ctx context.Context,ID uint) error
+	GetUserByEmail(ctx context.Context,email string) (*model.User, error)
+	GetUserByID(ctx context.Context,ID uint) (*model.User, error)
 }
