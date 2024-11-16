@@ -28,11 +28,11 @@ func (s *UserTestSuite) TestA_Create() {
 		Valid bool
 	}{
 		{
-			User:  model.NewUser("firstName1", "lastName1", "example@gmail.com", "first user", model.UserRole),
+			User:  model.NewUser("firstName1", "lastName1", "example@gmail.com", "first user"),
 			Valid: true,
 		},
 		{
-			User:  model.NewUser("firstName1", "lastName1", "example@gmail.com", "first user", model.UserRole),
+			User:  model.NewUser("firstName1", "lastName1", "example@gmail.com", "first user"),
 			Valid: false,
 		},
 	}
@@ -82,7 +82,7 @@ func (s *UserTestSuite) TestB_GetUserByID() {
 
 func (s *UserTestSuite) TestC_CreateWithRollback() {
 	ctx := context.TODO()
-	user := model.NewUser("firstName2", "lastName2", "example2@gmail.com", "fist user", model.UserRole)
+	user := model.NewUser("firstName2", "lastName2", "example2@gmail.com", "fist user")
 
 	savedUser, tx, err := s.repo.Create(ctx, user)
 	s.NoError(err)

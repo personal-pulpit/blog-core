@@ -2,19 +2,20 @@ package repository
 
 import (
 	"blog/internal/model"
+	"context"
 	"time"
 )
 
 type AuthPostgresRepository interface {
-	Create(authModel *model.Auth) (*model.Auth, error)
-	GetUserAuth(ID model.ID) (*model.Auth, error)
-	ChangePassword(ID model.ID, hashedPassword string) error
-	VerifyEmail(ID model.ID) error
-	IncrementFailedLoginAttempts(ID model.ID) error
-	ClearFailedLoginAttempts(ID model.ID) error
-	LockAccount(ID model.ID, lockDuration time.Duration) error
-	UnlockAccount(ID model.ID) error
-	DeleteByID(ID model.ID) error
+	Create(ctx context.Context, authModel *model.Auth) (*model.Auth, error)
+	GetUserAuth(ctx context.Context,ID uint) (*model.Auth, error)
+	ChangePassword(ctx context.Context,ID uint, hashedPassword string) error
+	VerifyEmail(ctx context.Context,ID uint) error
+	IncrementFailedLoginAttempts(ctx context.Context,ID uint) error
+	ClearFailedLoginAttempts(ctx context.Context,ID uint) error
+	LockAccount(ctx context.Context,ID uint, lockDuration time.Duration) error
+	UnlockAccount(ctx context.Context,ID uint) error
+	DeleteByID(ctx context.Context,ID uint) error
 }
 type AuthRedisRepository interface {
 }
