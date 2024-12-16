@@ -15,7 +15,7 @@ var (
 	ErrHashingPassword          = errors.New("failed to hash password")
 	ErrCreateAuthStore          = errors.New("failed to to create auth store")
 	ErrCreateUser               = errors.New("failed to to create user")
-	ErrCreateEmailToken         = errors.New("failed to create email token")
+	ErrGenerateVerificationCode         = errors.New("failed to generate verification code")
 	ErrDestroyToken             = errors.New("failed to destroy token")
 	ErrChangePassword           = errors.New("failed to change password")
 	ErrClearFailedLoginAttempts = errors.New("failed to clear failed login attempts")

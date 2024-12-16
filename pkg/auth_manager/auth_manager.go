@@ -1,152 +1,177 @@
 package auth_manager
 
 import (
+	"blog/config"
 	"blog/internal/model"
-	"blog/utils/random"
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-
-	"github.com/redis/go-redis/v9"
-)
-
-var (
-	ErrInvalidToken            = errors.New("invalid token")
-	ErrInvalidTokenType        = errors.New("invalid token type")
-	ErrUnexpectedSigningMethod = errors.New("unexpected token signing method")
-	ErrNotFound                = errors.New("not found")
-)
-
-var TokenEncodingAlgorithm = jwt.SigningMethodHS512
-
-type TokenType int
-
-const (
-	AccessToken TokenType = iota
-	RefreshToken
-	ResetPassword
-	VerifyEmail
+	"github.com/go-redis/redis/v8"
+	auth_manager "github.com/tahadostifam/go-auth-manager"
 )
 
 type AuthManager interface {
-	GenerateToken(tokenType TokenType, tokenPayload *TokenClaims, expr time.Duration) (token string, err error)
-	DecodeToken(token string, tokenType TokenType) (claims *TokenClaims, err error)
-	Destroy(key string) (err error)
-	GetOTP(uniqueID string) (otp string, err error)
-	SetOTP( uniqueID string, expr time.Duration) (otp string, err error)
+	GenerateAccessToken(ctx context.Context, userID uint, role model.Role) (accessToken string, _ error)
+	DecodeAccessToken(ctx context.Context, accessToken string) (*AccessTokenClaims, error)
+	GenerateRefreshToken(ctx context.Context, userID uint, ipAddress, userAgent string) (refreshToken string, _ error)
+	DecodeRefreshToken(ctx context.Context, RefreshToken string) (*RefreshTokenClaims, error)
+	GenerateResetPasswordToken(ctx context.Context, userID uint) (resetPasswordToken string, _ error)
+	DecodeResetPasswordToken(ctx context.Context, resetPasswordToken string) (*ResetPasswordTokenClaims, error)
+	GenerateVerificationCode(ctx context.Context, key string) (verificationCode string, _ error)
+	CompareVerificationCode(ctx context.Context, key string, verificationCode string) (bool, error)
+	DestroyPailToken(ctx context.Context, key string) (_ error)
+	DestroyRefreshToken(ctx context.Context, key string) error
+}
+type AccessTokenClaims struct {
+	UserID   string
+	Role     string
+	CreateAt time.Time
 }
 
-type AuthManagerOpts struct {
-	PrivateKey string
+type RefreshTokenClaims struct {
+	IPAddress  string
+	UserAgent  string
+	UserID     uint
+	LoggedInAt time.Duration
 }
 
-// Used as jwt claims
-type TokenClaims struct {
-	ID        model.ID  `json:"id"`
-	Role      model.Role `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	TokenType TokenType `json:"token_type"`
-	jwt.RegisteredClaims
+type ResetPasswordTokenClaims struct {
+	UserID   string
+	CreateAt time.Time
 }
 
-func NewTokenClaims(ID model.ID, role model.Role ,tokenType TokenType) *TokenClaims {
-	return &TokenClaims{
-		ID:        ID,
-		CreatedAt: time.Now(),
-		TokenType: tokenType,
+const (
+	ResetPasswordTokenExpr = time.Second * 360   // 5 minutes
+	AccessTokenExpr        = time.Minute * 45    // 45 minutes
+	RefreshTokenExpr       = time.Hour * 24 * 14 // 2 weeks
+	VerificationCodeExpr   = time.Minute * 2     // 2 minutes
+	VerificationCodeLength = 6
+)
+
+type authManger struct {
+	authManger auth_manager.AuthManager
+}
+
+func NewAuthManger(redisClient *redis.Client, jwtConfigs config.Jwt) AuthManager {
+	mainAuthManger := auth_manager.NewAuthManager(redisClient, auth_manager.AuthManagerOpts{
+		PrivateKey: jwtConfigs.Secret,
+	})
+
+	authManger := &authManger{
+		authManger: mainAuthManger,
 	}
+
+	return authManger
+
 }
 
-type authManager struct {
-	redisClient *redis.Client
-	opts        AuthManagerOpts
-}
-
-func NewAuthManager(redisClient *redis.Client, opts AuthManagerOpts) AuthManager {
-	return &authManager{redisClient, opts}
-}
-
-func (t *authManager) GenerateToken(tokenType TokenType, tokenClaims *TokenClaims, expr time.Duration) (_ string, _ error) {
-	token, err := jwt.NewWithClaims(TokenEncodingAlgorithm, tokenClaims).SignedString([]byte(t.opts.PrivateKey))
+func (a *authManger) GenerateAccessToken(ctx context.Context, userID uint, role model.Role) (accessToken string, _ error) {
+	accessToken, err := a.authManger.GenerateAccessToken(ctx, fmt.Sprint(userID), fmt.Sprint(role), AccessTokenExpr)
 	if err != nil {
 		return "", err
 	}
 
-	cmd := t.redisClient.Set(context.TODO(), token, nil, expr)
-	if cmd.Err() != nil {
-		return "", cmd.Err()
-	}
-
-	return token, nil
+	return accessToken, nil
 }
 
-func (t *authManager) DecodeToken(token string, tokenType TokenType) (_ *TokenClaims, _ error) {
-	exists,err :=t.redisClient.Exists(context.TODO(),token).Result()
-	if err != nil{
-		return nil,err
-	}
-	
-	if exists != 1{
-		return nil,ErrInvalidToken
-	}
-
-	tokenClaims := &TokenClaims{}
-	jwtToken, err := jwt.ParseWithClaims(token, tokenClaims,
-		func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, ErrUnexpectedSigningMethod
-			}
-
-			return []byte(t.opts.PrivateKey), nil
-		},
-	)
+func (a *authManger) DecodeAccessToken(ctx context.Context, accessToken string) (*AccessTokenClaims, error) {
+	accessTokenPayload, err := a.authManger.DecodeAccessToken(ctx, accessToken)
 	if err != nil {
-		return nil, ErrInvalidToken
+		return nil, err
 	}
 
-	if jwtToken.Valid {
-		if tokenClaims.TokenType != tokenType {
-			return nil, ErrInvalidTokenType
-		}
-
-		return tokenClaims, nil
+	accessTokenClaims := &AccessTokenClaims{
+		UserID: accessTokenPayload.Payload.UUID,
+		Role:   accessTokenPayload.Payload.Role,
 	}
 
-	return &TokenClaims{}, ErrInvalidToken
+	return accessTokenClaims, nil
 }
 
-func (t *authManager) Destroy(key string) (_ error) {
-	cmd := t.redisClient.Del(context.TODO(), key)
-	if cmd.Err() != nil {
-		return cmd.Err()
+func (a *authManger) GenerateRefreshToken(ctx context.Context, userID uint, ipAddress, userAgent string) (refreshToken string, _ error) {
+	refreshTokenClaims, err := a.authManger.GenerateRefreshToken(ctx, &auth_manager.RefreshTokenPayload{
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		LoggedInAt: time.Duration(time.Now().UnixMilli()),
+		UserID:     userID,
+	},
+		RefreshTokenExpr)
+	if err != nil {
+		return "", err
+	}
+
+	return refreshTokenClaims, nil
+}
+
+func (a *authManger) DecodeRefreshToken(ctx context.Context, RefreshToken string) (*RefreshTokenClaims, error) {
+	refreshTokenPayload, err := a.authManger.DecodeRefreshToken(ctx, RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenClaims := &RefreshTokenClaims{
+		IPAddress:  refreshTokenPayload.IPAddress,
+		UserAgent:  refreshTokenPayload.UserAgent,
+		UserID:     refreshTokenPayload.UserID,
+		LoggedInAt: refreshTokenPayload.LoggedInAt,
+	}
+
+	return refreshTokenClaims, err
+}
+
+func (a *authManger) GenerateResetPasswordToken(ctx context.Context, userID uint) (resetPasswordToken string, _ error) {
+	resetPasswordToken, err := a.authManger.GeneratePlainToken(ctx, auth_manager.ResetPassword, &auth_manager.TokenPayload{UUID: fmt.Sprintf("%d", userID)}, ResetPasswordTokenExpr)
+	if err != nil {
+		return "", err
+	}
+
+	return resetPasswordToken, nil
+}
+
+func (a *authManger) DecodeResetPasswordToken(ctx context.Context, resetPasswordToken string) (*ResetPasswordTokenClaims, error) {
+	resetPasswordTokePayload, err := a.authManger.DecodePlainToken(ctx, resetPasswordToken, auth_manager.ResetPassword)
+	if err != nil {
+		return nil, err
+	}
+	resetPasswordTokeClaims := &ResetPasswordTokenClaims{
+		UserID:   resetPasswordTokePayload.UUID,
+		CreateAt: resetPasswordTokePayload.CreatedAt,
+	}
+
+	return resetPasswordTokeClaims, nil
+}
+
+func (a *authManger) GenerateVerificationCode(ctx context.Context, key string) (verificationCode string, _ error) {
+	verificationCode, err := a.authManger.GenerateVerificationCode(ctx, key, VerificationCodeLength, VerificationCodeExpr)
+	if err != nil {
+		return "", err
+	}
+
+	return verificationCode, nil
+}
+
+func (a *authManger) CompareVerificationCode(ctx context.Context, key string, verificationCode string) (bool, error) {
+	isEqual, err := a.authManger.CompareVerificationCode(ctx, key, verificationCode)
+	if err != nil {
+		return false, err
+	}
+
+	return isEqual, nil
+}
+
+func (a *authManger) DestroyPailToken(ctx context.Context, key string) (_ error) {
+	err := a.authManger.DestroyPlainToken(ctx, key)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (t *authManager) GetOTP( uniqueID string) (_ string, _ error) {
-	result, err := t.redisClient.Get(context.TODO(), uniqueID).Result()
+func (a *authManger) DestroyRefreshToken(ctx context.Context, key string) error {
+	err := a.authManger.TerminateRefreshTokens(ctx, key)
 	if err != nil {
-		return "", err
+		return err
 	}
-
-	if len(strings.TrimSpace(result)) > 0 {
-		return result, nil
-	}
-
-	return "", ErrNotFound
-}
-
-func (t *authManager) SetOTP(uniqueID string, expr time.Duration) (_ string, _ error) {
-	otp := fmt.Sprintf("%d", random.GenerateOTP())
-
-	_, err := t.redisClient.Set(context.TODO(), uniqueID, otp, expr).Result()
-	if err != nil {
-		return "", err
-	}
-
-	return otp, nil
+	return nil
 }

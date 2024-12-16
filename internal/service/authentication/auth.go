@@ -7,8 +7,10 @@ import (
 	email "blog/pkg/email_manager"
 	"blog/utils/hash"
 	"blog/utils/random"
+	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -24,16 +26,16 @@ const (
 )
 
 type AuthService interface {
-	Register(FirstName, lastName, email, biography, password string) (*model.User, string, error)
-	Login(email string, password string) (*model.User, string, string, error)
-	VerifyEmail(otp string, userID model.ID) error
-	SendResetPasswordVerification(email string) (string, time.Duration, error)
-	SubmitResetPassword(token string, newPassword string) error
-	ChangePassword(accessToken string, oldPassword string, newPassword string) error
-	Authenticate(accessToken string) (*model.User, error)
-	RefreshToken(refreshToken string, accessToken string) (string, error)
-	DeleteAccount(ID model.ID, password string) error
-	Logout(token string) error
+	Register(ctx context.Context, firstName, lastName, email, biography, password string) (*model.User, error)
+	Login(ctx context.Context, email string, password string) (*model.User, string, string, error)
+	VerifyEmail(ctx context.Context, otp string, userID uint) error
+	SendResetPasswordVerification(ctx context.Context, email string) (string, error)
+	SubmitResetPassword(ctx context.Context, token string, newPassword string) error
+	ChangePassword(ctx context.Context, accessToken string, oldPassword string, newPassword string) error
+	Authenticate(ctx context.Context, accessToken string) (*model.User, error)
+	RefreshToken(ctx context.Context, refreshToken string, accessToken string) (string, error)
+	DeleteAccount(ctx context.Context, accessToken string, password string) error
+	DestroyRefreshToken(ctx context.Context, token string) error
 }
 type authenticateManager struct {
 	uniqueId         string
@@ -54,94 +56,83 @@ func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, 
 	}
 }
 
-func (a *authenticateManager) Register(firstName, lastName, email, biography, password string) (*model.User, string, error) {
-	userModel := model.NewUser(firstName, lastName, email, biography, model.UserRole)
+func (a *authenticateManager) Register(ctx context.Context, firstName, lastName, email, biography, password string) (*model.User, error) {
+	userModel := model.NewUser(firstName, lastName, email, biography)
 
-	savedUser, tx, err := a.userPostgresRepo.Create(userModel)
+	savedUser, tx, err := a.userPostgresRepo.Create(ctx, userModel)
 
 	if errors.Is(err, repository.ErrUniqueConstraint) {
-		return nil, "", repository.ErrUniqueConstraint
+		return nil, repository.ErrUniqueConstraint
 
 	} else if err != nil {
-		return nil, "", ErrCreateUser
+		return nil, ErrCreateUser
 	}
 
 	passwordHash, err := a.hashManager.HashPassword(password)
 
 	if err != nil {
 		tx.Rollback()
-		return nil, "", ErrHashingPassword
+		return nil, ErrHashingPassword
 	}
 
-	authModel := model.NewAuth(savedUser.ID, passwordHash)
+	authModel := model.NewAuth(savedUser.ID, passwordHash, model.UserRole)
 
-	_, err = a.authPostgresRepo.Create(authModel)
+	_, err = a.authPostgresRepo.Create(ctx, authModel)
 
 	if err != nil {
 		tx.Rollback()
 
-		return nil, "", ErrCreateAuthStore
+		return nil, ErrCreateAuthStore
 	}
 
 	a.uniqueId = fmt.Sprintf("%d", random.GenerateUniqueId())
 
-	verifyEmailToken, err := a.authManager.GenerateToken(
-		auth_manager.VerifyEmail,
-		auth_manager.NewTokenClaims(savedUser.ID, model.UserRole, auth_manager.VerifyEmail),
-		VerifyEmailTokenExpr,
-	)
+	emailVerificationCode, err := a.authManager.GenerateVerificationCode(ctx, a.uniqueId)
 
 	if err != nil {
 		tx.Rollback()
 
-		return nil, "", ErrCreateEmailToken
+		return nil, ErrGenerateVerificationCode
 	}
 
-	otp, err := a.authManager.SetOTP(a.uniqueId, OTPExpr)
+	err = a.emailService.SendVerificationEmail(userModel.Email, emailVerificationCode)
 
 	if err != nil {
 		tx.Rollback()
 
-		return nil, "", err
+		return nil, err
 	}
 
-	err = a.emailService.SendVerificationEmail(userModel.Email, otp)
+	tx.Commit()
 
-	if err != nil {
-		tx.Rollback()
-
-		return nil, "", err
-	}
-
-	return savedUser, verifyEmailToken, nil
+	return savedUser, nil
 }
 
-func (a *authenticateManager) VerifyEmail(otp string, userId model.ID) error {
-	savedOTP, err := a.authManager.GetOTP(a.uniqueId)
+func (a *authenticateManager) VerifyEmail(ctx context.Context, verificationCode string, userID uint) error {
+	isValid, err := a.authManager.CompareVerificationCode(ctx, a.uniqueId, verificationCode)
 
 	if err != nil {
 		return err
 	}
 
-	if savedOTP != otp {
+	if !isValid {
 		return ErrVerifyEmail
 	}
 
-	err = a.authPostgresRepo.VerifyEmail(userId)
+	err = a.authPostgresRepo.VerifyEmail(ctx, userID)
 	if err != nil {
 		return ErrVerifyEmail
 	}
 
 	return nil
 }
-func (a *authenticateManager) Login(email string, password string) (*model.User, string, string, error) {
-	userModel, err := a.userPostgresRepo.GetUserByEmail(email)
-	if errors.Is(err, repository.ErrUniqueConstraint) {
-		return nil, "", "", repository.ErrUniqueConstraint
-	} else if err != nil {
-		return nil, "", "", ErrCreateUser
+func (a *authenticateManager) Login(ctx context.Context, email string, password string) (*model.User, string, string, error) {
+	userModel, err := a.userPostgresRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, "", "", ErrInvalidEmailOrPassword
 	}
-	auth, err := a.authPostgresRepo.GetUserAuth(userModel.ID)
+
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx, userModel.ID)
 	if err != nil {
 		return nil, "", "", ErrInvalidEmailOrPassword
 	}
@@ -154,12 +145,12 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 		now := time.Now()
 		lockTime := time.Unix(auth.AccountLockedUntil, 0)
 		if now.After(lockTime) {
-			err = a.authPostgresRepo.UnlockAccount(auth.ID)
+			err = a.authPostgresRepo.UnlockAccount(ctx, auth.ID)
 			if err != nil {
 				return nil, "", "", ErrUnlockAccount
 			}
 
-			err = a.authPostgresRepo.ClearFailedLoginAttempts(auth.ID)
+			err = a.authPostgresRepo.ClearFailedLoginAttempts(ctx, auth.ID)
 			if err != nil {
 				return nil, "", "", ErrClearFailedLoginAttempts
 			}
@@ -174,7 +165,7 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 	}
 
 	if auth.FailedLoginAttempts+1 == MaximumFailedLoginAttempts {
-		err = a.authPostgresRepo.LockAccount(auth.ID, LockAccountDuration)
+		err = a.authPostgresRepo.LockAccount(ctx, auth.ID, LockAccountDuration)
 		if err != nil {
 			return nil, "", "", ErrLockAccount
 		}
@@ -182,7 +173,7 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 
 	validPassword := a.hashManager.CheckPasswordHash(password, auth.HashedPassword)
 	if !validPassword {
-		err = a.authPostgresRepo.IncrementFailedLoginAttempts(userModel.ID)
+		err = a.authPostgresRepo.IncrementFailedLoginAttempts(ctx, userModel.ID)
 		if err != nil {
 			return nil, "", "", ErrInvalidEmailOrPassword
 		}
@@ -190,17 +181,17 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 		return nil, "", "", ErrInvalidEmailOrPassword
 	}
 
-	accessToken, err := a.authManager.GenerateToken(auth_manager.AccessToken, auth_manager.NewTokenClaims(userModel.ID, userModel.Role, auth_manager.AccessToken), AccessTokenExpr)
+	accessToken, err := a.authManager.GenerateAccessToken(ctx, userModel.ID, auth.Role)
 	if err != nil {
 		return nil, "", "", ErrGenerateToken
 	}
 
-	refreshToken, err := a.authManager.GenerateToken(auth_manager.RefreshToken, auth_manager.NewTokenClaims(userModel.ID, userModel.Role, auth_manager.RefreshToken), RefreshTokenExpr)
+	refreshToken, err := a.authManager.GenerateRefreshToken(ctx, userModel.ID, "not implemented", "not implemented")
 	if err != nil {
 		return nil, "", "", ErrGenerateToken
 	}
 
-	err = a.authPostgresRepo.ClearFailedLoginAttempts(auth.ID)
+	err = a.authPostgresRepo.ClearFailedLoginAttempts(ctx, auth.ID)
 	if err != nil {
 		return nil, "", "", ErrClearFailedLoginAttempts
 	}
@@ -212,31 +203,35 @@ func (a *authenticateManager) Login(email string, password string) (*model.User,
 
 	return userModel, accessToken, refreshToken, nil
 }
-func (a *authenticateManager) Authenticate(accessToken string) (*model.User, error) {
+func (a *authenticateManager) Authenticate(ctx context.Context, accessToken string) (*model.User, error) {
 
-	tokenClaims, err := a.authManager.DecodeToken(accessToken, auth_manager.AccessToken)
+	tokenClaims, err := a.authManager.DecodeAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, ErrAccessDenied
 	}
 
-	if len(strings.TrimSpace(string(tokenClaims.ID))) == 0 {
+	if len(strings.TrimSpace(string(tokenClaims.UserID))) == 0 || len(strings.TrimSpace(tokenClaims.Role)) == 0 {
+		return nil, ErrAccessDenied
+	} else if !(tokenClaims.Role == fmt.Sprintf("%d", model.UserRole)) && !(tokenClaims.Role == fmt.Sprintf("%d", model.AdminRole)) {
 		return nil, ErrAccessDenied
 	}
 
-	user, err := a.userPostgresRepo.GetUserByID(tokenClaims.ID)
+	ID := convertString2Uint(tokenClaims.UserID)
+
+	user, err := a.userPostgresRepo.GetUserByID(ctx, ID)
 	if err != nil {
 		return nil, ErrAccessDenied
 	}
 
 	return user, nil
 }
-func (a *authenticateManager) ChangePassword(accessToken string, oldPassword string, newPassword string) error {
-	user, err := a.Authenticate(accessToken)
+func (a *authenticateManager) ChangePassword(ctx context.Context, accessToken string, oldPassword string, newPassword string) error {
+	user, err := a.Authenticate(ctx, accessToken)
 	if err != nil {
 		return err
 	}
 
-	auth, err := a.authPostgresRepo.GetUserAuth(user.ID)
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx, user.ID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -251,7 +246,7 @@ func (a *authenticateManager) ChangePassword(accessToken string, oldPassword str
 		return ErrHashingPassword
 	}
 
-	err = a.authPostgresRepo.ChangePassword(user.ID, newPasswordHash)
+	err = a.authPostgresRepo.ChangePassword(ctx, user.ID, newPasswordHash)
 	if err != nil {
 		return ErrChangePassword
 	}
@@ -259,74 +254,78 @@ func (a *authenticateManager) ChangePassword(accessToken string, oldPassword str
 	return nil
 }
 
-func (a *authenticateManager) RefreshToken(refreshToken string, accessToken string) (string, error) {
-	rftClaims, err := a.authManager.DecodeToken(refreshToken, auth_manager.RefreshToken)
+func (a *authenticateManager) RefreshToken(ctx context.Context, refreshToken string, accessToken string) (string, error) {
+	refreshTokenClaims, err := a.authManager.DecodeRefreshToken(ctx, refreshToken)
 	if err != nil {
 		return "", ErrAccessDenied
 	}
 
-	_, err = a.authManager.DecodeToken(accessToken, auth_manager.AccessToken)
+	_, err = a.authManager.DecodeAccessToken(ctx, accessToken)
+
 	if err != nil {
+		if errors.Is(err, auth_manager.ErrTokenExpired) {
+			ID := refreshTokenClaims.UserID
+
+			auth, err := a.authPostgresRepo.GetUserAuth(ctx, ID)
+			if err != nil {
+				return "", ErrAccessDenied
+			}
+
+			newAccessToken, err := a.authManager.GenerateAccessToken(ctx, ID, auth.Role)
+			if err != nil {
+				return "", ErrGenerateToken
+			}
+
+			return newAccessToken, nil
+		}
+
 		return "", ErrAccessDenied
 	}
 
-	_, err = a.authPostgresRepo.GetUserAuth(rftClaims.ID)
+	return accessToken, nil
+}
+
+func (a *authenticateManager) SendResetPasswordVerification(ctx context.Context, email string) (token string, _ error) {
+	user, err := a.userPostgresRepo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return "", ErrAccessDenied
+		return "", err
 	}
 
-	newAccessToken, err := a.authManager.GenerateToken(auth_manager.AccessToken, auth_manager.NewTokenClaims(rftClaims.ID, rftClaims.Role, auth_manager.AccessToken), AccessTokenExpr)
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx, user.ID)
+	if err != nil {
+		return "", err
+	}
+
+	if !auth.EmailVerified {
+		return "", ErrEmailNotVerified
+	}
+
+	if auth.FailedLoginAttempts >= MaximumFailedLoginAttempts {
+		return "", fmt.Errorf("%w until: %v", ErrAccountLocked, auth.AccountLockedUntil)
+	}
+
+	resetPasswordToken, err := a.authManager.GenerateResetPasswordToken(ctx, user.ID)
 	if err != nil {
 		return "", ErrGenerateToken
 	}
 
-	err = a.authManager.Destroy(accessToken)
-	if err != nil {
-		return "", ErrDestroyToken
-	}
-
-	return newAccessToken, nil
-}
-
-func (a *authenticateManager) SendResetPasswordVerification(email string) (token string, timeout time.Duration, _ error) {
-	user, err := a.userPostgresRepo.GetUserByEmail(email)
-	if err != nil {
-		return "", 0, err
-	}
-
-	auth, err := a.authPostgresRepo.GetUserAuth(user.ID)
-	if err != nil {
-		return "", 0, err
-	}
-
-	if !auth.EmailVerified {
-		return "", 0, ErrEmailNotVerified
-	}
-
-	if auth.FailedLoginAttempts >= MaximumFailedLoginAttempts {
-		return "", 0, fmt.Errorf("%w until: %v", ErrAccountLocked, auth.AccountLockedUntil)
-	}
-
-	resetPasswordToken, err := a.authManager.GenerateToken(auth_manager.ResetPassword, auth_manager.NewTokenClaims(auth.ID, user.Role, auth_manager.ResetPassword), ResetPasswordTokenExpr)
-	if err != nil {
-		return "", 0, ErrGenerateToken
-	}
-
 	err = a.emailService.SendResetPasswordEmail(email, "example.com", user.FirstName, "10")
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
 
-	return resetPasswordToken, ResetPasswordTokenExpr, nil
+	return resetPasswordToken, nil
 }
 
-func (a *authenticateManager) SubmitResetPassword(token string, newPassword string) error {
-	tokenClaims, err := a.authManager.DecodeToken(token, auth_manager.ResetPassword)
+func (a *authenticateManager) SubmitResetPassword(ctx context.Context, token string, newPassword string) error {
+	tokenClaims, err := a.authManager.DecodeResetPasswordToken(ctx, token)
 	if err != nil {
 		return ErrAccessDenied
 	}
 
-	auth, err := a.authPostgresRepo.GetUserAuth(tokenClaims.ID)
+	ID := convertString2Uint(tokenClaims.UserID)
+
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx, ID)
 	if err != nil {
 		return ErrAccessDenied
 	}
@@ -336,7 +335,7 @@ func (a *authenticateManager) SubmitResetPassword(token string, newPassword stri
 		return ErrHashingPassword
 	}
 
-	err = a.authPostgresRepo.ChangePassword(auth.ID, newPasswordHash)
+	err = a.authPostgresRepo.ChangePassword(ctx, auth.ID, newPasswordHash)
 	if err != nil {
 		return ErrChangePassword
 	}
@@ -344,8 +343,15 @@ func (a *authenticateManager) SubmitResetPassword(token string, newPassword stri
 	return nil
 }
 
-func (a *authenticateManager) DeleteAccount(ID model.ID, password string) error {
-	auth, err := a.authPostgresRepo.GetUserAuth(ID)
+func (a *authenticateManager) DeleteAccount(ctx context.Context,accessToken, password string) error {
+	tokenClaims,err :=a.authManager.DecodeAccessToken(ctx,accessToken)
+	if err != nil {
+		return err
+	}
+
+	ID := convertString2Uint(tokenClaims.UserID)
+	
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx,ID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -355,22 +361,31 @@ func (a *authenticateManager) DeleteAccount(ID model.ID, password string) error 
 		return ErrDeleteUser
 	}
 
-	err = a.authPostgresRepo.DeleteByID(ID)
+	err = a.authPostgresRepo.DeleteByID(ctx, ID)
 	if err != nil {
 		return ErrDeleteUser
 	}
 
-	err = a.userPostgresRepo.DeleteByID(ID)
+	err = a.userPostgresRepo.DeleteByID(ctx, ID)
 	if err != nil {
 		return ErrDeleteUser
 	}
 
 	return nil
 }
-func (a *authenticateManager) Logout(token string) error {
-	err := a.authManager.Destroy(token)
+
+func (a *authenticateManager) DestroyRefreshToken(ctx context.Context, refreshToken string) error {
+	err := a.authManager.DestroyRefreshToken(ctx, refreshToken)
 	if err != nil {
 		return ErrNotFound
 	}
 	return nil
+}
+
+func convertString2Uint(strID string) uint {
+	ID, err := strconv.Atoi(strID)
+	if err != nil {
+		panic(err)
+	}
+	return uint(ID)
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -13,29 +13,28 @@ var (
 	redisMutex    = &sync.Mutex{}
 )
 
-func GetRedisDB(cfg *config.Redis) (*redis.Client,error){
+func GetRedisDB(cfg *config.Redis) (*redis.Client, error) {
 	redisMutex.Lock()
 	defer redisMutex.Unlock()
 
 	if redisInstance == nil {
-		url := fmt.Sprintf("redis://%s:%s@%s:%d/%d?protocol=%s",
-		cfg.Username,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.DB,
-		cfg.Protocol,
+		url := fmt.Sprintf("redis://%s:%s@%s:%d/%d",
+			cfg.Username,
+			cfg.Password,
+			cfg.Host,
+			cfg.Port,
+			cfg.DB,
 		)
 		opts, err := redis.ParseURL(url)
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 		redisInstance = redis.NewClient(opts)
 	}
 
-	return redisInstance,nil
+	return redisInstance, nil
 }
-func CloseRedis(){
+func CloseRedis() {
 	err := redisInstance.Close()
 	if err != nil {
 		panic(err)
