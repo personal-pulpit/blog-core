@@ -34,7 +34,7 @@ type AuthService interface {
 	ChangePassword(ctx context.Context, accessToken string, oldPassword string, newPassword string) error
 	Authenticate(ctx context.Context, accessToken string) (*model.User, error)
 	RefreshToken(ctx context.Context, refreshToken string, accessToken string) (string, error)
-	DeleteAccount(ctx context.Context, accessToken string, password string) error
+	DeleteAccount(ctx context.Context,userID uint, password string) error
 	DestroyRefreshToken(ctx context.Context, token string) error
 }
 type authenticateManager struct {
@@ -343,15 +343,8 @@ func (a *authenticateManager) SubmitResetPassword(ctx context.Context, token str
 	return nil
 }
 
-func (a *authenticateManager) DeleteAccount(ctx context.Context,accessToken, password string) error {
-	tokenClaims,err :=a.authManager.DecodeAccessToken(ctx,accessToken)
-	if err != nil {
-		return err
-	}
-
-	ID := convertString2Uint(tokenClaims.UserID)
-	
-	auth, err := a.authPostgresRepo.GetUserAuth(ctx,ID)
+func (a *authenticateManager) DeleteAccount(ctx context.Context,userID uint, password string) error {	
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx,userID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -361,12 +354,12 @@ func (a *authenticateManager) DeleteAccount(ctx context.Context,accessToken, pas
 		return ErrDeleteUser
 	}
 
-	err = a.authPostgresRepo.DeleteByID(ctx, ID)
+	err = a.authPostgresRepo.DeleteByID(ctx, userID)
 	if err != nil {
 		return ErrDeleteUser
 	}
 
-	err = a.userPostgresRepo.DeleteByID(ctx, ID)
+	err = a.userPostgresRepo.DeleteByID(ctx, userID)
 	if err != nil {
 		return ErrDeleteUser
 	}

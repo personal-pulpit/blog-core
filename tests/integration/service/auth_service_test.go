@@ -366,28 +366,28 @@ func (s *AuthTestSuite) TestJ_DeleteAccount() {
 
 	testCases := []struct {
 		password    string
-		accessToken string
+		userID  uint
 		Valid       bool
 	}{
 		{
 			password:    s.password,
-			accessToken: s.accessToken,
+			userID: s.user.ID,
 			Valid:       true,
 		},
 		{
 			password:    "invalid",
-			accessToken: s.accessToken,
+			userID:s.user.ID ,
 			Valid:       false,
 		},
 		{
 			password:    s.password,
-			accessToken: "invalid",
+			userID: 45465486416,
 			Valid:       false,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.service.DeleteAccount(ctx, tc.accessToken, tc.password)
+		err := s.service.DeleteAccount(ctx, tc.userID, tc.password)
 		if tc.Valid {
 			s.NoError(err)
 

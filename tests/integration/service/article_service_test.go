@@ -191,7 +191,7 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 	}
 }
 
-func TestUserSuite(t *testing.T) {
+func TestArticleSuite(t *testing.T) {
 	t.Helper()
 
 	suite.Run(t, new(ArticleTestSuite))
