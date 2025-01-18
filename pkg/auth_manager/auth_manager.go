@@ -20,6 +20,8 @@ type AuthManager interface {
 	DecodeResetPasswordToken(ctx context.Context, resetPasswordToken string) (*ResetPasswordTokenClaims, error)
 	GenerateVerificationCode(ctx context.Context, key string) (verificationCode string, _ error)
 	CompareVerificationCode(ctx context.Context, key string, verificationCode string) (bool, error)
+	SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string, expiresAt time.Duration) error
+	IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool
 	DestroyPailToken(ctx context.Context, key string) (_ error)
 	DestroyRefreshToken(ctx context.Context, key string) error
 }
@@ -158,6 +160,20 @@ func (a *authManger) CompareVerificationCode(ctx context.Context, key string, ve
 	}
 
 	return isEqual, nil
+}
+
+func (a *authManger) SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string, expiresAt time.Duration) error {
+	err := a.authManger.SetAccessTokenInBlackList(ctx, accessToken, expiresAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *authManger) IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool {
+	isBlacklisted := a.authManger.IsAccessTokenBlacklisted(ctx, accessToken)
+	return isBlacklisted
 }
 
 func (a *authManger) DestroyPailToken(ctx context.Context, key string) (_ error) {

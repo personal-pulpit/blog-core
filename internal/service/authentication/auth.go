@@ -34,6 +34,8 @@ type AuthService interface {
 	ChangePassword(ctx context.Context, accessToken string, oldPassword string, newPassword string) error
 	Authenticate(ctx context.Context, accessToken string) (*model.User, error)
 	RefreshToken(ctx context.Context, refreshToken string, accessToken string) (string, error)
+	SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string, accessTokenExpr time.Duration) error
+	IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool
 	DeleteAccount(ctx context.Context,userID uint, password string) error
 	DestroyRefreshToken(ctx context.Context, token string) error
 }
@@ -374,6 +376,22 @@ func (a *authenticateManager) DestroyRefreshToken(ctx context.Context, refreshTo
 	}
 	return nil
 }
+
+//you can use it for logout 
+func (a *authenticateManager) SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string,accessTokenExpr time.Duration) error {
+	err := a.authManager.SetAccessTokenIntoBlacklist(ctx, accessToken, accessTokenExpr)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// you can use it in middlewares when someone wants to get in
+func (a *authenticateManager) IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool {
+	return a.authManager.IsAccessTokenBlacklisted(ctx, accessToken)
+}
+
 
 func convertString2Uint(strID string) uint {
 	ID, err := strconv.Atoi(strID)
