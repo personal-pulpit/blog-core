@@ -3,21 +3,21 @@ package server
 import (
 	"blog/api/routers"
 	"blog/api/validation"
-	"blog/config"
+	"blog/internal/service/article"
+	"blog/internal/service/authentication"
+	"blog/internal/service/user"
+	"blog/pkg/auth_manager"
 	"blog/pkg/logger"
 	"fmt"
-
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
 )
 
-func InitServer(cfg *config.Config, PostgresCLI *gorm.DB, redisCLI *redis.Client, logger logger.Logger) error {
+func InitServer(port int, authManager auth_manager.AuthManager,authService authentication.AuthService, userService user.UserService, articleService article.ArticleService, logger logger.Logger) error {
 	err := validation.InitValidations()
 	if err != nil {
 		return err
 	}
 
-	router := routers.InitRouters(cfg.Jwt, PostgresCLI, redisCLI, logger)
+	router := routers.InitRouters(authManager,authService, userService, articleService, logger)
 
-	return router.Run(fmt.Sprintf(":%d", cfg.Server.Port))
+	return router.Run(fmt.Sprintf(":%d", port))
 }

@@ -4,7 +4,9 @@ import (
 	"blog/api/helpers"
 	"blog/api/helpers/auth_helper"
 	"blog/api/helpers/common"
+	"blog/config"
 	"blog/pkg/auth_manager"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,23 +14,26 @@ import (
 
 type UserAuthMiddleware struct {
 	AuthManager auth_manager.AuthManager
-	AuthHelper  auth_helper.AuthHeaderHelper
 }
 
-func NewUserAuthMiddelware(authManger auth_manager.AuthManager, authHelper auth_helper.AuthHeaderHelper) *UserAuthMiddleware {
+func NewUserAuthMiddleware(authManger auth_manager.AuthManager) *UserAuthMiddleware {
 	return &UserAuthMiddleware{
 		AuthManager: authManger,
-		AuthHelper:  authHelper,
 	}
 }
 func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		accessToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.AccessTokenHeader)
+		accessToken, err := auth_helper.GetHeader(ctx, auth_helper.AccessTokenHeader)
 
 		if err != nil {
 			ctx.Set("is_logged", false)
 		} else {
-			cliams, err := m.AuthManager.DecodeToken(accessToken, auth_manager.AccessToken)
+			if m.AuthManager.IsAccessTokenBlacklisted(ctx, accessToken) {
+				ctx.Set("is_logged", false)
+				ctx.Next()
+			}
+
+			accessTokenClaims, err := m.AuthManager.DecodeAccessToken(ctx, accessToken)
 
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError,
@@ -37,34 +42,11 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Set("id", cliams.ID)
-			ctx.Set("role", cliams.Role)
+			ctx.Set("id", accessTokenClaims.UserID)
+			ctx.Set("role", accessTokenClaims.Role)
 			ctx.Set("is_logged", true)
-			ctx.Set("is_admin", common.IsAdmin(cliams.Role))
-
-			ctx.Next()
-		}
-
-		verifyEmailToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.VerifyEmailTokenHeader)
-
-		if err != nil {
-			ctx.Next()
-		} else {
-			cliams, err := m.AuthManager.DecodeToken(verifyEmailToken, auth_manager.VerifyEmail)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusInternalServerError,
-					helpers.NewHttpResponse(
-						http.StatusInternalServerError, err.Error(), nil))
-				return
-			}
-
-			ctx.Set("id", cliams.ID)
-
-			ctx.Next()
 		}
 		ctx.Next()
-
 	}
 }
 
@@ -81,6 +63,7 @@ func (m *UserAuthMiddleware) EnsureLoggedIn() gin.HandlerFunc {
 		}
 	}
 }
+
 func (m *UserAuthMiddleware) EnsureNotLoggedIn() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		is_logged := common.GetUserStatus(ctx)
@@ -89,52 +72,17 @@ func (m *UserAuthMiddleware) EnsureNotLoggedIn() gin.HandlerFunc {
 			ctx.Next()
 
 		} else {
-			accsessToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.AccessTokenHeader)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			RefreshToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.RefreshTokenHeader)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			m.AuthHelper.DeleteHeader(ctx, auth_helper.AccessTokenHeader)
-
-			m.AuthHelper.DeleteHeader(ctx, auth_helper.RefreshTokenHeader)
-
-			err = m.AuthManager.Destroy(accsessToken)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			err = m.AuthManager.Destroy(RefreshToken)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
+			port := config.GetConfigInstance().Server.Port
+			url := fmt.Sprintf("localhost:%d/api/v1", port)
+			ctx.Redirect(http.StatusFound, url)
 		}
 	}
 }
+
 func (m *UserAuthMiddleware) EnsureAdmin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if ctx.GetBool("is_admin") {
+		role := ctx.GetString("role")
+		if role == "admin" {
 			ctx.Next()
 		} else {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
@@ -150,7 +98,7 @@ func (m *UserAuthMiddleware) Logout() gin.HandlerFunc {
 		is_logged := common.GetUserStatus(ctx)
 
 		if is_logged {
-			accsessToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.AccessTokenHeader)
+			accessToken, err := auth_helper.GetHeader(ctx, auth_helper.AccessTokenHeader)
 
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusBadRequest,
@@ -159,7 +107,7 @@ func (m *UserAuthMiddleware) Logout() gin.HandlerFunc {
 				return
 			}
 
-			RefreshToken, err := m.AuthHelper.GetHeader(ctx, auth_helper.RefreshTokenHeader)
+			refreshToken, err := auth_helper.GetHeader(ctx, auth_helper.RefreshTokenHeader)
 
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusBadRequest,
@@ -168,20 +116,10 @@ func (m *UserAuthMiddleware) Logout() gin.HandlerFunc {
 				return
 			}
 
-			m.AuthHelper.DeleteHeader(ctx, auth_helper.AccessTokenHeader)
+			auth_helper.DeleteHeader(ctx, auth_helper.AccessTokenHeader)
+			auth_helper.DeleteHeader(ctx, auth_helper.RefreshTokenHeader)
 
-			m.AuthHelper.DeleteHeader(ctx, auth_helper.RefreshTokenHeader)
-
-			err = m.AuthManager.Destroy(accsessToken)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			err = m.AuthManager.Destroy(RefreshToken)
+			err = m.AuthManager.DestroyRefreshToken(ctx, refreshToken)
 
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusBadRequest,
@@ -190,6 +128,14 @@ func (m *UserAuthMiddleware) Logout() gin.HandlerFunc {
 				return
 			}
 
+			err = m.AuthManager.SetAccessTokenIntoBlacklist(ctx, accessToken, auth_manager.AccessTokenExpr)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusBadRequest,
+					helpers.NewHttpResponse(
+						http.StatusBadRequest, err.Error(), nil))
+				return
+			}
+			ctx.Next()
 		} else {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest,
 				helpers.NewHttpResponse(
