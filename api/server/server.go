@@ -7,17 +7,17 @@ import (
 	"blog/pkg/logger"
 	"fmt"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
-func InitServer(cfg *config.Config, PostgresCLI *gorm.DB, redisCLI *redis.Client,logger logger.Logger)error{
+func InitServer(cfg *config.Config, PostgresCLI *gorm.DB, redisCLI *redis.Client, logger logger.Logger) error {
 	err := validation.InitValidations()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
-	router := routers.InitRouters(cfg.Jwt, PostgresCLI, redisCLI,logger)
+	router := routers.InitRouters(cfg.Jwt, PostgresCLI, redisCLI, logger)
 
 	return router.Run(fmt.Sprintf(":%d", cfg.Server.Port))
 }
