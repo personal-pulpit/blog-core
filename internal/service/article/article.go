@@ -7,8 +7,8 @@ import (
 )
 
 type ArticleService interface {
-	Create(ctx context.Context,title, content string, userId model.ID) (*model.Article, error)
-	Update(ctx context.Context,ID uint, tilte, contet string) (*model.Article, error)
+	Create(ctx context.Context,title, content string, authorID uint) (*model.Article, error)
+	Update(ctx context.Context,ID uint, title, content string) (*model.Article, error)
 	Delete(ctx context.Context,articleID uint) error
 	GetAll(ctx context.Context,) ([]model.Article, error)
 	GetArticleByTitle(ctx context.Context,title string) ([]model.Article, error)
@@ -23,8 +23,8 @@ func NewArticleService(repo repository.ArticlePostgresRepository)ArticleService{
 	return &articleService{repo}
 }
 
-func (s *articleService) Create(ctx context.Context,title, content string, autherId model.ID) (*model.Article, error)  {
-	articleModel := model.NewArticle(title,content,autherId)
+func (s *articleService) Create(ctx context.Context,title, content string, authorID uint) (*model.Article, error)  {
+	articleModel := model.NewArticle(title,content,authorID)
 
 	article ,err := s.articlePostgresRepo.Create(ctx,articleModel)
 

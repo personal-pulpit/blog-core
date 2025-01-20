@@ -13,12 +13,13 @@ type User struct {
 	LastName  string `gorm:"size:25;NOT NULL"`
 	Email     string `gorm:"unique;size:50;NOT NULL"`
 	Biography string `gorm:"type:text;size:500;NOT NULL"`
+	Articles  []Article `gorm:"foreignKey:AuthorID"`
 }
 
-func NewUser(firtsname, lastname, email, biography string) *User {
+func NewUser(firstName, lastName, email, biography string) *User {
 	return &User{
-		FirstName: firtsname,
-		LastName:  lastname,
+		FirstName: firstName,
+		LastName:  lastName,
 		Email:     email,
 		Biography: biography,
 	}

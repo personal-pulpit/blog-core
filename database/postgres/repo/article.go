@@ -27,7 +27,7 @@ func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticlePostgresRepo
 func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, error) {
 	var articles = []model.Article{}
 
-	if err := a.postgresCLI.WithContext(ctx).Find(&articles).Error; err != nil {
+	if err := a.postgresCLI.WithContext(ctx).Preload("Author").Find(&articles).Error; err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, erro
 func (a *articlePostgresRepo) GetArticleByTitle(ctx context.Context, title string) ([]model.Article, error) {
 	articles := []model.Article{}
 
-	err := a.postgresCLI.WithContext(ctx).Where("title = ?", title).First(&articles).Error
+	err := a.postgresCLI.WithContext(ctx).Preload("Author").Where("title = ?", title).First(&articles).Error
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (a *articlePostgresRepo) GetArticleByTitle(ctx context.Context, title strin
 func (a *articlePostgresRepo) GetArticleByID(ctx context.Context,ID uint) (*model.Article, error) {
 	article := new(model.Article)
 
-	err := a.postgresCLI.WithContext(ctx).First(article, ID).Error
+	err := a.postgresCLI.WithContext(ctx).Preload("Author").First(article, ID).Error
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ func NewUserPostgresRepository(postgresCLI *gorm.DB) repository.UserPostgresRepo
 }
 func (u *userPostgresRepo) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	user := &model.User{}
-	tx := u.postgresCLI.WithContext(ctx).Where("email= ?", email).First(user)
+	tx := u.postgresCLI.WithContext(ctx).Preload("Articles").Where("email= ?", email).First(user)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -28,7 +28,7 @@ func (u *userPostgresRepo) GetUserByEmail(ctx context.Context, email string) (*m
 }
 func (u *userPostgresRepo) GetUserByID(ctx context.Context, ID uint) (*model.User, error) {
 	user := &model.User{}
-	tx := u.postgresCLI.WithContext(ctx).First(user, ID)
+	tx := u.postgresCLI.WithContext(ctx).Preload("Articles").First(user, ID)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

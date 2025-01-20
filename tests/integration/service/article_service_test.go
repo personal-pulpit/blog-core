@@ -13,14 +13,24 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo    repository.ArticlePostgresRepository
-	service article.ArticleService
-	article *model.Article
+	repo            repository.ArticlePostgresRepository
+	userRepo        repository.UserPostgresRepository
+	service         article.ArticleService
+	article         *model.Article
+	articleAuthorID uint
 }
 
 func (s *ArticleTestSuite) SetupSuite() {
 	s.repo = postgres_repository.NewArticlePostgresRepo(db)
 	s.service = article.NewArticleService(s.repo)
+
+	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
+
+	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user1", "user1", "<EMAIL>", "user1"))
+	s.Nil(err)
+	s.NotNil(user)
+	tx.Commit()
+	s.articleAuthorID = user.ID
 }
 
 func (s *ArticleTestSuite) TestA_CreateArticle() {
@@ -29,19 +39,25 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 	testCases := []struct {
 		title    string
 		content  string
-		authorID model.ID
+		authorID uint
 		Valid    bool
 	}{
 		{
 			title:    "article1",
 			content:  "content of article1",
-			authorID: "",
+			authorID: s.articleAuthorID,
 			Valid:    true,
+		},
+		{
+			title:    "article1",
+			content:  "content of article1",
+			authorID: 0,
+			Valid:    false,
 		},
 	}
 
 	for _, tc := range testCases {
-		article, err := s.service.Create(ctx,tc.title, tc.content, tc.authorID)
+		article, err := s.service.Create(ctx, tc.title, tc.content, tc.authorID)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(article)
@@ -60,6 +76,7 @@ func (s *ArticleTestSuite) TestB_GetAllArticles() {
 	s.NoError(err)
 	for _, article := range articles {
 		s.NotNil(article)
+		s.NotNil(article.Author)
 	}
 }
 
@@ -81,11 +98,12 @@ func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
 	}
 
 	for _, tc := range testCases {
-		articles, err := s.service.GetArticleByTitle(ctx,tc.Title)
+		articles, err := s.service.GetArticleByTitle(ctx, tc.Title)
 		if tc.Valid {
 			s.NoError(err)
 			for _, article := range articles {
 				s.NotNil(article)
+				s.NotNil(article.Author)
 			}
 
 		} else if !tc.Valid {
@@ -117,6 +135,7 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(article)
+			s.NotNil(article.Author)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)

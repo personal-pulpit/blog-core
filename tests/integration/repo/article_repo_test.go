@@ -12,12 +12,21 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo    repository.ArticlePostgresRepository
-	article *model.Article
+	repo            repository.ArticlePostgresRepository
+	userRepo        repository.UserPostgresRepository
+	article         *model.Article
+	articleAuthorID uint
 }
 
 func (s *ArticleTestSuite) SetupSuite() {
 	s.repo = postgres_repository.NewArticlePostgresRepo(db)
+	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
+
+	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user1", "user1", "<EMAIL>", "user1"))
+	s.Nil(err)
+	s.NotNil(user)
+	tx.Commit()
+	s.articleAuthorID = user.ID
 }
 
 func (s *ArticleTestSuite) TestA_CreateArticle() {
@@ -28,15 +37,21 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 		Valid   bool
 	}{
 		{
-			article: model.NewArticle("article1", "content", "1"),
+			article: model.NewArticle("article1", "content", s.articleAuthorID),
 			Valid:   true,
 		},
+		{
+			article: model.NewArticle("article1", "content", 0),
+			Valid:   false,
+		},
+
 	}
 
 	for _, tc := range testCases {
-		article, err := s.repo.Create(ctx,tc.article)
+		article, err := s.repo.Create(ctx, tc.article)
 		if tc.Valid {
 			s.NoError(err)
+			s.NotNil(article)
 			s.article = article
 		} else if !tc.Valid {
 			s.Error(err)
@@ -51,6 +66,10 @@ func (s *ArticleTestSuite) TestB_GetAllArticles() {
 	articles, err := s.repo.GetAll(ctx)
 	s.NoError(err)
 	s.NotNil(articles)
+	for _, article := range articles {
+		s.NotNil(article)
+		s.NotNil(article.Author)
+	}
 }
 
 func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
@@ -71,11 +90,12 @@ func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
 	}
 
 	for _, tc := range testCases {
-		articles, err := s.repo.GetArticleByTitle(ctx,tc.Title)
+		articles, err := s.repo.GetArticleByTitle(ctx, tc.Title)
 		if tc.Valid {
 			s.NoError(err)
 			for _, article := range articles {
 				s.NotNil(article)
+				s.NotNil(article.Author)
 			}
 
 		} else if !tc.Valid {
@@ -87,7 +107,7 @@ func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
 
 func (s *ArticleTestSuite) TestD_GetArticleByID() {
 	ctx := context.TODO()
-	
+
 	testCases := []struct {
 		ID    uint
 		Valid bool
@@ -103,10 +123,11 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 	}
 
 	for _, tc := range testCases {
-		article, err := s.repo.GetArticleByID(ctx,tc.ID)
+		article, err := s.repo.GetArticleByID(ctx, tc.ID)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(article)
+			s.NotNil(article.Author)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)
@@ -142,7 +163,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 	}
 
 	for _, tc := range testCases {
-		savedArticle, err := s.repo.UpdateByID(ctx,tc.articleID, tc.title, tc.content)
+		savedArticle, err := s.repo.UpdateByID(ctx, tc.articleID, tc.title, tc.content)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(savedArticle)
@@ -155,7 +176,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 
 func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 	ctx := context.TODO()
-	
+
 	testCases := []struct {
 		articleID uint
 		Valid     bool
@@ -172,7 +193,7 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 	}
 
 	for _, tc := range testCases {
-		err := s.repo.DeleteByID(ctx,tc.articleID)
+		err := s.repo.DeleteByID(ctx, tc.articleID)
 		if tc.Valid {
 			s.NoError(err)
 		} else if !tc.Valid {

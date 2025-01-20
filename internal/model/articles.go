@@ -1,7 +1,7 @@
 package model
 
 import (
-	"time"
+		"time"
 )
 
 type Article struct {
@@ -10,13 +10,14 @@ type Article struct {
 	UpdatedAt time.Time
 	Title     string `gorm:"size:100;NOT NULL"`
 	Content   string `gorm:"text;NOT NULL"`
-	AuthorId  ID     `gorm:"NOT NULL"`
+	AuthorID  uint
+	Author *User  `gorm:"foreignKey:AuthorID"`
 }
 
-func NewArticle(title, content string, authorID ID) *Article {
+func NewArticle(title, content string, authorID uint) *Article {
 	return &Article{
 		Title:    title,
 		Content:  content,
-		AuthorId: authorID,
+		AuthorID: authorID,
 	}
 }
