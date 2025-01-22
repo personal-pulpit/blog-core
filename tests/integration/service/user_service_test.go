@@ -14,6 +14,8 @@ import (
 type UserTestSuite struct {
 	suite.Suite
 	userRepo repository.UserPostgresRepository
+	authRepo repository.AuthPostgresRepository
+
 	service  user.UserService
 
 	user *model.User
@@ -21,8 +23,9 @@ type UserTestSuite struct {
 
 func (s *UserTestSuite) SetupSuite() {
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
+	s.authRepo = postgres_repository.NewAuthPostgresRepository(db)
 
-	s.service = user.NewUserService(s.userRepo)
+	s.service = user.NewUserService(s.userRepo,s.authRepo)
 
 	userModel := model.NewUser("user1 firstName","user1 lastName","afakeonce@fake.come","user1 biography")
 	user,tx,err :=s.userRepo.Create(context.TODO(),userModel)
@@ -103,6 +106,46 @@ func (s *UserTestSuite) TestB_UpdateUser() {
 			s.Error(err)
 			s.Nil(user)
 
+		}
+	}
+}
+
+func (s *UserTestSuite) TestC_DeleteAccount() {
+	ctx := context.TODO()
+
+	userAuth,err :=s.authRepo.GetUserAuth(ctx, s.user.ID)
+	s.NoError(err)
+	s.NotNil(userAuth)
+
+	testCases := []struct {
+		password    string
+		userID  uint
+		Valid       bool
+	}{
+		{
+			password:    userAuth.HashedPassword,
+			userID: s.user.ID,
+			Valid:       true,
+		},
+		{
+			password:    "invalid",
+			userID:s.user.ID ,
+			Valid:       false,
+		},
+		{
+			password:    userAuth.HashedPassword,
+			userID: 45465486416,
+			Valid:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := s.service.DeleteAccount(ctx, tc.userID, tc.password)
+		if tc.Valid {
+			s.NoError(err)
+
+		} else if !tc.Valid {
+			s.Error(err)
 		}
 	}
 }

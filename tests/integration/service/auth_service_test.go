@@ -203,25 +203,25 @@ func (s *AuthTestSuite) TestD_Authenticate() {
 func (s *AuthTestSuite) TestE_ChangePassword() {
 	ctx := context.TODO()
 	testCases := []struct {
-		accessToken string
+		userID uint
 		oldPassword string
 		newPassword string
 		Valid       bool
 	}{
 		{
-			accessToken: s.accessToken,
+			userID: s.user.ID,
 			oldPassword: s.password,
 			newPassword: "newPassForMeVerySecure",
 			Valid:       true,
 		},
 		{
-			accessToken: "Invalid",
+			userID: 565674651121324,
 			oldPassword: s.password,
 			newPassword: "newPassForMeVerySecure",
 			Valid:       false,
 		},
 		{
-			accessToken: s.accessToken,
+			userID: s.user.ID,
 			oldPassword: "Invalid",
 			newPassword: "newPassForMeVerySecure",
 			Valid:       false,
@@ -229,7 +229,7 @@ func (s *AuthTestSuite) TestE_ChangePassword() {
 	}
 
 	for _, tc := range testCases {
-		err := s.service.ChangePassword(ctx, tc.accessToken, tc.oldPassword, tc.newPassword)
+		err := s.service.ChangePassword(ctx, tc.userID, tc.oldPassword, tc.newPassword)
 		if tc.Valid {
 			s.NoError(err)
 
@@ -355,42 +355,6 @@ func (s *AuthTestSuite) TestI_SubmitResetPassword() {
 			s.quickLogin(ctx, s.user.Email, tc.newPassword)
 
 			s.password = tc.newPassword
-		} else if !tc.Valid {
-			s.Error(err)
-		}
-	}
-}
-
-func (s *AuthTestSuite) TestJ_DeleteAccount() {
-	ctx := context.TODO()
-
-	testCases := []struct {
-		password    string
-		userID  uint
-		Valid       bool
-	}{
-		{
-			password:    s.password,
-			userID: s.user.ID,
-			Valid:       true,
-		},
-		{
-			password:    "invalid",
-			userID:s.user.ID ,
-			Valid:       false,
-		},
-		{
-			password:    s.password,
-			userID: 45465486416,
-			Valid:       false,
-		},
-	}
-
-	for _, tc := range testCases {
-		err := s.service.DeleteAccount(ctx, tc.userID, tc.password)
-		if tc.Valid {
-			s.NoError(err)
-
 		} else if !tc.Valid {
 			s.Error(err)
 		}

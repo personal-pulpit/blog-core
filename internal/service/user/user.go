@@ -9,17 +9,17 @@ import (
 type UserService interface {
 	GetUserProfile(ctx context.Context,ID uint)(*model.User,error)
 	UpdateProfile(ctx context.Context,ID uint, FirstName, lastName, biography string) (*model.User,error)
-	// DeleteAccount(ctx context.Context,ID uint, password string) error
+	DeleteAccount(ctx context.Context,ID uint, password string) error
 }
 type userManager struct {
 	userPostgresRepo  repository.UserPostgresRepository
-	// authPostgresRepo repository.AuthPostgresRepository
+	authPostgresRepo repository.AuthPostgresRepository
 }
 
-func NewUserService(userPostgresRepo repository.UserPostgresRepository) UserService {
+func NewUserService(userPostgresRepo repository.UserPostgresRepository,authPostgresRepo repository.AuthPostgresRepository) UserService {
 	return &userManager{
 		userPostgresRepo:  userPostgresRepo,
-		// authPostgresRepo: authPostgresRepo,
+		authPostgresRepo: authPostgresRepo,
 	}
 }
 func (u *userManager) GetUserProfile(ctx context.Context,ID uint)(*model.User,error){
@@ -45,22 +45,25 @@ func (u *userManager) UpdateProfile(ctx context.Context,ID uint, FirstName, last
 	return userModel,nil
 }
 
-// func (u *userManager) DeleteAccount(ctx context.Context,ID uint, password string) error {
-// 	auth, err := u.authPostgresRepo.GetUserAuth(ctx,ID)
-// 	if err != nil {
-// 		return ErrNotFound
-// 	}
-// 	if !auth.EmailVerified {
-// 		return ErrDeleteUser
-// 	}
+func (u *userManager) DeleteAccount(ctx context.Context,ID uint, password string) error {
+	auth, err := u.authPostgresRepo.GetUserAuth(ctx,ID)
+	if err != nil {
+		return ErrNotFound
+	}
 
-// 	err = u.authPostgresRepo.DeleteByID(ctx,ID)
-// 	if err != nil{
-// 		return ErrDeleteUser
-// 	}
-// 	err = u.userPostgresRepo.DeleteByID(ctx,ID)
-// 	if err != nil {
-// 		return ErrDeleteUser
-// 	}
-// 	return nil
-// }
+	if !auth.EmailVerified {
+		return ErrDeleteUser
+	}
+
+	err = u.authPostgresRepo.DeleteByID(ctx,ID)
+	if err != nil{
+		return ErrDeleteUser
+	}
+	
+	err = u.userPostgresRepo.DeleteByID(ctx,ID)
+	if err != nil {
+		return ErrDeleteUser
+	}
+	
+	return nil
+}

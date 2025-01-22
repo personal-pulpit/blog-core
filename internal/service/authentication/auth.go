@@ -31,12 +31,11 @@ type AuthService interface {
 	VerifyEmail(ctx context.Context, otp string, userID uint) error
 	SendResetPasswordVerification(ctx context.Context, email string) (string, error)
 	SubmitResetPassword(ctx context.Context, token string, newPassword string) error
-	ChangePassword(ctx context.Context, accessToken string, oldPassword string, newPassword string) error
+	ChangePassword(ctx context.Context, userID uint, oldPassword string, newPassword string) error
 	Authenticate(ctx context.Context, accessToken string) (*model.User, error)
 	RefreshToken(ctx context.Context, refreshToken string, accessToken string) (string, error)
 	SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string, accessTokenExpr time.Duration) error
 	IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool
-	DeleteAccount(ctx context.Context,userID uint, password string) error
 	DestroyRefreshToken(ctx context.Context, token string) error
 }
 type authenticateManager struct {
@@ -227,13 +226,8 @@ func (a *authenticateManager) Authenticate(ctx context.Context, accessToken stri
 
 	return user, nil
 }
-func (a *authenticateManager) ChangePassword(ctx context.Context, accessToken string, oldPassword string, newPassword string) error {
-	user, err := a.Authenticate(ctx, accessToken)
-	if err != nil {
-		return err
-	}
-
-	auth, err := a.authPostgresRepo.GetUserAuth(ctx, user.ID)
+func (a *authenticateManager) ChangePassword(ctx context.Context, userID uint, oldPassword string, newPassword string) error {
+	auth, err := a.authPostgresRepo.GetUserAuth(ctx, userID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -248,7 +242,7 @@ func (a *authenticateManager) ChangePassword(ctx context.Context, accessToken st
 		return ErrHashingPassword
 	}
 
-	err = a.authPostgresRepo.ChangePassword(ctx, user.ID, newPasswordHash)
+	err = a.authPostgresRepo.ChangePassword(ctx, userID, newPasswordHash)
 	if err != nil {
 		return ErrChangePassword
 	}
@@ -340,30 +334,6 @@ func (a *authenticateManager) SubmitResetPassword(ctx context.Context, token str
 	err = a.authPostgresRepo.ChangePassword(ctx, auth.ID, newPasswordHash)
 	if err != nil {
 		return ErrChangePassword
-	}
-
-	return nil
-}
-
-func (a *authenticateManager) DeleteAccount(ctx context.Context,userID uint, password string) error {	
-	auth, err := a.authPostgresRepo.GetUserAuth(ctx,userID)
-	if err != nil {
-		return ErrNotFound
-	}
-
-	validPassword := a.hashManager.CheckPasswordHash(password, auth.HashedPassword)
-	if !validPassword {
-		return ErrDeleteUser
-	}
-
-	err = a.authPostgresRepo.DeleteByID(ctx, userID)
-	if err != nil {
-		return ErrDeleteUser
-	}
-
-	err = a.userPostgresRepo.DeleteByID(ctx, userID)
-	if err != nil {
-		return ErrDeleteUser
 	}
 
 	return nil
