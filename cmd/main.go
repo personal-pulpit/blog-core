@@ -43,7 +43,7 @@ func main() {
 
 	emailService := email.NewEmailService(&config.Email)
 	authService := authentication.NewAuthenticateService(authPostgresRepo, userPostgresRepo, authManager, hashManager, emailService)
-	userService := user.NewUserService(userPostgresRepo)
+	userService := user.NewUserService(userPostgresRepo,authPostgresRepo)
 	articleService := article.NewArticleService(articlePostgresRepo)
 
 	err = server.InitServer(config.Server.Port, authManager,authService, userService, articleService, logger)

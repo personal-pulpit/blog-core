@@ -4,10 +4,9 @@ import (
 	"blog/api/helpers"
 	"blog/api/helpers/auth_helper"
 	"blog/api/helpers/common"
-	"blog/config"
 	"blog/pkg/auth_manager"
-	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +20,7 @@ func NewUserAuthMiddleware(authManger auth_manager.AuthManager) *UserAuthMiddlew
 		AuthManager: authManger,
 	}
 }
+
 func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken, err := auth_helper.GetHeader(ctx, auth_helper.AccessTokenHeader)
@@ -30,19 +30,38 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 		} else {
 			if m.AuthManager.IsAccessTokenBlacklisted(ctx, accessToken) {
 				ctx.Set("is_logged", false)
-				ctx.Next()
-			}
-
-			accessTokenClaims, err := m.AuthManager.DecodeAccessToken(ctx, accessToken)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusInternalServerError,
-					helpers.NewHttpResponse(
-						http.StatusInternalServerError, err.Error(), nil))
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, helpers.NewHttpResponse(
+					http.StatusUnauthorized,
+					"Token Blacklisted",
+					map[string]interface{}{
+						"message":    "Your session token has been invalidated",
+						"suggestion": "Please login again to obtain a new token",
+						"metadata": map[string]interface{}{
+							"timestamp":    time.Now(),
+							"token_status": "blacklisted",
+						},
+					}))
 				return
 			}
 
-			ctx.Set("id", accessTokenClaims.UserID)
+			accessTokenClaims, err := m.AuthManager.DecodeAccessToken(ctx, accessToken)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, helpers.NewHttpResponse(
+					http.StatusUnauthorized,
+					"Invalid Token",
+					map[string]interface{}{
+						"message":    "Unable to verify your authentication token",
+						"suggestion": "Please ensure your token is valid or login again",
+						"error":      err.Error(),
+						"metadata": map[string]interface{}{
+							"timestamp":    time.Now(),
+							"token_status": "invalid",
+						},
+					}))
+				return
+			}
+
+			ctx.Set("id", helpers.StringToInt(accessTokenClaims.UserID))
 			ctx.Set("role", accessTokenClaims.Role)
 			ctx.Set("is_logged", true)
 		}
@@ -56,9 +75,18 @@ func (m *UserAuthMiddleware) EnsureLoggedIn() gin.HandlerFunc {
 		if is_logged {
 			ctx.Next()
 		} else {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				helpers.NewHttpResponse(
-					http.StatusUnauthorized, ErrYouAreUnAuthorized.Error(), nil))
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, helpers.NewHttpResponse(
+				http.StatusUnauthorized,
+				"Authentication Required",
+				map[string]interface{}{
+					"message":    "You must be logged in to access this resource",
+					"suggestion": "Please login to continue",
+					"metadata": map[string]interface{}{
+						"timestamp":      time.Now(),
+						"request_path":   ctx.Request.URL.Path,
+						"request_method": ctx.Request.Method,
+					},
+				}))
 			return
 		}
 	}
@@ -70,24 +98,49 @@ func (m *UserAuthMiddleware) EnsureNotLoggedIn() gin.HandlerFunc {
 
 		if !is_logged {
 			ctx.Next()
-
 		} else {
-			port := config.GetConfigInstance().Server.Port
-			url := fmt.Sprintf("localhost:%d/api/v1", port)
-			ctx.Redirect(http.StatusFound, url)
+			ctx.AbortWithStatusJSON(http.StatusForbidden,
+				helpers.NewHttpResponse(
+					http.StatusForbidden,
+					"Access Denied - Already Authenticated",
+					map[string]interface{}{
+						"status":     "logged_in",
+						"user_id":    ctx.GetInt("id"),
+						"role":       ctx.GetString("role"),
+						"message":    "This endpoint is only accessible for non-authenticated users",
+						"suggestion": "Please logout first to access this endpoint",
+						"metadata": map[string]interface{}{
+							"timestamp":      time.Now(),
+							"request_path":   ctx.Request.URL.Path,
+							"request_method": ctx.Request.Method,
+						},
+					}))
+			return
 		}
 	}
 }
 
 func (m *UserAuthMiddleware) EnsureAdmin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		isLogged := common.GetUserStatus(ctx)
 		role := ctx.GetString("role")
-		if role == "admin" {
+
+		if role == "admin" && isLogged {
 			ctx.Next()
 		} else {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized,
-				helpers.NewHttpResponse(
-					http.StatusUnauthorized, ErrYouAreUnAuthorized.Error(), nil))
+			ctx.AbortWithStatusJSON(http.StatusForbidden, helpers.NewHttpResponse(
+				http.StatusForbidden,
+				"Admin Access Required",
+				map[string]interface{}{
+					"message":       "This endpoint requires administrative privileges",
+					"current_role":  role,
+					"required_role": "admin",
+					"metadata": map[string]interface{}{
+						"timestamp":      time.Now(),
+						"request_path":   ctx.Request.URL.Path,
+						"request_method": ctx.Request.Method,
+					},
+				}))
 			return
 		}
 	}
@@ -97,50 +150,84 @@ func (m *UserAuthMiddleware) Logout() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		is_logged := common.GetUserStatus(ctx)
 
-		if is_logged {
-			accessToken, err := auth_helper.GetHeader(ctx, auth_helper.AccessTokenHeader)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			refreshToken, err := auth_helper.GetHeader(ctx, auth_helper.RefreshTokenHeader)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			auth_helper.DeleteHeader(ctx, auth_helper.AccessTokenHeader)
-			auth_helper.DeleteHeader(ctx, auth_helper.RefreshTokenHeader)
-
-			err = m.AuthManager.DestroyRefreshToken(ctx, refreshToken)
-
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-
-			err = m.AuthManager.SetAccessTokenIntoBlacklist(ctx, accessToken, auth_manager.AccessTokenExpr)
-			if err != nil {
-				ctx.AbortWithStatusJSON(http.StatusBadRequest,
-					helpers.NewHttpResponse(
-						http.StatusBadRequest, err.Error(), nil))
-				return
-			}
-			ctx.Next()
-		} else {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest,
-				helpers.NewHttpResponse(
-					http.StatusBadRequest, ErrSomeTimesWentWrong.Error(), nil))
+		if !is_logged {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				"Logout Failed",
+				map[string]interface{}{
+					"message":    "No active session found",
+					"suggestion": "You must be logged in to perform a logout",
+					"metadata": map[string]interface{}{
+						"timestamp":      time.Now(),
+						"session_status": "inactive",
+					},
+				}))
 			return
 		}
+
+		accessToken, err := auth_helper.GetHeader(ctx, auth_helper.AccessTokenHeader)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				"Invalid Access Token",
+				map[string]interface{}{
+					"message": "Access token not found in request",
+					"error":   err.Error(),
+					"metadata": map[string]interface{}{
+						"timestamp":      time.Now(),
+						"missing_header": auth_helper.AccessTokenHeader,
+					},
+				}))
+			return
+		}
+
+		refreshToken, err := auth_helper.GetHeader(ctx, auth_helper.RefreshTokenHeader)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				"Invalid Refresh Token",
+				map[string]interface{}{
+					"message": "Refresh token not found in request",
+					"error":   err.Error(),
+					"metadata": map[string]interface{}{
+						"timestamp":      time.Now(),
+						"missing_header": auth_helper.RefreshTokenHeader,
+					},
+				}))
+			return
+		}
+
+		auth_helper.DeleteHeader(ctx, auth_helper.AccessTokenHeader)
+		auth_helper.DeleteHeader(ctx, auth_helper.RefreshTokenHeader)
+
+		if err := m.AuthManager.DestroyRefreshToken(ctx, refreshToken); err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, helpers.NewHttpResponse(
+				http.StatusInternalServerError,
+				"Refresh Token Destruction Failed",
+				map[string]interface{}{
+					"message": "Unable to invalidate refresh token",
+					"error":   err.Error(),
+					"metadata": map[string]interface{}{
+						"timestamp": time.Now(),
+					},
+				}))
+			return
+		}
+
+		if err := m.AuthManager.SetAccessTokenIntoBlacklist(ctx, accessToken, auth_manager.AccessTokenExpr); err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, helpers.NewHttpResponse(
+				http.StatusInternalServerError,
+				"Access Token Blacklisting Failed",
+				map[string]interface{}{
+					"message": "Unable to blacklist access token",
+					"error":   err.Error(),
+					"metadata": map[string]interface{}{
+						"timestamp": time.Now(),
+					},
+				}))
+			return
+		}
+
+		ctx.Next()
 	}
 }
