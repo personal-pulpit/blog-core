@@ -4,8 +4,10 @@ import (
 	"blog/api/helpers"
 	"blog/api/helpers/auth_helper"
 	"blog/api/helpers/common"
+	"blog/internal/model"
 	"blog/pkg/auth_manager"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,7 +48,7 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 
 			accessTokenClaims, err := m.AuthManager.DecodeAccessToken(ctx, accessToken)
 			if err != nil {
-				if ctx.Request.URL.Path == "/api/v1/auth/refresh-token"{
+				if ctx.Request.URL.Path == "/api/v1/auth/refresh-token" {
 					ctx.Set("is_logged", false)
 					return
 				}
@@ -130,7 +132,7 @@ func (m *UserAuthMiddleware) EnsureAdmin() gin.HandlerFunc {
 		isLogged := common.GetUserStatus(ctx)
 		role := ctx.GetString("role")
 
-		if role == "admin" && isLogged {
+		if role == strconv.Itoa(int(model.AdminRole)) && isLogged {
 			ctx.Next()
 		} else {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, helpers.NewHttpResponse(

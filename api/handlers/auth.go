@@ -424,7 +424,7 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	err := h.AuthService.DestroyRefreshToken(ctx,input.RefreshToken)
+	err := h.AuthService.DestroyRefreshToken(ctx, input.RefreshToken)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
 			http.StatusInternalServerError,
@@ -434,7 +434,7 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 			}))
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
 		http.StatusOK,
 		"Logged out successfully",
