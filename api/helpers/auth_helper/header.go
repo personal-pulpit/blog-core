@@ -5,7 +5,6 @@ import (
 )
 
 const AccessTokenHeader = "X-Access-Token"
-const RefreshTokenHeader = "X-Refresh-Token"
 
 func GetHeader(ctx *gin.Context, name string) (string, error) {
 	token := ctx.GetHeader(name)

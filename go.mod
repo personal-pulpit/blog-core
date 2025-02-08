@@ -110,4 +110,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/tahadostifam/go-auth-manager => github.com/AssassinRobot/go-auth-manager v1.0.5
+replace github.com/tahadostifam/go-auth-manager => github.com/AssassinRobot/go-auth-manager v1.1.1

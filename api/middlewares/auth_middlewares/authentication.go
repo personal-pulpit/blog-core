@@ -46,6 +46,11 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 
 			accessTokenClaims, err := m.AuthManager.DecodeAccessToken(ctx, accessToken)
 			if err != nil {
+				if ctx.Request.URL.Path == "/api/v1/auth/refresh-token"{
+					ctx.Set("is_logged", false)
+					return
+				}
+
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, helpers.NewHttpResponse(
 					http.StatusUnauthorized,
 					"Invalid Token",
@@ -181,38 +186,7 @@ func (m *UserAuthMiddleware) Logout() gin.HandlerFunc {
 			return
 		}
 
-		refreshToken, err := auth_helper.GetHeader(ctx, auth_helper.RefreshTokenHeader)
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, helpers.NewHttpResponse(
-				http.StatusBadRequest,
-				"Invalid Refresh Token",
-				map[string]interface{}{
-					"message": "Refresh token not found in request",
-					"error":   err.Error(),
-					"metadata": map[string]interface{}{
-						"timestamp":      time.Now(),
-						"missing_header": auth_helper.RefreshTokenHeader,
-					},
-				}))
-			return
-		}
-
 		auth_helper.DeleteHeader(ctx, auth_helper.AccessTokenHeader)
-		auth_helper.DeleteHeader(ctx, auth_helper.RefreshTokenHeader)
-
-		if err := m.AuthManager.DestroyRefreshToken(ctx, refreshToken); err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, helpers.NewHttpResponse(
-				http.StatusInternalServerError,
-				"Refresh Token Destruction Failed",
-				map[string]interface{}{
-					"message": "Unable to invalidate refresh token",
-					"error":   err.Error(),
-					"metadata": map[string]interface{}{
-						"timestamp": time.Now(),
-					},
-				}))
-			return
-		}
 
 		if err := m.AuthManager.SetAccessTokenIntoBlacklist(ctx, accessToken, auth_manager.AccessTokenExpr); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, helpers.NewHttpResponse(

@@ -62,8 +62,8 @@ func (a *authenticateManager) Register(ctx context.Context, firstName, lastName,
 
 	savedUser, tx, err := a.userPostgresRepo.Create(ctx, userModel)
 
-	if errors.Is(err, repository.ErrUniqueConstraint) {
-		return nil, repository.ErrUniqueConstraint
+	if errors.Is(err, repository.ErrEmailAlreadyExits) {
+		return nil, repository.ErrEmailAlreadyExits
 
 	} else if err != nil {
 		return nil, ErrCreateUser

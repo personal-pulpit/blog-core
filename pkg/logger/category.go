@@ -37,7 +37,6 @@ const (
 
 	// Validation
 	EmailValidation       SubCategory = "EmailValidation"
-	PhonenumberValidation SubCategory = "PhonenumberValidation"
 	UsernameValidation    SubCategory = "UsernameValidation"
 )
 

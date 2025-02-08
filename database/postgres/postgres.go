@@ -35,9 +35,9 @@ func GetPostgresqlDB(cfg *config.Postgres) (*gorm.DB,error) {
 		postgresInstance = db
 	}
 	
+	Migration(model.Auth{})
 	Migration(model.User{})
 	Migration(model.Article{})
-	Migration(model.Auth{})
 
 	return postgresInstance,nil
 }
