@@ -5,13 +5,13 @@ import (
 )
 
 type Article struct {
-	ID        uint
+	ID        uint `gorm:"primaryKey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Title     string `gorm:"size:100;NOT NULL"`
 	Content   string `gorm:"text;NOT NULL"`
 	AuthorID  uint
-	Author *User  `gorm:"foreignKey:AuthorID"`
+	Author *User  `gorm:"foreignKey:author_id"`
 }
 
 func NewArticle(title, content string, authorID uint) *Article {

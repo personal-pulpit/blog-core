@@ -6,7 +6,7 @@ import (
 
 
 type User struct {
-	ID        uint
+	ID        uint `gorm:"primaryKey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	FirstName string `gorm:"size:25;NOT NULL"`

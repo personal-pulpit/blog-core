@@ -80,6 +80,10 @@ func (a *authManger) GenerateAccessToken(ctx context.Context, userID uint, role 
 func (a *authManger) DecodeAccessToken(ctx context.Context, accessToken string) (*AccessTokenClaims, error) {
 	accessTokenPayload, err := a.authManger.DecodeAccessToken(ctx, accessToken)
 	if err != nil {
+		if err == auth_manager.ErrTokenExpired {
+			return nil, ErrTokenExpired
+		}
+
 		return nil, err
 	}
 

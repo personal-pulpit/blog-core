@@ -34,34 +34,22 @@ func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, erro
 	return articles, nil
 }
 
-// func (a *articlePostgresRepo) GetArticle(filters map[string]interface{}) (*model.Article, error) {
-// 	var article = &model.Article{}
-
-// 	query := a.postgresCLI
-
-// 	for key, value := range filters {
-// 		query = query.Where(key, value)
-// 	}
-
-// 	if err := query.Find(article).Error; err != nil {
-// 		return nil, err
-// 	}
-
-// 	return article, nil
-// }
-
 func (a *articlePostgresRepo) GetArticleByTitle(ctx context.Context, title string) ([]model.Article, error) {
 	articles := []model.Article{}
 
-	err := a.postgresCLI.WithContext(ctx).Preload("Author").Where("title = ?", title).First(&articles).Error
+	err := a.postgresCLI.WithContext(ctx).Preload("Author").Where("LOWER(title) LIKE LOWER(?)", "%"+title+"%").Find(&articles).Error
 	if err != nil {
 		return nil, err
+	}
+
+	if len(articles) == 0 {
+		return nil, ErrArticleNotFound
 	}
 
 	return articles, nil
 }
 
-func (a *articlePostgresRepo) GetArticleByID(ctx context.Context,ID uint) (*model.Article, error) {
+func (a *articlePostgresRepo) GetArticleByID(ctx context.Context, ID uint) (*model.Article, error) {
 	article := new(model.Article)
 
 	err := a.postgresCLI.WithContext(ctx).Preload("Author").First(article, ID).Error
@@ -72,7 +60,7 @@ func (a *articlePostgresRepo) GetArticleByID(ctx context.Context,ID uint) (*mode
 	return article, nil
 }
 
-func (a *articlePostgresRepo) Create(ctx context.Context,articleModel *model.Article) (*model.Article, error) {
+func (a *articlePostgresRepo) Create(ctx context.Context, articleModel *model.Article) (*model.Article, error) {
 	err := a.postgresCLI.WithContext(ctx).Create(&articleModel).Error
 	if err != nil {
 		return nil, err
@@ -81,7 +69,7 @@ func (a *articlePostgresRepo) Create(ctx context.Context,articleModel *model.Art
 	return articleModel, nil
 }
 
-func (a *articlePostgresRepo) UpdateByID(ctx context.Context,ID uint, title, content string) (*model.Article, error) {
+func (a *articlePostgresRepo) UpdateByID(ctx context.Context, ID uint, title, content string) (*model.Article, error) {
 	article := new(model.Article)
 
 	err := a.postgresCLI.WithContext(ctx).First(article, ID).Error
@@ -104,7 +92,7 @@ func (a *articlePostgresRepo) UpdateByID(ctx context.Context,ID uint, title, con
 	return article, err
 }
 
-func (a *articlePostgresRepo) DeleteByID(ctx context.Context,ID uint) error {
+func (a *articlePostgresRepo) DeleteByID(ctx context.Context, ID uint) error {
 	article := new(model.Article)
 
 	result := a.postgresCLI.WithContext(ctx).Delete(article, ID)

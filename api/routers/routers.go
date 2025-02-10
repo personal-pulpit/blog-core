@@ -52,14 +52,14 @@ func praseRouters(r *gin.RouterGroup) {
 			authHandler := handlers.NewAuthHandler(authServiceRouter)
 
 			r.POST("/register", authMiddleware.EnsureNotLoggedIn(), authHandler.Register)
-			r.POST("/verifyEmail", authMiddleware.SetUserStatus(), authMiddleware.EnsureNotLoggedIn(), authHandler.VerifyEmail)
-			r.POST("/login", authMiddleware.SetUserStatus(), authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
-			r.GET("/logout", authMiddleware.SetUserStatus(),authMiddleware.EnsureLoggedIn(), authMiddleware.Logout(), authHandler.Logout)
+			r.POST("/verify-email", authMiddleware.EnsureNotLoggedIn(), authHandler.VerifyEmail)
+			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
+			r.POST("/logout",authMiddleware.EnsureLoggedIn(), authMiddleware.Logout(), authHandler.Logout)
 			r.GET("/authenticate", authHandler.Authenticate)
 			r.POST("/refresh-token", authHandler.RefreshToken)
-			r.POST("/change-password",  authMiddleware.SetUserStatus(),authMiddleware.EnsureLoggedIn(), authHandler.ChangePassword)
-			r.POST("/reset-password/request", authMiddleware.SetUserStatus(), authMiddleware.EnsureNotLoggedIn(), authHandler.SendResetPasswordVerification)
-			r.POST("/reset-password/submit", authMiddleware.SetUserStatus(), authMiddleware.EnsureNotLoggedIn(), authHandler.SubmitResetPassword)
+			r.POST("/change-password",authMiddleware.EnsureLoggedIn(), authHandler.ChangePassword)
+			r.POST("/reset-password/request", authMiddleware.EnsureNotLoggedIn(), authHandler.SendResetPasswordVerification)
+			r.POST("/reset-password/submit", authMiddleware.EnsureNotLoggedIn(), authHandler.SubmitResetPassword)
 		}
 
 	case "/api/v1/user":
@@ -68,18 +68,19 @@ func praseRouters(r *gin.RouterGroup) {
 				UserService: userServiceRouter,
 			}
 
-			r.GET("/me",authMiddleware.SetUserStatus(),authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
-			r.GET("/:id",authMiddleware.SetUserStatus(),authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
-			r.PATCH("/update",authMiddleware.SetUserStatus(), authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
-			r.DELETE("/delete",authMiddleware.SetUserStatus(), authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
+			r.GET("/me",authMiddleware.EnsureLoggedIn(), userHandler.GetCurrentUser)
+			r.GET("/:id",authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
+			r.PATCH("/update", authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
+			r.DELETE("/delete", authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
 		}
 	case "/api/v1/article":
 		{
 			articleHandler := handlers.NewArticleHandler(articleServiceRouter)
 
-			r.GET("",authMiddleware.SetUserStatus(), articleHandler.GetAll)
-			r.GET("/:id",authMiddleware.SetUserStatus(), articleHandler.GetByID)
-			r.POST("", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.Create)
+			r.GET("", articleHandler.GetAll)
+			r.GET("/:id", articleHandler.GetByID)
+			r.GET("/search", articleHandler.Search)
+			r.POST("/create", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.Create)
 			r.PATCH("/:id", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.UpdateByID)
 			r.DELETE("/:id", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.DeleteByID)
 		}

@@ -24,32 +24,40 @@ func NewAuthHandler(authService authentication.AuthService) *AuthHandler {
 
 type (
 	verifyEmailInput struct {
-		OTP    string `form:"otp" binding:"required"`
-		UserID string `form:"userID" binding:"required"`
+		OTP    string `json:"otp" binding:"required"`
+		UserID string `json:"userID" binding:"required"`
 	}
-	
+
 	signinInput struct {
-		FirstName string `form:"firstName" binding:"required"`
-		LastName  string `form:"lastName" binding:"required"`
-		Password  string `form:"password" binding:"required"`
-		Email     string `form:"email" binding:"required,emailvalidatior"`
-		Biography string `form:"biography" binding:"required"`
+		FirstName string `json:"firstName" binding:"required,min=1,max=50"`
+		LastName  string `json:"lastName" binding:"max=25"`
+		Password  string `json:"password" binding:"required,min=8,max=200"`
+		Email     string `json:"email" binding:"required,emailvalidatior"`
+		Biography string `json:"biography" binding:"max=250"`
 	}
 
 	loginInput struct {
-		Email    string `form:"email" binding:"required,emailvalidatior"`
-		Password string `form:"password" binding:"required"`
+		Email    string `json:"email" binding:"required,emailvalidatior"`
+		Password string `json:"password" binding:"required,min=8,max=200"`
+	}
+
+	refreshToken struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
 	}
 
 	changePasswordInput struct {
-		OldPassword string `form:"old_password" binding:"required"`
-		NewPassword string `form:"new_password" binding:"required"`
+		OldPassword string `json:"old_password" binding:"required,min=8,max=200"`
+		NewPassword string `json:"new_password" binding:"required,min=8,max=200"`
+	}
+
+	logoutInput struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
 	}
 )
 
 func (h *AuthHandler) Register(ctx *gin.Context) {
 	var si signinInput
-	err := ctx.ShouldBind(&si)
+	err := ctx.ShouldBindJSON(&si)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -90,9 +98,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	)
 
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrEmailAlreadyExits) ||
-			errors.Is(err, postgres_repository.ErrUsernameAlreadyExits) ||
-			errors.Is(err, postgres_repository.ErrPhoneNumberAlreadyExits) {
+		if errors.Is(err, postgres_repository.ErrEmailAlreadyExits) {
 			ctx.JSON(http.StatusConflict, helpers.NewHttpResponse(
 				http.StatusConflict,
 				"Registration failed - Duplicate information",
@@ -131,7 +137,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 
 func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 	var input verifyEmailInput
-	err := ctx.ShouldBind(&input)
+	err := ctx.ShouldBindJSON(&input)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -189,7 +195,7 @@ func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 func (h *AuthHandler) Login(ctx *gin.Context) {
 	var li loginInput
-	err := ctx.ShouldBind(&li)
+	err := ctx.ShouldBindJSON(&li)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -210,7 +216,7 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	user, accessToken, refreshToken, err := h.AuthService.Login(ctx, li.Email, li.Password)
+	_, accessToken, refreshToken, err := h.AuthService.Login(ctx, li.Email, li.Password)
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrUserNotFound) ||
 			errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
@@ -235,12 +241,6 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 		http.StatusOK,
 		"Login successful",
 		map[string]interface{}{
-			"user": map[string]interface{}{
-				"id":         user.ID,
-				"email":      user.Email,
-				"first_name": user.FirstName,
-				"last_name":  user.LastName,
-			},
 			"tokens": map[string]interface{}{
 				"access_token":  accessToken,
 				"refresh_token": refreshToken,
@@ -280,10 +280,32 @@ func (h *AuthHandler) Authenticate(ctx *gin.Context) {
 }
 
 func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
-	refreshToken := ctx.GetHeader("X-Refresh-Token")
-	accessToken := ctx.GetHeader("X-Access-Token")
+	var li = new(refreshToken)
 
-	newAccessToken, err := h.AuthService.RefreshToken(ctx, refreshToken, accessToken)
+	err := ctx.ShouldBindJSON(&li)
+	if err != nil {
+		if utils.CheckErrorForWord(err, "required") {
+			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				"Missing refresh token",
+				map[string]interface{}{
+					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
+					"required_fields":   []string{"refresh_token"},
+				}))
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+			http.StatusBadRequest,
+			"Invalid request data",
+			map[string]interface{}{
+				"validation_errors": utils.GetValidationError(err),
+			}))
+		return
+	}
+	
+	accessToken := ctx.GetString("accessToken")
+
+	newAccessToken, err := h.AuthService.RefreshToken(ctx, li.RefreshToken, accessToken)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, helpers.NewHttpResponse(
 			http.StatusUnauthorized,
@@ -298,7 +320,7 @@ func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 		http.StatusOK,
 		"Token refreshed successfully",
 		map[string]interface{}{
-			"access_token": newAccessToken,
+			"new_access_token": newAccessToken,
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),
 			},
@@ -307,7 +329,7 @@ func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 
 func (h *AuthHandler) ChangePassword(ctx *gin.Context) {
 	var input changePasswordInput
-	if err := ctx.ShouldBind(&input); err != nil {
+	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
 			http.StatusBadRequest,
 			"Invalid password change data",
@@ -342,11 +364,11 @@ func (h *AuthHandler) ChangePassword(ctx *gin.Context) {
 
 func (h *AuthHandler) SendResetPasswordVerification(ctx *gin.Context) {
 	type resetPasswordInput struct {
-		Email string `form:"email" binding:"required,emailvalidatior"`
+		Email string `json:"email" binding:"required,emailvalidatior"`
 	}
 
 	var input resetPasswordInput
-	if err := ctx.ShouldBind(&input); err != nil {
+	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
 			http.StatusBadRequest,
 			"Invalid email format",
@@ -380,12 +402,12 @@ func (h *AuthHandler) SendResetPasswordVerification(ctx *gin.Context) {
 
 func (h *AuthHandler) SubmitResetPassword(ctx *gin.Context) {
 	type submitResetPasswordInput struct {
-		Token       string `form:"token" binding:"required"`
-		NewPassword string `form:"new_password" binding:"required"`
+		Token       string `json:"token" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
 	}
 
 	var input submitResetPasswordInput
-	if err := ctx.ShouldBind(&input); err != nil {
+	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
 			http.StatusBadRequest,
 			"Invalid reset password data",
@@ -417,6 +439,28 @@ func (h *AuthHandler) SubmitResetPassword(ctx *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(ctx *gin.Context) {
+	var input logoutInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+			http.StatusBadRequest,
+			"Invalid logout data",
+			map[string]interface{}{
+				"validation_errors": utils.GetValidationError(err),
+			}))
+		return
+	}
+
+	err := h.AuthService.DestroyRefreshToken(ctx, input.RefreshToken)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+			http.StatusInternalServerError,
+			"Logout failed:could not destroy refresh token",
+			map[string]interface{}{
+				"error": err.Error(),
+			}))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
 		http.StatusOK,
 		"Logged out successfully",

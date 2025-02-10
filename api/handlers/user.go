@@ -20,12 +20,12 @@ type UserHandler struct {
 
 type (
 	updateInput struct {
-		FirstName string `form:"firstName" binding:"required"`
-		LastName  string `form:"lastName" binding:"required"`
-		Biography string `form:"biography" binding:"required"`
+		FirstName string `json:"firstName" binding:"required"`
+		LastName  string `json:"lastName" binding:"required"`
+		Biography string `json:"biography" binding:"required"`
 	}
 	deleteAccountInput struct {
-		Password string `form:"password" binding:"required"`
+		Password string `json:"password" binding:"required"`
 	}
 )
 
@@ -33,7 +33,6 @@ var (
 	ErrPleaseCompleteAllFields = errors.New("please complete all fields")
 	ErrUsernameShouldContain   = errors.New("username should contain: a-z  _ 0-9")
 	ErrInvalidEmail            = errors.New("email is invalid")
-	ErrInvalidPhoneNumber      = errors.New("phone number is invalid")
 )
 
 func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
@@ -65,6 +64,7 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 		"Profile retrieved successfully",
 		map[string]interface{}{
 			"user": user,
+			"role": ctx.GetString("role"),
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),
 			},
@@ -109,7 +109,7 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 	var ui updateInput
-	err := ctx.ShouldBind(&ui)
+	err := ctx.ShouldBindJSON(&ui)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -162,7 +162,7 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 
 func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	var input deleteAccountInput
-	err := ctx.ShouldBind(&input)
+	err := ctx.ShouldBindJSON(&input)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(

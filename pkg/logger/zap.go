@@ -14,7 +14,7 @@ type ZapLogger struct {
 }
 
 var (
-	zapLoggerInstance = &ZapLogger{}
+	zapLoggerInstance *ZapLogger
 	mu                = &sync.Mutex{}
 	logLevelMapping   = map[string]zapcore.Level{
 		"debug": zapcore.DebugLevel,
@@ -52,6 +52,7 @@ func GetZapLoggerInstance(loggerCfg *config.Logger) Logger {
 
 		logger = logger.With("AppName", "MyApp", "LoggerName", "ZeroLog")
 
+		zapLoggerInstance = new(ZapLogger)
 		zapLoggerInstance.Logger = logger
 	}
 	return zapLoggerInstance

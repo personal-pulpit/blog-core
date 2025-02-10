@@ -17,8 +17,8 @@ type (
 		ArticleService article.ArticleService
 	}
 	articleInput struct {
-		Title   string `form:"title" binding:"required"`
-		Content string `form:"content" binding:"required"`
+		Title   string `json:"title" binding:"required"`
+		Content string `json:"content" binding:"required"`
 	}
 )
 
@@ -32,8 +32,8 @@ func (a *Article) GetAll(ctx *gin.Context) {
 	articles, err := a.ArticleService.GetAll(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest, 
-			"Failed to fetch articles", 
+			http.StatusBadRequest,
+			"Failed to fetch articles",
 			map[string]interface{}{
 				"error": err.Error(),
 				"count": 0,
@@ -42,49 +42,49 @@ func (a *Article) GetAll(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK, 
-		"Successfully retrieved articles", 
+		http.StatusOK,
+		"Successfully retrieved articles",
 		map[string]interface{}{
-			"count": len(articles),
+			"count":     len(articles),
 			"timestamp": time.Now(),
-			"articles": articles,
+			"articles":  articles,
 		}))
 }
 
 func (a *Article) GetByID(ctx *gin.Context) {
 	ID := ctx.Param("id")
-	
+
 	article, err := a.ArticleService.GetArticleByID(ctx, uint(helpers.StringToInt(ID)))
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound, 
-				"Article not found", 
+				http.StatusNotFound,
+				"Article not found",
 				map[string]interface{}{
 					"article_id": ID,
-					"error": err.Error(),
+					"error":      err.Error(),
 				}))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, helpers.NewHttpResponse(
-			http.StatusInternalServerError, 
-			"Failed to fetch article", 
+			http.StatusInternalServerError,
+			"Failed to fetch article",
 			map[string]interface{}{
 				"article_id": ID,
-				"error": err.Error(),
+				"error":      err.Error(),
 			}))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK, 
-		"Article retrieved successfully", 
+		http.StatusOK,
+		"Article retrieved successfully",
 		map[string]interface{}{
 			"article": map[string]interface{}{
-				"id": article.ID,
-				"title": article.Title,
-				"content": article.Content,
-				"author": article.Author,
+				"id":         article.ID,
+				"title":      article.Title,
+				"content":    article.Content,
+				"author":     article.Author,
 				"created_at": article.CreatedAt,
 				"updated_at": article.UpdatedAt,
 			},
@@ -94,39 +94,39 @@ func (a *Article) GetByID(ctx *gin.Context) {
 		}))
 }
 
-func (a *Article) GetByTitle(ctx *gin.Context) {
-	title := ctx.Query("title")
+func (a *Article) Search(ctx *gin.Context) {
+	q := ctx.Query("q")
 
-	articles, err := a.ArticleService.GetArticleByTitle(ctx, title)
+	articles, err := a.ArticleService.GetArticleByTitle(ctx, q)
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound, 
-				"No articles found with given title", 
+				http.StatusNotFound,
+				"No articles found with given data",
 				map[string]interface{}{
-					"search_title": title,
-					"error": err.Error(),
+					"search_query": q,
+					"error":        err.Error(),
 				}))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, helpers.NewHttpResponse(
-			http.StatusInternalServerError, 
-			"Failed to search articles", 
+			http.StatusInternalServerError,
+			"Failed to search articles",
 			map[string]interface{}{
-				"search_title": title,
-				"error": err.Error(),
+				"search_query": q,
+				"error":        err.Error(),
 			}))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK, 
-		"Articles found successfully", 
+		http.StatusOK,
+		"Articles found successfully",
 		map[string]interface{}{
 			"articles": articles,
-			"count": len(articles),
+			"count":    len(articles),
 			"search_criteria": map[string]interface{}{
-				"title": title,
+				"search_query": q,
 			},
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),
@@ -136,7 +136,7 @@ func (a *Article) GetByTitle(ctx *gin.Context) {
 
 func (a *Article) Create(ctx *gin.Context) {
 	var ai articleInput
-	err := ctx.ShouldBind(&ai)
+	err := ctx.ShouldBindJSON(&ai)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -144,7 +144,7 @@ func (a *Article) Create(ctx *gin.Context) {
 				"Missing required fields",
 				map[string]interface{}{
 					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-					"provided_fields": ai,
+					"provided_fields":   ai,
 				}))
 			return
 		}
@@ -153,7 +153,7 @@ func (a *Article) Create(ctx *gin.Context) {
 			"Invalid input data",
 			map[string]interface{}{
 				"validation_errors": utils.GetValidationError(err),
-				"provided_data": ai,
+				"provided_data":     ai,
 			}))
 		return
 	}
@@ -162,8 +162,8 @@ func (a *Article) Create(ctx *gin.Context) {
 	article, err := a.ArticleService.Create(ctx, ai.Title, ai.Content, authorID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest, 
-			"Failed to create article", 
+			http.StatusBadRequest,
+			"Failed to create article",
 			map[string]interface{}{
 				"error": err.Error(),
 				"input": ai,
@@ -172,19 +172,19 @@ func (a *Article) Create(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, helpers.NewHttpResponse(
-		http.StatusCreated, 
-		"Article created successfully", 
+		http.StatusCreated,
+		"Article created successfully",
 		map[string]interface{}{
 			"article": map[string]interface{}{
-				"id": article.ID,
-				"title": article.Title,
-				"content": article.Content,
-				"author_id": article.AuthorID,
+				"id":         article.ID,
+				"title":      article.Title,
+				"content":    article.Content,
+				"author_id":  article.AuthorID,
 				"created_at": article.CreatedAt,
 			},
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),
-				"status": "published",
+				"status":    "published",
 			},
 		}))
 }
@@ -201,8 +201,8 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 				"Missing required fields for update",
 				map[string]interface{}{
 					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-					"article_id": id,
-					"provided_data": ai,
+					"article_id":        id,
+					"provided_data":     ai,
 				}))
 			return
 		}
@@ -212,8 +212,8 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 			"Invalid update data",
 			map[string]interface{}{
 				"validation_errors": utils.GetValidationError(err),
-				"article_id": id,
-				"provided_data": ai,
+				"article_id":        id,
+				"provided_data":     ai,
 			}))
 		return
 	}
@@ -227,34 +227,34 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound, 
-				"Article not found for update", 
+				http.StatusNotFound,
+				"Article not found for update",
 				map[string]interface{}{
 					"article_id": id,
-					"error": err.Error(),
+					"error":      err.Error(),
 				}))
 			return
 		}
 
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest, 
-			"Failed to update article", 
+			http.StatusBadRequest,
+			"Failed to update article",
 			map[string]interface{}{
 				"article_id": id,
-				"error": err.Error(),
+				"error":      err.Error(),
 			}))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK, 
-		"Article updated successfully", 
+		http.StatusOK,
+		"Article updated successfully",
 		map[string]interface{}{
 			"article": map[string]interface{}{
-				"id": article.ID,
-				"title": article.Title,
-				"content": article.Content,
-				"author": article.Author,
+				"id":         article.ID,
+				"title":      article.Title,
+				"content":    article.Content,
+				"author":     article.Author,
 				"updated_at": article.UpdatedAt,
 			},
 			"metadata": map[string]interface{}{
@@ -269,32 +269,32 @@ func (a *Article) DeleteByID(ctx *gin.Context) {
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound, 
-				"Article not found for deletion", 
+				http.StatusNotFound,
+				"Article not found for deletion",
 				map[string]interface{}{
 					"article_id": id,
-					"error": err.Error(),
+					"error":      err.Error(),
 				}))
 			return
 		}
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest, 
-			"Failed to delete article", 
+			http.StatusBadRequest,
+			"Failed to delete article",
 			map[string]interface{}{
 				"article_id": id,
-				"error": err.Error(),
+				"error":      err.Error(),
 			}))
 		return
 	}
-	
+
 	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK, 
-		"Article deleted successfully", 
+		http.StatusOK,
+		"Article deleted successfully",
 		map[string]interface{}{
 			"deleted_article_id": id,
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),
-				"status": "deleted",
+				"status":    "deleted",
 			},
 		}))
 }
