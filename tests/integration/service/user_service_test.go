@@ -14,41 +14,51 @@ import (
 type UserTestSuite struct {
 	suite.Suite
 	userRepo repository.UserPostgresRepository
-	authRepo repository.AuthPostgresRepository
 
-	service  user.UserService
+	service user.UserService
 
-	user *model.User
+	user     *model.User
+	password string
 }
 
 func (s *UserTestSuite) SetupSuite() {
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
-	s.authRepo = postgres_repository.NewAuthPostgresRepository(db)
+	authRepo := postgres_repository.NewAuthPostgresRepository(db)
 
-	s.service = user.NewUserService(s.userRepo,s.authRepo)
+	s.service = user.NewUserService(s.userRepo, authRepo)
 
-	userModel := model.NewUser("user1 firstName","user1 lastName","afakeonce@fake.come","user1 biography")
-	user,tx,err :=s.userRepo.Create(context.TODO(),userModel)
+	userModel := model.NewUser("user1 firstName", "user1 lastName", "afakeonce@fake.come", "user1 biography")
+	user, tx, err := s.userRepo.Create(context.TODO(), userModel)
 	s.NoError(err)
 	tx.Commit()
 
+	password := "password123456"
+
+	userAuth := model.NewAuth(user.ID, password, model.UserRole)
+	_, err = authRepo.Create(context.TODO(), userAuth)
+	s.NoError(err)
+
+	err = authRepo.VerifyEmail(context.TODO(), user.ID)
+	s.NoError(err)
+
 	s.user = user
+	s.password = password
 }
 
 func (s *UserTestSuite) TestA_GetUser() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		ID uint
-		Valid     bool
+		ID    uint
+		Valid bool
 	}{
 		{
-			ID : s.user.ID,
-			Valid:     true,
+			ID:    s.user.ID,
+			Valid: true,
 		},
 		{
-			ID : 8880008,
-			Valid:     false,
+			ID:    8880008,
+			Valid: false,
 		},
 	}
 
@@ -69,30 +79,30 @@ func (s *UserTestSuite) TestB_UpdateUser() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		userID uint
+		userID    uint
 		firstName string
 		lastName  string
 		biography string
-		Valid  bool
+		Valid     bool
 	}{
 		{
-			userID: s.user.ID,
+			userID:    s.user.ID,
 			firstName: "first name1",
 			lastName:  "last name1",
 			biography: "valid user",
-			Valid:  true,
+			Valid:     true,
 		},
 		{
-			userID: 14885684,
+			userID:    14885684,
 			firstName: "first name1",
 			lastName:  "last name1",
 			biography: "invalid user",
-			Valid:  false,
+			Valid:     false,
 		},
 	}
 
 	for _, tc := range testCases {
-		user,err := s.service.UpdateProfile(ctx, tc.userID,tc.firstName,tc.lastName,tc.biography)
+		user, err := s.service.UpdateProfile(ctx, tc.userID, tc.firstName, tc.lastName, tc.biography)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(user)
@@ -113,29 +123,25 @@ func (s *UserTestSuite) TestB_UpdateUser() {
 func (s *UserTestSuite) TestC_DeleteAccount() {
 	ctx := context.TODO()
 
-	userAuth,err :=s.authRepo.GetUserAuth(ctx, s.user.ID)
-	s.NoError(err)
-	s.NotNil(userAuth)
-
 	testCases := []struct {
-		password    string
-		userID  uint
-		Valid       bool
+		password string
+		userID   uint
+		Valid    bool
 	}{
 		{
-			password:    userAuth.HashedPassword,
-			userID: s.user.ID,
-			Valid:       true,
+			password: s.password,
+			userID:   s.user.ID,
+			Valid:    true,
 		},
 		{
-			password:    "invalid",
-			userID:s.user.ID ,
-			Valid:       false,
+			password: "invalid",
+			userID:   s.user.ID,
+			Valid:    false,
 		},
 		{
-			password:    userAuth.HashedPassword,
-			userID: 45465486416,
-			Valid:       false,
+			password: s.password,
+			userID:   45465486416,
+			Valid:    false,
 		},
 	}
 
@@ -155,4 +161,3 @@ func TestUserSuite(t *testing.T) {
 
 	suite.Run(t, new(UserTestSuite))
 }
-
