@@ -1,0 +1,23 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.0'
+    - name: Install Dependencies
+      run: go mod tidy
+    - name: Run Integration Repository Tests
+      run: make integration_repo_test
+    - name: Run Integration Service Tests
+      run: make integration_service_test
