@@ -50,6 +50,7 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 			if err != nil {
 				if ctx.Request.URL.Path == "/api/v1/auth/refresh-token" {
 					ctx.Set("is_logged", false)
+					ctx.Set("accessToken", accessToken)
 					return
 				}
 

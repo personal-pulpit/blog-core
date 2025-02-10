@@ -94,17 +94,17 @@ func (a *Article) GetByID(ctx *gin.Context) {
 		}))
 }
 
-func (a *Article) GetByTitle(ctx *gin.Context) {
-	title := ctx.Query("title")
+func (a *Article) Search(ctx *gin.Context) {
+	q := ctx.Query("q")
 
-	articles, err := a.ArticleService.GetArticleByTitle(ctx, title)
+	articles, err := a.ArticleService.GetArticleByTitle(ctx, q)
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
-				"No articles found with given title",
+				"No articles found with given data",
 				map[string]interface{}{
-					"search_title": title,
+					"search_query": q,
 					"error":        err.Error(),
 				}))
 			return
@@ -113,7 +113,7 @@ func (a *Article) GetByTitle(ctx *gin.Context) {
 			http.StatusInternalServerError,
 			"Failed to search articles",
 			map[string]interface{}{
-				"search_title": title,
+				"search_query": q,
 				"error":        err.Error(),
 			}))
 		return
@@ -126,7 +126,7 @@ func (a *Article) GetByTitle(ctx *gin.Context) {
 			"articles": articles,
 			"count":    len(articles),
 			"search_criteria": map[string]interface{}{
-				"title": title,
+				"search_query": q,
 			},
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),

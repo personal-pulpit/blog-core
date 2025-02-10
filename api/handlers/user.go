@@ -64,6 +64,7 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 		"Profile retrieved successfully",
 		map[string]interface{}{
 			"user": user,
+			"role": ctx.GetString("role"),
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),
 			},

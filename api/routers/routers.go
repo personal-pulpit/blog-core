@@ -79,7 +79,8 @@ func praseRouters(r *gin.RouterGroup) {
 
 			r.GET("", articleHandler.GetAll)
 			r.GET("/:id", articleHandler.GetByID)
-			r.POST("", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.Create)
+			r.GET("/search", articleHandler.Search)
+			r.POST("/create", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.Create)
 			r.PATCH("/:id", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.UpdateByID)
 			r.DELETE("/:id", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.DeleteByID)
 		}

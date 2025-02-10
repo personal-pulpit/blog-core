@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,6 +25,8 @@ const (
 	LockAccountDuration        = time.Second * 5
 	MaximumFailedLoginAttempts = 5
 )
+
+var mutex = new(sync.Mutex)
 
 type AuthService interface {
 	Register(ctx context.Context, firstName, lastName, email, biography, password string) (*model.User, error)
@@ -86,7 +89,9 @@ func (a *authenticateManager) Register(ctx context.Context, firstName, lastName,
 		return nil, ErrCreateAuthStore
 	}
 
+	mutex.Lock()
 	a.uniqueId = fmt.Sprintf("%d", random.GenerateUniqueId())
+	mutex.Unlock()
 
 	emailVerificationCode, err := a.authManager.GenerateVerificationCode(ctx, a.uniqueId)
 
@@ -347,8 +352,8 @@ func (a *authenticateManager) DestroyRefreshToken(ctx context.Context, refreshTo
 	return nil
 }
 
-//you can use it for logout 
-func (a *authenticateManager) SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string,accessTokenExpr time.Duration) error {
+// you can use it for logout
+func (a *authenticateManager) SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string, accessTokenExpr time.Duration) error {
 	err := a.authManager.SetAccessTokenIntoBlacklist(ctx, accessToken, accessTokenExpr)
 	if err != nil {
 		return ErrNotFound
@@ -361,7 +366,6 @@ func (a *authenticateManager) SetAccessTokenIntoBlacklist(ctx context.Context, a
 func (a *authenticateManager) IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool {
 	return a.authManager.IsAccessTokenBlacklisted(ctx, accessToken)
 }
-
 
 func convertString2Uint(strID string) uint {
 	ID, err := strconv.Atoi(strID)

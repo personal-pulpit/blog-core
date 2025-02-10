@@ -41,6 +41,10 @@ type (
 		Password string `json:"password" binding:"required,min=8,max=200"`
 	}
 
+	refreshToken struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+
 	changePasswordInput struct {
 		OldPassword string `json:"old_password" binding:"required,min=8,max=200"`
 		NewPassword string `json:"new_password" binding:"required,min=8,max=200"`
@@ -276,10 +280,32 @@ func (h *AuthHandler) Authenticate(ctx *gin.Context) {
 }
 
 func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
-	refreshToken := ctx.GetHeader("X-Refresh-Token")
-	accessToken := ctx.GetHeader("X-Access-Token")
+	var li = new(refreshToken)
 
-	newAccessToken, err := h.AuthService.RefreshToken(ctx, refreshToken, accessToken)
+	err := ctx.ShouldBindJSON(&li)
+	if err != nil {
+		if utils.CheckErrorForWord(err, "required") {
+			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+				http.StatusBadRequest,
+				"Missing refresh token",
+				map[string]interface{}{
+					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
+					"required_fields":   []string{"refresh_token"},
+				}))
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+			http.StatusBadRequest,
+			"Invalid request data",
+			map[string]interface{}{
+				"validation_errors": utils.GetValidationError(err),
+			}))
+		return
+	}
+	
+	accessToken := ctx.GetString("accessToken")
+
+	newAccessToken, err := h.AuthService.RefreshToken(ctx, li.RefreshToken, accessToken)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, helpers.NewHttpResponse(
 			http.StatusUnauthorized,
