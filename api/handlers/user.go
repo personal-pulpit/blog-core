@@ -31,10 +31,17 @@ type (
 
 var (
 	ErrPleaseCompleteAllFields = errors.New("please complete all fields")
-	ErrUsernameShouldContain   = errors.New("username should contain: a-z  _ 0-9")
 	ErrInvalidEmail            = errors.New("email is invalid")
 )
 
+// @Summary Get current user profile
+// @Description Retrieve the profile of the currently authenticated user
+// @Tags users
+// @Produce json
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile retrieved successfully"
+// @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "User not found"
+// @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve user profile"
+// @Router /api/v1/user/me [get]
 func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 
@@ -71,6 +78,15 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Get user profile by ID
+// @Description Retrieve the profile of a user by their ID
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile retrieved successfully"
+// @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "User not found"
+// @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve user profile"
+// @Router /api/v1/user/{id} [get]
 func (u *UserHandler) GetUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 
@@ -106,6 +122,15 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Update user profile
+// @Description Update the profile of the currently authenticated user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body updateInput true "User profile data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile updated successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid update data"
+// @Router /api/v1/user/update [patch]
 func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 	var ui updateInput
@@ -160,6 +185,15 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Delete user account
+// @Description Delete the account of the currently authenticated user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param input body deleteAccountInput true "Account deletion data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Account deleted successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid deletion request"
+// @Router /api/v1/user/delete [delete]
 func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	var input deleteAccountInput
 	err := ctx.ShouldBindJSON(&input)

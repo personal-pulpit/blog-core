@@ -1,0 +1,845 @@
+definitions:
+  handlers.articleInput:
+    properties:
+      content:
+        description: Content of the article
+        example: This is the content of the article.
+        type: string
+      title:
+        description: Title of the article
+        example: My First Article
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  handlers.changePasswordInput:
+    properties:
+      new_password:
+        maxLength: 200
+        minLength: 8
+        type: string
+      old_password:
+        maxLength: 200
+        minLength: 8
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  handlers.deleteAccountInput:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  handlers.loginInput:
+    properties:
+      email:
+        type: string
+      password:
+        maxLength: 200
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.logoutInput:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handlers.refreshToken:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handlers.resetPasswordInput:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  handlers.signinInput:
+    properties:
+      biography:
+        maxLength: 250
+        type: string
+      email:
+        type: string
+      firstName:
+        maxLength: 50
+        minLength: 1
+        type: string
+      lastName:
+        maxLength: 25
+        type: string
+      password:
+        maxLength: 200
+        minLength: 8
+        type: string
+    required:
+    - email
+    - firstName
+    - password
+    type: object
+  handlers.submitResetPasswordInput:
+    properties:
+      new_password:
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  handlers.updateInput:
+    properties:
+      biography:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+    required:
+    - biography
+    - firstName
+    - lastName
+    type: object
+  handlers.verifyEmailInput:
+    properties:
+      otp:
+        type: string
+      userID:
+        type: string
+    required:
+    - otp
+    - userID
+    type: object
+  helpers.HttpResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/article:
+    get:
+      description: Retrieve all articles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved articles
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Failed to fetch articles
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all articles
+      tags:
+      - articles
+  /api/v1/article/{id}:
+    delete:
+      description: Delete an article by its ID
+      parameters:
+      - description: Article ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Article deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Failed to delete article
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Article not found for deletion
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an article by ID
+      tags:
+      - article
+    get:
+      description: Retrieve an article by its ID
+      parameters:
+      - description: Article ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Article retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Article not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to fetch article
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get an article by ID
+      tags:
+      - articles
+    patch:
+      consumes:
+      - application/json
+      description: Update an article by its ID
+      parameters:
+      - description: Article ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Article input
+        in: body
+        name: article
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.articleInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Article updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid update data
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Article not found for update
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an article by ID
+      tags:
+      - articles
+  /api/v1/article/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new article with the provided title and content
+      parameters:
+      - description: Article input
+        in: body
+        name: article
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.articleInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Article created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input data
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new article
+      tags:
+      - articles
+  /api/v1/article/search:
+    get:
+      description: Search articles by title using a query string
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Articles found successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: No articles found with given data
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to search articles
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search articles by title
+      tags:
+      - articles
+  /api/v1/auth/authenticate:
+    get:
+      description: Validate the access token of the user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "401":
+          description: Authentication failed
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Authenticate user
+      tags:
+      - auth
+  /api/v1/auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change the password of the currently authenticated user
+      parameters:
+      - description: Password change data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.changePasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid password change data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Change user password
+      tags:
+      - auth
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with email and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.loginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid login data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: User login
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Log out the currently authenticated user
+      parameters:
+      - description: Logout data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.logoutInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid logout data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: User logout
+      tags:
+      - auth
+  /api/v1/auth/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Refresh the user's access token using the refresh token
+      parameters:
+      - description: Refresh token data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.refreshToken'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid request data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "401":
+          description: Token refresh failed
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Refresh access token
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with the provided details
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.signinInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid registration data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "409":
+          description: Email already exists
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /api/v1/auth/reset-password/request:
+    post:
+      consumes:
+      - application/json
+      description: Send a verification email to reset the password
+      parameters:
+      - description: Email data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.resetPasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset password verification sent
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid email format
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Send reset password verification
+      tags:
+      - auth
+  /api/v1/auth/reset-password/submit:
+    post:
+      consumes:
+      - application/json
+      description: Submit a new password to reset the user's password
+      parameters:
+      - description: Reset password data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.submitResetPasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid reset password data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Submit reset password
+      tags:
+      - auth
+  /api/v1/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verify the email address of a user using the provided OTP
+      parameters:
+      - description: Email verification data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.verifyEmailInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid verification data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: User not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Verify user email
+      tags:
+      - auth
+  /api/v1/user/{id}:
+    get:
+      description: Retrieve the profile of a user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: User not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to retrieve user profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get user profile by ID
+      tags:
+      - users
+  /api/v1/user/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete the account of the currently authenticated user
+      parameters:
+      - description: Account deletion data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.deleteAccountInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid deletion request
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Delete user account
+      tags:
+      - users
+  /api/v1/user/me:
+    get:
+      description: Retrieve the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: User not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to retrieve user profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get current user profile
+      tags:
+      - users
+  /api/v1/user/update:
+    patch:
+      consumes:
+      - application/json
+      description: Update the profile of the currently authenticated user
+      parameters:
+      - description: User profile data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid update data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Update user profile
+      tags:
+      - users
+swagger: "2.0"

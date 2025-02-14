@@ -11,12 +11,15 @@ import (
 	"blog/pkg/auth_manager"
 	"blog/pkg/logger"
 
+	swaggerFiles "github.com/swaggo/files"
+
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 var (
 	authServiceRouter    authentication.AuthService
-	userServiceRouter   user.UserService
+	userServiceRouter    user.UserService
 	articleServiceRouter article.ArticleService
 
 	authMiddleware *auth_middlewares.UserAuthMiddleware
@@ -33,6 +36,9 @@ func InitRouters(authManager auth_manager.AuthManager, authService authenticatio
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.CustomLogger())
 	r.Use(middlewares.LimitByRequest())
+
+	//swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	v1 := r.Group("/api/v1", authMiddleware.SetUserStatus())
 	{
@@ -54,10 +60,10 @@ func praseRouters(r *gin.RouterGroup) {
 			r.POST("/register", authMiddleware.EnsureNotLoggedIn(), authHandler.Register)
 			r.POST("/verify-email", authMiddleware.EnsureNotLoggedIn(), authHandler.VerifyEmail)
 			r.POST("/login", authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
-			r.POST("/logout",authMiddleware.EnsureLoggedIn(), authMiddleware.Logout(), authHandler.Logout)
+			r.POST("/logout", authMiddleware.EnsureLoggedIn(), authMiddleware.Logout(), authHandler.Logout)
 			r.GET("/authenticate", authHandler.Authenticate)
 			r.POST("/refresh-token", authHandler.RefreshToken)
-			r.POST("/change-password",authMiddleware.EnsureLoggedIn(), authHandler.ChangePassword)
+			r.POST("/change-password", authMiddleware.EnsureLoggedIn(), authHandler.ChangePassword)
 			r.POST("/reset-password/request", authMiddleware.EnsureNotLoggedIn(), authHandler.SendResetPasswordVerification)
 			r.POST("/reset-password/submit", authMiddleware.EnsureNotLoggedIn(), authHandler.SubmitResetPassword)
 		}
@@ -68,8 +74,8 @@ func praseRouters(r *gin.RouterGroup) {
 				UserService: userServiceRouter,
 			}
 
-			r.GET("/me",authMiddleware.EnsureLoggedIn(), userHandler.GetCurrentUser)
-			r.GET("/:id",authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
+			r.GET("/me", authMiddleware.EnsureLoggedIn(), userHandler.GetCurrentUser)
+			r.GET("/:id", authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
 			r.PATCH("/update", authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
 			r.DELETE("/delete", authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
 		}

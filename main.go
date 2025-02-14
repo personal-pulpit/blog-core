@@ -14,6 +14,7 @@ import (
 
 	postgres_repository "blog/database/postgres/repo"
 	"blog/pkg/auth_manager"
+	_ "blog/docs"
 )
 
 func checkError(loggerInstance logger.Logger, err error) {

@@ -50,11 +50,30 @@ type (
 		NewPassword string `json:"new_password" binding:"required,min=8,max=200"`
 	}
 
+	resetPasswordInput struct {
+		Email string `json:"email" binding:"required,emailvalidatior"`
+	}
+
+	submitResetPasswordInput struct {
+		Token       string `json:"token" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+
 	logoutInput struct {
 		RefreshToken string `json:"refresh_token" binding:"required"`
 	}
 )
 
+// @Summary Register a new user
+// @Description Create a new user account with the provided details
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body signinInput true "User registration data"
+// @Success 201 {object} helpers.HttpResponse{data=map[string]interface{}} "User registered successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid registration data"
+// @Failure 409 {object} helpers.HttpResponse{data=map[string]interface{}} "Email already exists"
+// @Router /api/v1/auth/register [post]
 func (h *AuthHandler) Register(ctx *gin.Context) {
 	var si signinInput
 	err := ctx.ShouldBindJSON(&si)
@@ -135,6 +154,16 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Verify user email
+// @Description Verify the email address of a user using the provided OTP
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body verifyEmailInput true "Email verification data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Email verified successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid verification data"
+// @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "User not found"
+// @Router /api/v1/auth/verify-email [post]
 func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 	var input verifyEmailInput
 	err := ctx.ShouldBindJSON(&input)
@@ -193,6 +222,16 @@ func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 		}))
 }
 
+// @Summary User login
+// @Description Authenticate a user with email and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body loginInput true "Login credentials"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Login successful"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid login data"
+// @Failure 401 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid credentials"
+// @Router /api/v1/auth/login [post]
 func (h *AuthHandler) Login(ctx *gin.Context) {
 	var li loginInput
 	err := ctx.ShouldBindJSON(&li)
@@ -252,6 +291,13 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Authenticate user
+// @Description Validate the access token of the user
+// @Tags auth
+// @Produce json
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Authentication successful"
+// @Failure 401 {object} helpers.HttpResponse{data=map[string]interface{}} "Authentication failed"
+// @Router /api/v1/auth/authenticate [get]
 func (h *AuthHandler) Authenticate(ctx *gin.Context) {
 	accessToken := ctx.GetHeader("X-Access-Token")
 
@@ -279,6 +325,16 @@ func (h *AuthHandler) Authenticate(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Refresh access token
+// @Description Refresh the user's access token using the refresh token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body refreshToken true "Refresh token data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Token refreshed successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid request data"
+// @Failure 401 {object} helpers.HttpResponse{data=map[string]interface{}} "Token refresh failed"
+// @Router /api/v1/auth/refresh-token [post]
 func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 	var li = new(refreshToken)
 
@@ -327,6 +383,15 @@ func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Change user password
+// @Description Change the password of the currently authenticated user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body changePasswordInput true "Password change data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Password changed successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid password change data"
+// @Router /api/v1/auth/change-password [post]
 func (h *AuthHandler) ChangePassword(ctx *gin.Context) {
 	var input changePasswordInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -362,11 +427,16 @@ func (h *AuthHandler) ChangePassword(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Send reset password verification
+// @Description Send a verification email to reset the password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body resetPasswordInput true "Email data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Reset password verification sent"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid email format"
+// @Router /api/v1/auth/reset-password/request [post]
 func (h *AuthHandler) SendResetPasswordVerification(ctx *gin.Context) {
-	type resetPasswordInput struct {
-		Email string `json:"email" binding:"required,emailvalidatior"`
-	}
-
 	var input resetPasswordInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -400,12 +470,16 @@ func (h *AuthHandler) SendResetPasswordVerification(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Submit reset password
+// @Description Submit a new password to reset the user's password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body submitResetPasswordInput true "Reset password data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Password reset successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid reset password data"
+// @Router /api/v1/auth/reset-password/submit [post]
 func (h *AuthHandler) SubmitResetPassword(ctx *gin.Context) {
-	type submitResetPasswordInput struct {
-		Token       string `json:"token" binding:"required"`
-		NewPassword string `json:"new_password" binding:"required"`
-	}
-
 	var input submitResetPasswordInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -438,6 +512,15 @@ func (h *AuthHandler) SubmitResetPassword(ctx *gin.Context) {
 		}))
 }
 
+// @Summary User logout
+// @Description Log out the currently authenticated user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body logoutInput true "Logout data"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Logged out successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid logout data"
+// @Router /api/v1/auth/logout [post]
 func (h *AuthHandler) Logout(ctx *gin.Context) {
 	var input logoutInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {

@@ -1,4 +1,3 @@
-## unit test
 unit_test:
 	go test $(shell go list ./... | grep -v /tests)
 
@@ -11,3 +10,6 @@ integration_service_test:
 coverage:
 	go tool cover -html="coverage.out"
 
+##swagger generate
+swag_gen:
+	swag init

@@ -10,24 +10,34 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/swaggo/swag/example/celler/httputil"
 )
 
-type (
-	Article struct {
-		ArticleService article.ArticleService
-	}
-	articleInput struct {
-		Title   string `json:"title" binding:"required"`
-		Content string `json:"content" binding:"required"`
-	}
-)
+// Article represents the Article handler.
+type Article struct {
+	ArticleService article.ArticleService
+}
 
+// articleInput represents the input for creating or updating an article.
+type articleInput struct {
+	Title   string `json:"title" binding:"required" example:"My First Article"`                      // Title of the article
+	Content string `json:"content" binding:"required" example:"This is the content of the article."` // Content of the article
+}
+
+// NewArticleHandler creates a new Article handler.
 func NewArticleHandler(articleService article.ArticleService) *Article {
 	return &Article{
 		ArticleService: articleService,
 	}
 }
 
+// @Summary Get all articles
+// @Description Retrieve all articles
+// @Tags articles
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Successfully retrieved articles"
+// @Failure 400 {object} map[string]interface{} "Failed to fetch articles"
+// @Router /api/v1/article [get]
 func (a *Article) GetAll(ctx *gin.Context) {
 	articles, err := a.ArticleService.GetAll(ctx)
 	if err != nil {
@@ -51,6 +61,15 @@ func (a *Article) GetAll(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Get an article by ID
+// @Description Retrieve an article by its ID
+// @Tags articles
+// @Produce json
+// @Param id path string true "Article ID"
+// @Success 200 {object} map[string]interface{} "Article retrieved successfully"
+// @Failure 404 {object} map[string]interface{} "Article not found"
+// @Failure 500 {object} map[string]interface{} "Failed to fetch article"
+// @Router /api/v1/article/{id} [get]
 func (a *Article) GetByID(ctx *gin.Context) {
 	ID := ctx.Param("id")
 
@@ -94,6 +113,16 @@ func (a *Article) GetByID(ctx *gin.Context) {
 		}))
 }
 
+
+// @Summary Search articles by title
+// @Description Search articles by title using a query string
+// @Tags articles
+// @Produce json
+// @Param q query string true "Search query"
+// @Success 200 {object} map[string]interface{} "Articles found successfully"
+// @Failure 404 {object} map[string]interface{} "No articles found with given data"
+// @Failure 500 {object} map[string]interface{} "Failed to search articles"
+// @Router /api/v1/article/search [get]
 func (a *Article) Search(ctx *gin.Context) {
 	q := ctx.Query("q")
 
@@ -134,6 +163,16 @@ func (a *Article) Search(ctx *gin.Context) {
 		}))
 }
 
+
+// @Summary Create a new article
+// @Description Create a new article with the provided title and content
+// @Tags articles
+// @Accept json
+// @Produce json
+// @Param article body articleInput true "Article input"
+// @Success 201 {object} map[string]interface{} "Article created successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid input data"
+// @Router /api/v1/article/create [post]
 func (a *Article) Create(ctx *gin.Context) {
 	var ai articleInput
 	err := ctx.ShouldBindJSON(&ai)
@@ -189,6 +228,17 @@ func (a *Article) Create(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Update an article by ID
+// @Description Update an article by its ID
+// @Tags articles
+// @Accept json
+// @Produce json
+// @Param id path string true "Article ID"
+// @Param article body articleInput true "Article input"
+// @Success 200 {object} map[string]interface{} "Article updated successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid update data"
+// @Failure 404 {object} map[string]interface{} "Article not found for update"
+// @Router /api/v1/article/{id} [patch]
 func (a *Article) UpdateByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	var ai = new(articleInput)
@@ -263,6 +313,15 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 		}))
 }
 
+// @Summary Delete an article by ID
+// @Description Delete an article by its ID
+// @Tags article
+// @Produce json
+// @Param id path string true "Article ID"
+// @Success 200 {object} map[string]interface{} "Article deleted successfully"
+// @Failure 404 {object} map[string]interface{} "Article not found for deletion"
+// @Failure 400 {object} map[string]interface{} "Failed to delete article"
+// @Router /api/v1/article/{id} [delete]
 func (a *Article) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	err := a.ArticleService.Delete(ctx, uint(helpers.StringToInt(id)))
