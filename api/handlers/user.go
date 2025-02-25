@@ -41,7 +41,7 @@ var (
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile retrieved successfully"
 // @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "User not found"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve user profile"
-// @Router /api/v1/user/me [get]
+// @Router /api/v1/users/me [get]
 func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 
@@ -86,7 +86,7 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile retrieved successfully"
 // @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "User not found"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve user profile"
-// @Router /api/v1/user/{id} [get]
+// @Router /api/v1/users/{id} [get]
 func (u *UserHandler) GetUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 
@@ -130,7 +130,7 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 // @Param user body updateInput true "User profile data"
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile updated successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid update data"
-// @Router /api/v1/user/update [patch]
+// @Router /api/v1/users/update [patch]
 func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 	var ui updateInput
@@ -193,7 +193,7 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 // @Param input body deleteAccountInput true "Account deletion data"
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Account deleted successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid deletion request"
-// @Router /api/v1/user/delete [delete]
+// @Router /api/v1/users/delete [delete]
 func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	var input deleteAccountInput
 	err := ctx.ShouldBindJSON(&input)

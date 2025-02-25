@@ -155,7 +155,7 @@ paths:
       summary: Get all articles
       tags:
       - articles
-  /api/v1/article/{id}:
+  /api/v1/articles/{id}:
     delete:
       description: Delete an article by its ID
       parameters:
@@ -251,7 +251,7 @@ paths:
       summary: Update an article by ID
       tags:
       - articles
-  /api/v1/article/create:
+  /api/v1/articles/create:
     post:
       consumes:
       - application/json
@@ -279,7 +279,7 @@ paths:
       summary: Create a new article
       tags:
       - articles
-  /api/v1/article/search:
+  /api/v1/articles/search:
     get:
       description: Search articles by title using a query string
       parameters:
@@ -682,7 +682,7 @@ paths:
       summary: Verify user email
       tags:
       - auth
-  /api/v1/user/{id}:
+  /api/v1/users/{id}:
     get:
       description: Retrieve the profile of a user by their ID
       parameters:
@@ -727,7 +727,7 @@ paths:
       summary: Get user profile by ID
       tags:
       - users
-  /api/v1/user/delete:
+  /api/v1/users/delete:
     delete:
       consumes:
       - application/json
@@ -765,7 +765,7 @@ paths:
       summary: Delete user account
       tags:
       - users
-  /api/v1/user/me:
+  /api/v1/users/me:
     get:
       description: Retrieve the profile of the currently authenticated user
       produces:
@@ -804,7 +804,7 @@ paths:
       summary: Get current user profile
       tags:
       - users
-  /api/v1/user/update:
+  /api/v1/users/update:
     patch:
       consumes:
       - application/json

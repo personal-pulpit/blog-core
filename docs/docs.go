@@ -43,7 +43,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/article/create": {
+        "/api/v1/articles/create": {
             "post": {
                 "description": "Create a new article with the provided title and content",
                 "consumes": [
@@ -85,7 +85,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/article/search": {
+        "/api/v1/articles/search": {
             "get": {
                 "description": "Search articles by title using a query string",
                 "produces": [
@@ -129,7 +129,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/article/{id}": {
+        "/api/v1/articles/{id}": {
             "get": {
                 "description": "Retrieve an article by its ID",
                 "produces": [
@@ -925,7 +925,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/delete": {
+        "/api/v1/users/delete": {
             "delete": {
                 "description": "Delete the account of the currently authenticated user",
                 "consumes": [
@@ -991,7 +991,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/me": {
+        "/api/v1/users/me": {
             "get": {
                 "description": "Retrieve the profile of the currently authenticated user",
                 "produces": [
@@ -1062,7 +1062,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/update": {
+        "/api/v1/users/update": {
             "patch": {
                 "description": "Update the profile of the currently authenticated user",
                 "consumes": [
@@ -1128,7 +1128,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/{id}": {
+        "/api/v1/users/{id}": {
             "get": {
                 "description": "Retrieve the profile of a user by their ID",
                 "produces": [
