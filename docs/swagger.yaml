@@ -136,7 +136,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/v1/article:
+  /api/v1/articles:
     get:
       description: Retrieve all articles
       produces:
@@ -285,8 +285,19 @@ paths:
       parameters:
       - description: Search query
         in: query
-        name: q
-        required: true
+        name: title
+        type: string
+      - description: 'Search query format: 2025-02-8 00:00:00.00000+00'
+        in: query
+        name: publishedAt
+        type: string
+      - description: 'Search query format: 2025-02-8 00:00:00.00000+00'
+        in: query
+        name: publishedAtGT
+        type: string
+      - description: 'Search query format: 2025-02-8 00:00:00.00000+00'
+        in: query
+        name: publishedAtLT
         type: string
       produces:
       - application/json

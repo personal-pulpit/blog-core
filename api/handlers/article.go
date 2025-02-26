@@ -37,7 +37,7 @@ func NewArticleHandler(articleService article.ArticleService) *Article {
 // @Produce json
 // @Success 200 {object} map[string]interface{} "Successfully retrieved articles"
 // @Failure 400 {object} map[string]interface{} "Failed to fetch articles"
-// @Router /api/v1/article [get]
+// @Router /api/v1/articles [get]
 func (a *Article) GetAll(ctx *gin.Context) {
 	articles, err := a.ArticleService.GetAll(ctx)
 	if err != nil {
@@ -117,23 +117,37 @@ func (a *Article) GetByID(ctx *gin.Context) {
 // @Description Search articles by title using a query string
 // @Tags articles
 // @Produce json
-// @Param q query string true "Search query"
+// @Param title query string false "Search query"
+// @Param publishedAt query string false "Search query format: 2025-02-8 00:00:00.00000+00"
+// @Param publishedAtGT query string false "Search query format: 2025-02-8 00:00:00.00000+00"
+// @Param publishedAtLT query string false "Search query format: 2025-02-8 00:00:00.00000+00"
 // @Success 200 {object} map[string]interface{} "Articles found successfully"
 // @Failure 404 {object} map[string]interface{} "No articles found with given data"
 // @Failure 500 {object} map[string]interface{} "Failed to search articles"
 // @Router /api/v1/articles/search [get]
 func (a *Article) Search(ctx *gin.Context) {
-	q := ctx.Query("q")
+	var filterData = map[string]string{}
 
-	articles, err := a.ArticleService.GetArticleByTitle(ctx, q)
+	err := ctx.BindQuery(&filterData)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+			http.StatusBadRequest,
+			"Failed to bind query",
+			map[string]interface{}{
+				"error": err.Error(),
+			}))
+		return
+	}
+
+	articles, err := a.ArticleService.SearchArticle(ctx, filterData)
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"No articles found with given data",
 				map[string]interface{}{
-					"search_query": q,
-					"error":        err.Error(),
+					"search_data": filterData,
+					"error":       err.Error(),
 				}))
 			return
 		}
@@ -141,8 +155,8 @@ func (a *Article) Search(ctx *gin.Context) {
 			http.StatusInternalServerError,
 			"Failed to search articles",
 			map[string]interface{}{
-				"search_query": q,
-				"error":        err.Error(),
+				"search_data": filterData,
+				"error":       err.Error(),
 			}))
 		return
 	}
@@ -154,7 +168,7 @@ func (a *Article) Search(ctx *gin.Context) {
 			"articles": articles,
 			"count":    len(articles),
 			"search_criteria": map[string]interface{}{
-				"search_query": q,
+				"search_data": filterData,
 			},
 			"metadata": map[string]interface{}{
 				"timestamp": time.Now(),

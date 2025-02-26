@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/article": {
+        "/api/v1/articles": {
             "get": {
                 "description": "Retrieve all articles",
                 "produces": [
@@ -99,9 +99,26 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Search query",
-                        "name": "q",
-                        "in": "query",
-                        "required": true
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search query format: 2025-02-8 00:00:00.00000+00",
+                        "name": "publishedAt",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search query format: 2025-02-8 00:00:00.00000+00",
+                        "name": "publishedAtGT",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search query format: 2025-02-8 00:00:00.00000+00",
+                        "name": "publishedAtLT",
+                        "in": "query"
                     }
                 ],
                 "responses": {

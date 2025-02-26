@@ -4,8 +4,10 @@ import (
 	postgres_repository "blog/database/postgres/repo"
 	"blog/internal/model"
 	"blog/internal/repository"
+	"blog/utils"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -44,7 +46,6 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 			article: model.NewArticle("article1", "content", 0),
 			Valid:   false,
 		},
-
 	}
 
 	for _, tc := range testCases {
@@ -72,25 +73,34 @@ func (s *ArticleTestSuite) TestB_GetAllArticles() {
 	}
 }
 
-func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
+func (s *ArticleTestSuite) TestC_SearchArticle() {
 	ctx := context.TODO()
+	fakeTitleData := "fake"
+	fakeTimeNowData := time.Now().Format("2006-01-02 15:04:05.999999999-07")
+	
+	timeNow, err := utils.ParasTime(fakeTimeNowData)
+	s.Nil(err)
 
 	testCases := []struct {
-		Title string
-		Valid bool
+		filterData *model.ArticleFilter
+		Valid      bool
 	}{
 		{
-			Title: s.article.Title,
-			Valid: true,
+			filterData: &model.ArticleFilter{Title: &s.article.Title, PublishedAt: timeNow},
+			Valid:      true,
 		},
 		{
-			Title: "Invalid",
-			Valid: false,
+			filterData: &model.ArticleFilter{Title: &fakeTitleData, PublishedAtLT: timeNow},
+			Valid:      true,
+		},
+		{
+			filterData: &model.ArticleFilter{Title: &fakeTitleData, PublishedAt: &s.article.CreatedAt, PublishedAtGT: timeNow},
+			Valid:      true,
 		},
 	}
 
 	for _, tc := range testCases {
-		articles, err := s.repo.GetArticleByTitle(ctx, tc.Title)
+		articles, err := s.repo.SearchArticles(ctx, tc.filterData)
 		if tc.Valid {
 			s.NoError(err)
 			for _, article := range articles {

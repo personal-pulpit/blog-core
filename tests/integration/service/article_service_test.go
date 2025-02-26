@@ -7,6 +7,7 @@ import (
 	"blog/internal/service/article"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -80,25 +81,39 @@ func (s *ArticleTestSuite) TestB_GetAllArticles() {
 	}
 }
 
-func (s *ArticleTestSuite) TestC_GetArticlesByTitle() {
+func (s *ArticleTestSuite) TestC_SearchArticles() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		Title string
-		Valid bool
+		filterData map[string]string
+		Valid      bool
 	}{
 		{
-			Title: s.article.Title,
+			filterData: map[string]string{
+				"title":       s.article.Title,
+				"publishedAt": time.Now().Format("2006-01-02 15:04:05.999999999-07"),
+			},
 			Valid: true,
 		},
 		{
-			Title: "Invalid",
+			filterData: map[string]string{
+				"title":       "fake",
+				"publishedAt": time.Now().Format("2006-01-02 15:04:05.999999999-07"),
+				"publishedAtLt": time.Now().Format("2006-01-02 15:04:05.999999999-07"),
+			},
+			Valid: true,
+		},
+		{
+			filterData: map[string]string{
+				"title":       s.article.Title,
+				"publishedAt": "invalid time",
+			},
 			Valid: false,
 		},
 	}
 
 	for _, tc := range testCases {
-		articles, err := s.service.GetArticleByTitle(ctx, tc.Title)
+		articles, err := s.service.SearchArticle(ctx, tc.filterData)
 		if tc.Valid {
 			s.NoError(err)
 			for _, article := range articles {
