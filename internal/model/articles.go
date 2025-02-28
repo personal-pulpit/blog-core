@@ -14,6 +14,13 @@ type Article struct {
 	Author *User  `gorm:"foreignKey:author_id"`
 }
 
+type ArticleFilter struct {
+	Title       *string 
+	PublishedAt *time.Time 
+	PublishedAtGT *time.Time
+	PublishedAtLT *time.Time
+}
+
 func NewArticle(title, content string, authorID uint) *Article {
 	return &Article{
 		Title:    title,

@@ -3,6 +3,7 @@ package article
 import (
 	"blog/internal/model"
 	"blog/internal/repository"
+	"blog/utils"
 	"context"
 )
 
@@ -11,7 +12,7 @@ type ArticleService interface {
 	Update(ctx context.Context, ID uint, title, content string) (*model.Article, error)
 	Delete(ctx context.Context, articleID uint) error
 	GetAll(ctx context.Context) ([]model.Article, error)
-	GetArticleByTitle(ctx context.Context, title string) ([]model.Article, error)
+	SearchArticle(ctx context.Context, filter map[string]string) ([]model.Article, error)
 	GetArticleByID(ctx context.Context, ID uint) (*model.Article, error)
 }
 
@@ -62,8 +63,37 @@ func (s *articleService) GetAll(ctx context.Context) ([]model.Article, error) {
 	return articles, err
 }
 
-func (s *articleService) GetArticleByTitle(ctx context.Context, title string) ([]model.Article, error) {
-	articles, err := s.articlePostgresRepo.GetArticleByTitle(ctx, title)
+func (s *articleService) SearchArticle(ctx context.Context, filter map[string]string) ([]model.Article, error) {
+	var articleFilter = &model.ArticleFilter{}
+
+	for i, v := range filter {
+		if i == "title" {
+			articleFilter.Title = &v
+		} else if i == "publishedAt" {
+			parsedTime, err := utils.ParasTime(v)
+			if err != nil {
+				return nil, err
+			}
+
+			articleFilter.PublishedAt = parsedTime
+		} else if i == "publishedAtGt" {
+			parsedTime, err := utils.ParasTime(v)
+			if err != nil {
+				return nil, err
+			}
+
+			articleFilter.PublishedAtGT = parsedTime
+		} else if i == "publishedAtLt" {
+			parsedTime, err := utils.ParasTime(v)
+			if err != nil {
+				return nil, err
+			}
+
+			articleFilter.PublishedAtLT = parsedTime
+		}
+	}
+
+	articles, err := s.articlePostgresRepo.SearchArticles(ctx, articleFilter)
 	if err != nil {
 		return nil, err
 	}

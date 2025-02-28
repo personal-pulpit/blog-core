@@ -4,6 +4,7 @@ import (
 	"blog/internal/model"
 	"blog/internal/repository"
 	"context"
+	"strings"
 
 	"errors"
 
@@ -34,16 +35,39 @@ func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, erro
 	return articles, nil
 }
 
-func (a *articlePostgresRepo) GetArticleByTitle(ctx context.Context, title string) ([]model.Article, error) {
-	articles := []model.Article{}
+func (a *articlePostgresRepo) SearchArticles(ctx context.Context, filter *model.ArticleFilter) ([]model.Article, error) {
+	var articles []model.Article
+	query := a.postgresCLI.WithContext(ctx).Model(&model.Article{})
 
-	err := a.postgresCLI.WithContext(ctx).Preload("Author").Where("LOWER(title) LIKE LOWER(?)", "%"+title+"%").Find(&articles).Error
-	if err != nil {
-		return nil, err
+	var conditions []string
+	var args []interface{}
+
+	if filter.Title != nil {
+		conditions = append(conditions, "title LIKE ?")
+		args = append(args, "%"+*filter.Title+"%")
 	}
 
-	if len(articles) == 0 {
-		return nil, ErrArticleNotFound
+	if filter.PublishedAt != nil {
+		conditions = append(conditions, "created_at = ?")
+		args = append(args, *filter.PublishedAt)
+	}
+
+	if filter.PublishedAtGT != nil {
+		conditions = append(conditions, "created_at > ?")
+		args = append(args, *filter.PublishedAtGT)
+	}
+
+	if filter.PublishedAtLT != nil {
+		conditions = append(conditions, "created_at < ?")
+		args = append(args, *filter.PublishedAtLT)
+	}
+
+	if len(conditions) > 0 {
+		query = query.Where(strings.Join(conditions, " OR "), args...)
+	}
+
+	if err := query.Preload("Author").Find(&articles).Error; err != nil {
+		return nil, err
 	}
 
 	return articles, nil

@@ -43,8 +43,8 @@ func InitRouters(authManager auth_manager.AuthManager, authService authenticatio
 	v1 := r.Group("/api/v1", authMiddleware.SetUserStatus())
 	{
 		praseRouters(v1.Group("/auth"))
-		praseRouters(v1.Group("/user"))
-		praseRouters(v1.Group("/article"))
+		praseRouters(v1.Group("/users"))
+		praseRouters(v1.Group("/articles"))
 	}
 
 	return r
@@ -68,7 +68,7 @@ func praseRouters(r *gin.RouterGroup) {
 			r.POST("/reset-password/submit", authMiddleware.EnsureNotLoggedIn(), authHandler.SubmitResetPassword)
 		}
 
-	case "/api/v1/user":
+	case "/api/v1/users":
 		{
 			userHandler := &handlers.UserHandler{
 				UserService: userServiceRouter,
@@ -79,7 +79,7 @@ func praseRouters(r *gin.RouterGroup) {
 			r.PATCH("/update", authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
 			r.DELETE("/delete", authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
 		}
-	case "/api/v1/article":
+	case "/api/v1/articles":
 		{
 			articleHandler := handlers.NewArticleHandler(articleServiceRouter)
 
