@@ -2,6 +2,8 @@ package database
 
 import (
 	"blog/config"
+	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -11,6 +13,8 @@ import (
 var (
 	redisInstance *redis.Client
 	redisMutex    = &sync.Mutex{}
+
+	ErrConnectionFailed = errors.New("connection failed")
 )
 
 func GetRedisDB(cfg *config.Redis) (*redis.Client, error) {
@@ -25,11 +29,19 @@ func GetRedisDB(cfg *config.Redis) (*redis.Client, error) {
 			cfg.Port,
 			cfg.DB,
 		)
+
 		opts, err := redis.ParseURL(url)
 		if err != nil {
 			return nil, err
 		}
+
 		redisInstance = redis.NewClient(opts)
+
+		err = redisInstance.Ping(context.TODO()).Err()
+		if err != nil {
+			return nil, errors.Join(err, ErrConnectionFailed)
+		}
+
 	}
 
 	return redisInstance, nil

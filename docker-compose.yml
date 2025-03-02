@@ -17,6 +17,8 @@ services:
   redis:
     image: redis:latest
     container_name: redis
+    environment:
+      - REDIS_PASSWORD = password
     ports:
       - "6379:6379"
     networks:
@@ -33,6 +35,7 @@ services:
 
     networks:
       - webapi_network
+
 networks:
   webapi_network:
     driver: bridge 

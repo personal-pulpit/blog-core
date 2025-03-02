@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/joho/godotenv"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -34,12 +35,14 @@ type (
 		DBName   string `koanf:"db_name"`
 		Port     int    `koanf:"port"`
 	}
+
 	Logger struct {
 		LogFilePath string `koanf:"log_file_path"`
 		LoggerName  string `koanf:"logger_name"`
 		Level       string `koanf:"level"`
 		Encoding    string `koanf:"encoding"`
 	}
+
 	Redis struct {
 		Host     string `koanf:"host"`
 		DB       int    `koanf:"db"`
@@ -48,9 +51,11 @@ type (
 		Password string `koanf:"password"`
 		Protocol string `koanf:"protocol"`
 	}
+
 	Jwt struct {
 		Secret string `koanf:"secret"`
 	}
+
 	Email struct {
 		SenderEmail string `koanf:"sender_email"`
 		Password    string `koanf:"password"`
@@ -73,16 +78,18 @@ const (
 
 func ConfigsDirPath() string {
 	_, f, _, ok := runtime.Caller(0)
+
 	if !ok {
 		panic("Error in generating env dir")
 	}
 
 	return filepath.Dir(f)
 }
+
 func GetConfigInstance() *Config {
 	mu.Lock()
 	defer mu.Unlock()
-	
+
 	if configIns == nil {
 		filename := getConfigFile(GetEnv())
 
@@ -104,7 +111,13 @@ func GetConfigInstance() *Config {
 	}
 	return configIns
 }
+
 func GetEnv() Env {
+	err := godotenv.Load(ConfigsDirPath() + "/../" + ".env")
+	if err != nil {
+		panic(err)
+	}
+
 	env := strings.ToLower(os.Getenv("ENV"))
 
 	if env == Development || env == "" {
@@ -115,6 +128,7 @@ func GetEnv() Env {
 		panic("invalid env:" + env)
 	}
 }
+
 func getConfigFile(env Env) string {
 	if env == Development {
 		return "config-development.yaml"

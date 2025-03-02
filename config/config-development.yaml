@@ -11,8 +11,8 @@ jwt:
 redis:
   port: 6379
   host: 127.0.0.1
-  username: ""
-  password: ""
+  username: "default"
+  password: "password"
   db:       0
   protocol: 3
 logger:
