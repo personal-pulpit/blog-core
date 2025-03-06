@@ -2,11 +2,11 @@ package logger
 
 import (
 	"blog/config"
+	"os"
 	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type ZapLogger struct {
@@ -30,26 +30,18 @@ func GetZapLoggerInstance(loggerCfg *config.Logger) Logger {
 	defer mu.Unlock()
 
 	if zapLoggerInstance == nil {
-		w := zapcore.AddSync(&lumberjack.Logger{
-			Filename:   loggerCfg.LogFilePath,
-			MaxSize:    1,
-			MaxAge:     5,
-			MaxBackups: 10,
-			Compress:   true,
-		})
+		consoleWriter := zapcore.Lock(os.Stdout)
 
 		config := zap.NewProductionEncoderConfig()
-
 		config.EncodeTime = zapcore.ISO8601TimeEncoder
 
 		core := zapcore.NewCore(
 			zapcore.NewJSONEncoder(config),
-			w,
+			consoleWriter,
 			getLogLevel(loggerCfg.Level),
 		)
 
 		logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.ErrorLevel)).Sugar()
-
 		logger = logger.With("AppName", "MyApp", "LoggerName", "ZeroLog")
 
 		zapLoggerInstance = new(ZapLogger)

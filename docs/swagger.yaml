@@ -184,7 +184,7 @@ paths:
             type: object
       summary: Delete an article by ID
       tags:
-      - article
+      - articles
     get:
       description: Retrieve an article by its ID
       parameters:

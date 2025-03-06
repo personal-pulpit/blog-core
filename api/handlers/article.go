@@ -327,7 +327,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 
 // @Summary Delete an article by ID
 // @Description Delete an article by its ID
-// @Tags article
+// @Tags articles
 // @Produce json
 // @Param id path string true "Article ID"
 // @Success 200 {object} map[string]interface{} "Article deleted successfully"

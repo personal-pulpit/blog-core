@@ -195,7 +195,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "article"
+                    "articles"
                 ],
                 "summary": "Delete an article by ID",
                 "parameters": [
