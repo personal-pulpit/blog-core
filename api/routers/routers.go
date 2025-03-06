@@ -3,6 +3,7 @@ package routers
 import (
 	"blog/api/handlers"
 	"blog/api/middlewares"
+	"blog/config"
 
 	auth_middlewares "blog/api/middlewares/auth_middlewares"
 	"blog/internal/service/article"
@@ -32,6 +33,10 @@ func InitRouters(authManager auth_manager.AuthManager, authService authenticatio
 
 	authMiddleware = auth_middlewares.NewUserAuthMiddleware(authManager)
 
+	if config.GetEnv() == config.Production {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.CustomLogger())
