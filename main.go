@@ -17,21 +17,22 @@ import (
 	_ "blog/docs"
 )
 
-func checkError(loggerInstance logger.Logger, err error) {
+func checkError(loggerInstance logger.Logger,msg string,err error) {
 	if err != nil {
-		loggerInstance.Fatal(logger.General, logger.Startup, err.Error(), map[logger.ExtraKey]interface{}{})
+		loggerInstance.Fatal(msg,"Error",err)
 	}
 }
+
 func main() {
 	config := config.GetConfigInstance()
 
-	logger := logger.GetZapLoggerInstance(&config.Logger)
+	logger := logger.GetZapLoggerInstance()
 
 	postgresCLI, err := postgres.GetPostgresqlDB(&config.Postgres)
-	checkError(logger, err)
+	checkError(logger, "Postgres Database",err)
 
 	redisCLI, err := redis.GetRedisDB(&config.Redis)
-	checkError(logger, err)
+	checkError(logger, "Redis",err)
 
 	defer redis.CloseRedis()
 
@@ -48,5 +49,5 @@ func main() {
 	articleService := article.NewArticleService(articlePostgresRepo)
 
 	err = server.InitServer(config.Server.Port, authManager,authService, userService, articleService, logger)
-	checkError(logger, err)
+	checkError(logger,"Server", err)
 }

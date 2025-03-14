@@ -39,7 +39,6 @@ func InitRouters(authManager auth_manager.AuthManager, authService authenticatio
 	
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(middlewares.CustomLogger())
 	r.Use(middlewares.LimitByRequest())
 
 	//swagger
