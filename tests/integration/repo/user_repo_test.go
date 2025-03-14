@@ -14,10 +14,21 @@ type UserTestSuite struct {
 	suite.Suite
 	repo      repository.UserPostgresRepository
 	savedUser *model.User
+	commentRepo repository.CommentRepository
+	articleRepo repository.ArticlePostgresRepository
+
+	usersArticleID uint
+	usersCommentID uint
+
 }
 
 func (s *UserTestSuite) SetupSuite() {
+	//get main repo
 	s.repo = postgres_repository.NewUserPostgresRepository(db)
+
+	//get helper repos
+	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
+	s.articleRepo = postgres_repository.NewArticlePostgresRepo(db)
 }
 
 func (s *UserTestSuite) TestA_Create() {
@@ -43,7 +54,20 @@ func (s *UserTestSuite) TestA_Create() {
 			s.NoError(err)
 			s.NotNil(user)
 			tx.Commit()
+
 			s.savedUser = user
+
+			article,err := s.articleRepo.Create(ctx, model.NewArticle("article1", "content", user.ID))
+			s.Nil(err)
+			s.NotNil(article)
+			
+			s.usersArticleID = article.ID
+
+			comment,err := s.commentRepo.Create(ctx, model.NewComment(user.ID, article.ID, "comment1"))
+			s.Nil(err)
+			s.NotNil(comment)
+
+			s.usersCommentID = comment.ID
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(user)
@@ -73,6 +97,7 @@ func (s *UserTestSuite) TestB_GetUserByID() {
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(user)
+			s.NotNil(user.Comments)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(user)
@@ -196,8 +221,16 @@ func (s *UserTestSuite) TestF_DeleteUser() {
 		}
 	}
 
-	// Ensure the user is deleted after the test
+	// Ensure the user is deleted 
 	_, err = s.repo.GetUserByID(ctx, s.savedUser.ID)
+	s.Error(err)
+
+	// Ensure the user's article is deleted 
+	_,err = s.articleRepo.GetArticleByID(ctx,s.usersArticleID)
+	s.Error(err)
+
+	// Ensure the user's comment is deleted 
+	_,err = s.commentRepo.GetByID(ctx,s.usersCommentID)
 	s.Error(err)
 }
 func TestUserTestSuite(t *testing.T) {

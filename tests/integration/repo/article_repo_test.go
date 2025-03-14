@@ -14,20 +14,24 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo            repository.ArticlePostgresRepository
-	userRepo        repository.UserPostgresRepository
-	article         *model.Article
+	repo        repository.ArticlePostgresRepository
+	userRepo    repository.UserPostgresRepository
+	commentRepo repository.CommentRepository
+	article     *model.Article
+
 	articleAuthorID uint
 }
 
 func (s *ArticleTestSuite) SetupSuite() {
 	s.repo = postgres_repository.NewArticlePostgresRepo(db)
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
+	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
 
 	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user1", "user1", "<EMAIL>", "user1"))
 	s.Nil(err)
 	s.NotNil(user)
 	tx.Commit()
+
 	s.articleAuthorID = user.ID
 }
 
@@ -54,6 +58,15 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 			s.NoError(err)
 			s.NotNil(article)
 			s.article = article
+
+			comment, err := s.commentRepo.Create(ctx, model.NewComment(article.ID, s.articleAuthorID, "comment1"))
+			s.Nil(err)
+			s.NotNil(comment)
+
+			comment2, err := s.commentRepo.Create(ctx, model.NewComment(article.ID, s.articleAuthorID, "comment2"))
+			s.Nil(err)
+			s.NotNil(comment2)
+
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)
@@ -77,7 +90,7 @@ func (s *ArticleTestSuite) TestC_SearchArticle() {
 	ctx := context.TODO()
 	fakeTitleData := "fake"
 	fakeTimeNowData := time.Now().Format("2006-01-02 15:04:05.999999999-07")
-	
+
 	timeNow, err := utils.ParasTime(fakeTimeNowData)
 	s.Nil(err)
 
@@ -138,6 +151,7 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 			s.NoError(err)
 			s.NotNil(article)
 			s.NotNil(article.Author)
+			s.NotNil(article.Comments)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)
@@ -202,6 +216,11 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 		},
 	}
 
+	// Ensure the article's comments is exists
+	comments, err := s.commentRepo.GetAll(ctx)
+	s.NoError(err)
+	s.NotEqual(0, len(comments))
+
 	for _, tc := range testCases {
 		err := s.repo.DeleteByID(ctx, tc.articleID)
 		if tc.Valid {
@@ -210,6 +229,20 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 			s.Error(err)
 		}
 	}
+
+	// Ensure the user is deleted
+	_, err = s.repo.GetArticleByID(ctx, s.article.ID)
+	s.Error(err)
+
+	// Ensure the article's user exists
+	user, err := s.userRepo.GetUserByID(ctx, s.articleAuthorID)
+	s.Nil(err)
+	s.NotNil(user)
+
+	// Ensure the article's comments is deleted
+	comments, err = s.commentRepo.GetAll(ctx)
+ 	s.NoError(err)
+	s.Equal(0, len(comments))
 }
 
 func TestArticleTestSuite(t *testing.T) {

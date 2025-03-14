@@ -13,7 +13,8 @@ type User struct {
 	LastName  string `gorm:"size:25;NOT NULL"`
 	Email     string `gorm:"unique;size:50;NOT NULL"`
 	Biography string `gorm:"type:text;size:500;NOT NULL"`
-	Articles  []Article `gorm:"foreignKey:AuthorID"`
+	Articles  []Article `gorm:"foreignKey:AuthorID;constraint:OnDelete:CASCADE"`
+	Comments []Comment `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 func NewUser(firstName, lastName, email, biography string) *User {
