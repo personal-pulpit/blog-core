@@ -108,12 +108,26 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 // @Router /api/v1/comments/{id} [patch]
 func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 	id := ctx.Param("id")
-	content := ctx.PostForm("content")
-	userID := uint(ctx.GetInt("id"))
+	var input struct {
+        Content string `json:"content" binding:"required"`
+    }
+    
+    err := ctx.ShouldBindJSON(&input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
+			http.StatusBadRequest,
+			"Invalid update data",
+			map[string]interface{}{
+				"validation_errors": utils.GetValidationError(err),
+				"provided_data":     input.Content,
+			}))
+		return
+	}
 
+	userID := uint(ctx.GetInt("id"))
 	comment, err := a.commentService.UpdateComment(ctx,userID,
 		uint(helpers.StringToInt(id)),
-		content,
+		input.Content,
 	)
 
 	if err != nil {
