@@ -5,13 +5,14 @@ import (
 )
 
 type Article struct {
-	ID        uint `gorm:"primaryKey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Title     string `gorm:"size:100;NOT NULL"`
-	Content   string `gorm:"text;NOT NULL"`
-	AuthorID  uint
-	Author *User  `gorm:"foreignKey:author_id"`
+    ID        uint   `gorm:"primaryKey"`
+    CreatedAt time.Time
+    UpdatedAt time.Time
+    Title     string `gorm:"size:100;NOT NULL"`
+    Content   string `gorm:"type:text;NOT NULL"`
+    AuthorID  uint
+    Author    *User   `gorm:"foreignKey:AuthorID"`
+    Comments  []Comment `gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE;"`
 }
 
 type ArticleFilter struct {

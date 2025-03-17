@@ -27,7 +27,7 @@ func (s *UserTestSuite) SetupSuite() {
 
 	s.service = user.NewUserService(s.userRepo, authRepo)
 
-	userModel := model.NewUser("user1 firstName", "user1 lastName", "afakeonce@fake.come", "user1 biography")
+	userModel := model.NewUser("user1 firstName", "user1 lastName", "setupsuitemail@fake.come", "user1 biography")
 	user, tx, err := s.userRepo.Create(context.TODO(), userModel)
 	s.NoError(err)
 	tx.Commit()

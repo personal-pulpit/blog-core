@@ -8,6 +8,7 @@ import (
 	auth_middlewares "blog/api/middlewares/auth_middlewares"
 	"blog/internal/service/article"
 	"blog/internal/service/authentication"
+	"blog/internal/service/comment"
 	"blog/internal/service/user"
 	"blog/pkg/auth_manager"
 	"blog/pkg/logger"
@@ -22,14 +23,17 @@ var (
 	authServiceRouter    authentication.AuthService
 	userServiceRouter    user.UserService
 	articleServiceRouter article.ArticleService
+	commentServiceRouter comment.CommentService
+
 
 	authMiddleware *auth_middlewares.UserAuthMiddleware
 )
 
-func InitRouters(authManager auth_manager.AuthManager, authService authentication.AuthService, userService user.UserService, articleService article.ArticleService, logger logger.Logger) *gin.Engine {
+func InitRouters(authManager auth_manager.AuthManager, authService authentication.AuthService, userService user.UserService, articleService article.ArticleService,commentService comment.CommentService, logger logger.Logger) *gin.Engine {
 	authServiceRouter = authService
 	userServiceRouter = userService
 	articleServiceRouter = articleService
+	commentServiceRouter = commentService
 
 	authMiddleware = auth_middlewares.NewUserAuthMiddleware(authManager)
 
@@ -49,6 +53,7 @@ func InitRouters(authManager auth_manager.AuthManager, authService authenticatio
 		praseRouters(v1.Group("/auth"))
 		praseRouters(v1.Group("/users"))
 		praseRouters(v1.Group("/articles"))
+		praseRouters(v1.Group("/comments"))
 	}
 
 	return r
@@ -94,5 +99,13 @@ func praseRouters(r *gin.RouterGroup) {
 			r.PATCH("/:id", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.UpdateByID)
 			r.DELETE("/:id", authMiddleware.EnsureLoggedIn(), authMiddleware.EnsureAdmin(), articleHandler.DeleteByID)
 		}
+	case "/api/v1/comments":
+	{
+		commentHandler := handlers.NewCommentHandler(commentServiceRouter)
+
+		r.POST("/create", authMiddleware.EnsureLoggedIn(), commentHandler.Create)
+		r.PATCH("/:id", authMiddleware.EnsureLoggedIn(), commentHandler.UpdateByID)
+		r.DELETE("/:id", authMiddleware.EnsureLoggedIn(), commentHandler.DeleteByID)
 	}
+}
 }

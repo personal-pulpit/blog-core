@@ -5,5 +5,6 @@ import "errors"
 var (
 	ErrEmailAlreadyExits       = errors.New("email already exits")
 	ErrUserNotFound            = errors.New("user not found")
+	ErrCommentNotFound            = errors.New("comment not found")
 	ErrEmailOrPasswordWrong = errors.New("username or password wrong")
 )

@@ -27,6 +27,20 @@ definitions:
     - new_password
     - old_password
     type: object
+  handlers.commentInput:
+    properties:
+      article_id:
+        description: ID of the comment
+        example: "1"
+        type: string
+      content:
+        description: Content of the comment
+        example: This is the content of the comment.
+        type: string
+    required:
+    - article_id
+    - content
+    type: object
   handlers.deleteAccountInput:
     properties:
       password:
@@ -693,6 +707,95 @@ paths:
       summary: Verify user email
       tags:
       - auth
+  /api/v1/comments/{id}:
+    delete:
+      description: Delete an comment by its ID
+      parameters:
+      - description: comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: comment deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Failed to delete comment
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: comment not found for deletion
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an comment by ID
+      tags:
+      - comments
+    patch:
+      consumes:
+      - application/json
+      description: Update an comment by its ID
+      parameters:
+      - description: comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: comment updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid update data
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: comment not found for update
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an comment by ID
+      tags:
+      - comments
+  /api/v1/comments/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new comment with the provided content and comment ID
+      parameters:
+      - description: comment input
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.commentInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: comment created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input data
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new comment
+      tags:
+      - comments
   /api/v1/users/{id}:
     get:
       description: Retrieve the profile of a user by their ID
