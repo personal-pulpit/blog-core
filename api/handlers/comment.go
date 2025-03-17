@@ -24,8 +24,8 @@ func NewCommentHandler(commentService comment.CommentService) *CommentHandler {
 
 // commentInput represents the input for creating a comment.
 type commentInput struct {
-	ArticleID string `json:"article_id" binding:"required" example:"1"` // ID of the comment
-	Content string `json:"content" binding:"required" example:"This is the content of the comment."` // Content of the comment
+	ArticleID string `json:"article_id" binding:"required" example:"1"`                                // ID of the comment
+	Content   string `json:"content" binding:"required" example:"This is the content of the comment."` // Content of the comment
 }
 
 // @Summary Create a new comment
@@ -62,10 +62,10 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 	}
 	userID := uint(ctx.GetInt("id"))
 	comment, err := a.commentService.AddComment(
-	ctx,
-	ci.Content,
-	userID, 
-	uint(helpers.StringToInt(ci.ArticleID)),
+		ctx,
+		ci.Content,
+		userID,
+		uint(helpers.StringToInt(ci.ArticleID)),
 	)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
@@ -84,9 +84,9 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 		map[string]interface{}{
 			"comment": map[string]interface{}{
 				"id":         comment.ID,
-				"content":      comment.Content,
-				"user_id":  comment.UserID,
-				"article_id":  comment.ArticleID,
+				"content":    comment.Content,
+				"user_id":    comment.UserID,
+				"article_id": comment.ArticleID,
 				"created_at": comment.CreatedAt,
 			},
 			"metadata": map[string]interface{}{
@@ -109,8 +109,9 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	content := ctx.PostForm("content")
+	userID := uint(ctx.GetInt("id"))
 
-	comment, err := a.commentService.UpdateComment(ctx,
+	comment, err := a.commentService.UpdateComment(ctx,userID,
 		uint(helpers.StringToInt(id)),
 		content,
 	)
@@ -144,7 +145,7 @@ func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 			"comment": map[string]interface{}{
 				"id":         comment.ID,
 				"content":    comment.Content,
-				"user_id":     comment.UserID,
+				"user_id":    comment.UserID,
 				"article_id": comment.ArticleID,
 				"updated_at": comment.UpdatedAt,
 			},
@@ -165,7 +166,9 @@ func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 // @Router /api/v1/comments/{id} [delete]
 func (a *CommentHandler) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
-	err := a.commentService.DeleteComment(ctx, uint(helpers.StringToInt(id)))
+	userID := uint(ctx.GetInt("id"))
+
+	err := a.commentService.DeleteComment(ctx, userID, uint(helpers.StringToInt(id)))
 	if err != nil {
 		if errors.Is(err, postgres_repository.ErrCommentNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(

@@ -8,8 +8,8 @@ import (
 
 type CommentService interface {
 	AddComment(ctx context.Context, content string, userID, articleID uint) (*model.Comment, error)
-	UpdateComment(ctx context.Context, commentID uint, content string) (*model.Comment, error)
-	DeleteComment(ctx context.Context, commentID uint) error
+	UpdateComment(ctx context.Context, userID,commentID uint, content string) (*model.Comment, error)
+	DeleteComment(ctx context.Context, userID,commentID uint) error
 }
 
 type commentServiceImpl struct {
@@ -32,7 +32,12 @@ func (s *commentServiceImpl) AddComment(ctx context.Context, content string, use
 	return comment, nil
 }
 
-func (s *commentServiceImpl) UpdateComment(ctx context.Context, commentID uint, content string) (*model.Comment, error) {
+func (s *commentServiceImpl) UpdateComment(ctx context.Context, userID,commentID uint, content string) (*model.Comment, error) {
+	err := s.checkCommentCreator(ctx, userID, commentID)
+	if err != nil {
+		return nil,err
+	}
+
 	comment, err := s.commentRepo.UpdateByID(ctx, commentID, content)
 	if err != nil {
 		return nil, err
@@ -41,11 +46,27 @@ func (s *commentServiceImpl) UpdateComment(ctx context.Context, commentID uint, 
 	return comment, nil
 }
 
-func (s *commentServiceImpl) DeleteComment(ctx context.Context, commentID uint) error {
-	err := s.commentRepo.DeleteByID(ctx, commentID)
+func (s *commentServiceImpl) DeleteComment(ctx context.Context, userID,commentID uint) error {
+	err := s.checkCommentCreator(ctx, userID, commentID)
 	if err != nil {
 		return err
 	}
 
+	err = s.commentRepo.DeleteByID(ctx, commentID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *commentServiceImpl) checkCommentCreator(ctx context.Context, userID, commentID uint) error {
+	comment, err := s.commentRepo.GetByID(ctx, commentID)
+	if err != nil {
+		return err
+	}
+	if comment.UserID != userID {
+		return ErrPermissionDenied
+	}
 	return nil
 }

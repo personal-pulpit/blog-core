@@ -60,23 +60,32 @@ func (s *CommentTestSuite) TestB_UpdateComment() {
 
 	testCases := []struct {
 		commentID uint
+		userID    uint
 		content   string
 		Valid     bool
 	}{
 		{
 			commentID: s.commentID,
-			content:   "changed comment1",
-			Valid:     true,
+			userID:    0,
+			content:   "failed  content1",
+			Valid:     false,
 		},
 		{
 			commentID: 0,
+			userID:    s.userID,
 			content:   "failed  content1",
 			Valid:     false,
+		},
+		{
+			commentID: s.commentID,
+			userID:    s.userID,
+			content:   "changed comment1",
+			Valid:     true,
 		},
 	}
 
 	for _, tc := range testCases {
-		comment, err := s.service.UpdateComment(ctx, tc.commentID, tc.content)
+		comment, err := s.service.UpdateComment(ctx, tc.userID, tc.commentID, tc.content)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(comment)
@@ -93,20 +102,28 @@ func (s *CommentTestSuite) TestC_DeleteComment() {
 
 	testCases := []struct {
 		commentID uint
+		userID    uint
 		Valid     bool
 	}{
 		{
-			commentID: s.commentID,
-			Valid:     true,
+			commentID: 0,
+			userID:    s.userID,
+			Valid:     false,
 		},
 		{
-			commentID: 0,
+			commentID: s.commentID,
+			userID:    0,
 			Valid:     false,
+		},
+		{
+			commentID: s.commentID,
+			userID:    s.userID,
+			Valid:     true,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.service.DeleteComment(ctx, tc.commentID)
+		err := s.service.DeleteComment(ctx, tc.userID, tc.commentID)
 		if tc.Valid {
 			s.NoError(err)
 
