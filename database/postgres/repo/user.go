@@ -13,7 +13,7 @@ type userPostgresRepo struct {
 	postgresCLI *gorm.DB
 }
 
-func NewUserPostgresRepository(postgresCLI *gorm.DB) repository.UserPostgresRepository {
+func NewUserPostgresRepository(postgresCLI *gorm.DB) repository.UserRepository {
 	return &userPostgresRepo{
 		postgresCLI: postgresCLI,
 	}

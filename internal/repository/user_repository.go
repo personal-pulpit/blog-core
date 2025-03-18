@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserPostgresRepository interface {
+type UserRepository interface {
 	Create(ctx context.Context,user *model.User) (*model.User, *gorm.DB, error)
 	UpdateByID(ctx context.Context ,ID uint, firstName, lastName, biography string) (*model.User, error)
 	DeleteByID(ctx context.Context,ID uint) error

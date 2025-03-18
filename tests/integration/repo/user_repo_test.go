@@ -12,14 +12,13 @@ import (
 
 type UserTestSuite struct {
 	suite.Suite
-	repo      repository.UserPostgresRepository
-	savedUser *model.User
+	repo        repository.UserRepository
+	savedUser   *model.User
 	commentRepo repository.CommentRepository
-	articleRepo repository.ArticlePostgresRepository
+	articleRepo repository.ArticleRepository
 
 	usersArticleID uint
 	usersCommentID uint
-
 }
 
 func (s *UserTestSuite) SetupSuite() {
@@ -57,13 +56,13 @@ func (s *UserTestSuite) TestA_Create() {
 
 			s.savedUser = user
 
-			article,err := s.articleRepo.Create(ctx, model.NewArticle("article1", "content", user.ID))
+			article, err := s.articleRepo.Create(ctx, model.NewArticle("article1", "content", user.ID))
 			s.Nil(err)
 			s.NotNil(article)
-			
+
 			s.usersArticleID = article.ID
 
-			comment,err := s.commentRepo.Create(ctx, model.NewComment(user.ID, article.ID, "comment1"))
+			comment, err := s.commentRepo.Create(ctx, model.NewComment(user.ID, article.ID, "comment1"))
 			s.Nil(err)
 			s.NotNil(comment)
 
@@ -193,7 +192,7 @@ func (s *UserTestSuite) TestE_ModifyUser() {
 }
 
 func (s *UserTestSuite) TestF_DeleteUser() {
-	ctx := context.TODO()	
+	ctx := context.TODO()
 	testCases := []struct {
 		userID uint
 		Valid  bool
@@ -221,16 +220,16 @@ func (s *UserTestSuite) TestF_DeleteUser() {
 		}
 	}
 
-	// Ensure the user is deleted 
+	// Ensure the user is deleted
 	_, err = s.repo.GetUserByID(ctx, s.savedUser.ID)
 	s.Error(err)
 
-	// Ensure the user's article is deleted 
-	_,err = s.articleRepo.GetArticleByID(ctx,s.usersArticleID)
+	// Ensure the user's article is deleted
+	_, err = s.articleRepo.GetArticleByID(ctx, s.usersArticleID)
 	s.Error(err)
 
-	// Ensure the user's comment is deleted 
-	_,err = s.commentRepo.GetByID(ctx,s.usersCommentID)
+	// Ensure the user's comment is deleted
+	_, err = s.commentRepo.GetByID(ctx, s.usersCommentID)
 	s.Error(err)
 }
 func TestUserTestSuite(t *testing.T) {

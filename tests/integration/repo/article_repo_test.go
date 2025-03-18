@@ -14,8 +14,8 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo        repository.ArticlePostgresRepository
-	userRepo    repository.UserPostgresRepository
+	repo        repository.ArticleRepository
+	userRepo    repository.UserRepository
 	commentRepo repository.CommentRepository
 	article     *model.Article
 
@@ -241,7 +241,7 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 
 	// Ensure the article's comments is deleted
 	comments, err = s.commentRepo.GetAll(ctx)
- 	s.NoError(err)
+	s.NoError(err)
 	s.Equal(0, len(comments))
 }
 

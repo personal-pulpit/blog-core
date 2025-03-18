@@ -13,32 +13,32 @@ type authPostgresRepository struct {
 	postgresCLI *gorm.DB
 }
 
-func NewAuthPostgresRepository(postgresCLI *gorm.DB) repository.AuthPostgresRepository {
+func NewAuthPostgresRepository(postgresCLI *gorm.DB) repository.AuthRepository {
 	return &authPostgresRepository{
 		postgresCLI: postgresCLI,
 	}
 }
-func (a *authPostgresRepository) Create(ctx context.Context,authModel *model.Auth) (*model.Auth, error) {
+func (a *authPostgresRepository) Create(ctx context.Context, authModel *model.Auth) (*model.Auth, error) {
 	tx := a.postgresCLI.Create(authModel)
 
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	
+
 	return authModel, nil
 }
-func (a *authPostgresRepository) GetUserAuth(ctx context.Context,ID uint) (*model.Auth, error) {
+func (a *authPostgresRepository) GetUserAuth(ctx context.Context, ID uint) (*model.Auth, error) {
 	auth := new(model.Auth)
 
-	tx := a.postgresCLI.WithContext(ctx).First(auth,ID)
+	tx := a.postgresCLI.WithContext(ctx).First(auth, ID)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return auth, nil
 }
-func (a *authPostgresRepository) ChangePassword(ctx context.Context,ID uint, hashedPassword string) error {
-	authModel, err := a.GetUserAuth(ctx,ID)
+func (a *authPostgresRepository) ChangePassword(ctx context.Context, ID uint, hashedPassword string) error {
+	authModel, err := a.GetUserAuth(ctx, ID)
 	if err != nil {
 		return err
 	}
@@ -48,11 +48,11 @@ func (a *authPostgresRepository) ChangePassword(ctx context.Context,ID uint, has
 	if tx.Error != nil {
 		return tx.Error
 	}
-	
+
 	return nil
 }
-func (a *authPostgresRepository) VerifyEmail(ctx context.Context,ID uint) error {
-	auth, err := a.GetUserAuth(ctx,ID)
+func (a *authPostgresRepository) VerifyEmail(ctx context.Context, ID uint) error {
+	auth, err := a.GetUserAuth(ctx, ID)
 	if err != nil {
 		return err
 	}
@@ -66,8 +66,8 @@ func (a *authPostgresRepository) VerifyEmail(ctx context.Context,ID uint) error 
 	return nil
 }
 
-func (a *authPostgresRepository) IncrementFailedLoginAttempts(ctx context.Context,ID uint) error {
-	auth, err := a.GetUserAuth(ctx,ID)
+func (a *authPostgresRepository) IncrementFailedLoginAttempts(ctx context.Context, ID uint) error {
+	auth, err := a.GetUserAuth(ctx, ID)
 	if err != nil {
 		return err
 	}
@@ -81,8 +81,8 @@ func (a *authPostgresRepository) IncrementFailedLoginAttempts(ctx context.Contex
 	return nil
 }
 
-func (a *authPostgresRepository) ClearFailedLoginAttempts(ctx context.Context,ID uint) error {
-	auth, err := a.GetUserAuth(ctx,ID)
+func (a *authPostgresRepository) ClearFailedLoginAttempts(ctx context.Context, ID uint) error {
+	auth, err := a.GetUserAuth(ctx, ID)
 	if err != nil {
 		return err
 	}
@@ -96,8 +96,8 @@ func (a *authPostgresRepository) ClearFailedLoginAttempts(ctx context.Context,ID
 	return nil
 }
 
-func (a *authPostgresRepository) LockAccount(ctx context.Context,ID uint, lockDuration time.Duration) error {
-	auth, err := a.GetUserAuth(ctx,ID)
+func (a *authPostgresRepository) LockAccount(ctx context.Context, ID uint, lockDuration time.Duration) error {
+	auth, err := a.GetUserAuth(ctx, ID)
 	if err != nil {
 		return err
 	}
@@ -113,8 +113,8 @@ func (a *authPostgresRepository) LockAccount(ctx context.Context,ID uint, lockDu
 
 	return nil
 }
-func (a *authPostgresRepository) UnlockAccount(ctx context.Context,ID uint) error {
-	auth, err := a.GetUserAuth(ctx,ID)
+func (a *authPostgresRepository) UnlockAccount(ctx context.Context, ID uint) error {
+	auth, err := a.GetUserAuth(ctx, ID)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (a *authPostgresRepository) UnlockAccount(ctx context.Context,ID uint) erro
 	return nil
 }
 
-func (a *authPostgresRepository) DeleteByID(ctx context.Context,ID uint) error {
+func (a *authPostgresRepository) DeleteByID(ctx context.Context, ID uint) error {
 	auth := new(model.Auth)
 
 	result := a.postgresCLI.WithContext(ctx).Delete(auth, ID)

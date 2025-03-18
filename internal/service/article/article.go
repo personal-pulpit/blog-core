@@ -17,10 +17,10 @@ type ArticleService interface {
 }
 
 type articleService struct {
-	articlePostgresRepo repository.ArticlePostgresRepository
+	articlePostgresRepo repository.ArticleRepository
 }
 
-func NewArticleService(repo repository.ArticlePostgresRepository) ArticleService {
+func NewArticleService(repo repository.ArticleRepository) ArticleService {
 	return &articleService{repo}
 }
 

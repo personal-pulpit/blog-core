@@ -43,17 +43,17 @@ type AuthService interface {
 }
 type authenticateManager struct {
 	uniqueId         string
-	userPostgresRepo repository.UserPostgresRepository
-	authPostgresRepo repository.AuthPostgresRepository
+	userPostgresRepo repository.UserRepository
+	authPostgresRepo repository.AuthRepository
 	authManager      auth_manager.AuthManager
 	hashManager      *hash.HashManager
 	emailService     email.EmailService
 }
 
-func NewAuthenticateService(authPostgresRepo repository.AuthPostgresRepository, userPostgresRepo repository.UserPostgresRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager, emailService email.EmailService) AuthService {
+func NewAuthenticateService(authRepo repository.AuthRepository, userRepo repository.UserRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager, emailService email.EmailService) AuthService {
 	return &authenticateManager{
-		authPostgresRepo: authPostgresRepo,
-		userPostgresRepo: userPostgresRepo,
+		authPostgresRepo: authRepo,
+		userPostgresRepo: userRepo,
 		authManager:      authManager,
 		hashManager:      hashManager,
 		emailService:     emailService,

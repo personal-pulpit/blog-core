@@ -19,7 +19,7 @@ var (
 	ErrArticleNotFound = errors.New("article not found")
 )
 
-func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticlePostgresRepository {
+func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticleRepository {
 	return &articlePostgresRepo{
 		postgresCLI: postgresCLI,
 	}
