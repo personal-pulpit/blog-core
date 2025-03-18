@@ -25,14 +25,14 @@ func NewUserService(userPostgresRepo repository.UserRepository, authPostgresRepo
 func (u *userManager) GetUserProfile(ctx context.Context, ID uint) (*model.User, error) {
 	userModel, err := u.userPostgresRepo.GetUserByID(ctx, ID)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, err
 	}
 	return userModel, nil
 }
 func (u *userManager) UpdateProfile(ctx context.Context, ID uint, FirstName, lastName, biography string) (*model.User, error) {
 	user, err := u.userPostgresRepo.GetUserByID(ctx, ID)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, err
 	}
 	user.FirstName = FirstName
 	user.LastName = lastName
@@ -40,7 +40,7 @@ func (u *userManager) UpdateProfile(ctx context.Context, ID uint, FirstName, las
 
 	userModel, err := u.userPostgresRepo.UpdateByID(ctx, ID, user.FirstName, user.LastName, user.Biography)
 	if err != nil {
-		return nil, ErrUpdateUser
+		return nil, err
 	}
 	return userModel, nil
 }
@@ -48,21 +48,21 @@ func (u *userManager) UpdateProfile(ctx context.Context, ID uint, FirstName, las
 func (u *userManager) DeleteAccount(ctx context.Context, ID uint, password string) error {
 	auth, err := u.authPostgresRepo.GetUserAuth(ctx, ID)
 	if err != nil {
-		return ErrNotFound
+		return err
 	}
 
 	if !auth.EmailVerified {
-		return ErrDeleteUser
+		return ErrUsersEmailNotVerified
 	}
 
 	err = u.authPostgresRepo.DeleteByID(ctx, ID)
 	if err != nil {
-		return ErrDeleteUser
+		return err
 	}
 
 	err = u.userPostgresRepo.DeleteByID(ctx, ID)
 	if err != nil {
-		return ErrDeleteUser
+		return err
 	}
 
 	return nil

@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	postgres_repository "blog/database/postgres/repo"
 	"time"
 
+	"blog/internal/repository"
 	"blog/internal/service/user"
 
 	"blog/utils"
@@ -47,7 +47,7 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 
 	user, err := u.UserService.GetUserProfile(ctx, id)
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrUserNotFound) {
+		if errors.Is(err, repository.ErrUserNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"User not found",
@@ -92,7 +92,7 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 
 	user, err := u.UserService.GetUserProfile(ctx, uint(helpers.StringToInt(id)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrUserNotFound) {
+		if errors.Is(err, repository.ErrUserNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"User not found",

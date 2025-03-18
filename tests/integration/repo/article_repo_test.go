@@ -178,7 +178,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 		},
 
 		{
-			articleID: 1000,
+			articleID: 0,
 			title:     "article 2",
 			content:   "my fav article",
 			authorID:  "2",
@@ -194,6 +194,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 			s.NotEmpty(savedArticle.UpdatedAt)
 		} else if !tc.Valid {
 			s.Error(err)
+			s.Nil(savedArticle)
 		}
 	}
 }

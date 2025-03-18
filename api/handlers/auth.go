@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	postgres_repository "blog/database/postgres/repo"
+	"blog/internal/repository"
 	"blog/internal/service/authentication"
 	"blog/utils"
 	"errors"
@@ -117,7 +117,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	)
 
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrEmailAlreadyExits) {
+		if errors.Is(err, repository.ErrEmailAlreadyExits) {
 			ctx.JSON(http.StatusConflict, helpers.NewHttpResponse(
 				http.StatusConflict,
 				"Registration failed - Duplicate information",
@@ -189,7 +189,7 @@ func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 	err = h.AuthService.VerifyEmail(ctx, input.OTP, uint(helpers.StringToInt(input.UserID)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrUserNotFound) {
+		if errors.Is(err, repository.ErrUserNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"User not found",
@@ -257,8 +257,8 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 
 	_, accessToken, refreshToken, err := h.AuthService.Login(ctx, li.Email, li.Password)
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrUserNotFound) ||
-			errors.Is(err, postgres_repository.ErrEmailOrPasswordWrong) {
+		if errors.Is(err, repository.ErrUserNotFound) ||
+			errors.Is(err, authentication.ErrInvalidEmailOrPassword) {
 			ctx.JSON(http.StatusUnauthorized, helpers.NewHttpResponse(
 				http.StatusUnauthorized,
 				"Invalid credentials",
@@ -358,7 +358,7 @@ func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 			}))
 		return
 	}
-	
+
 	accessToken := ctx.GetString("accessToken")
 
 	newAccessToken, err := h.AuthService.RefreshToken(ctx, li.RefreshToken, accessToken)

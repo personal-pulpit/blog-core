@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	postgres_repository "blog/database/postgres/repo"
+	"blog/internal/repository"
 	"blog/internal/service/article"
 	"blog/utils"
 	"errors"
@@ -75,7 +75,7 @@ func (a *Article) GetByID(ctx *gin.Context) {
 
 	article, err := a.ArticleService.GetArticleByID(ctx, uint(helpers.StringToInt(ID)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
+		if errors.Is(err, repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"Article not found",
@@ -104,7 +104,7 @@ func (a *Article) GetByID(ctx *gin.Context) {
 				"title":      article.Title,
 				"content":    article.Content,
 				"author":     article.Author,
-				"comments" : article.Comments,
+				"comments":   article.Comments,
 				"created_at": article.CreatedAt,
 				"updated_at": article.UpdatedAt,
 			},
@@ -142,7 +142,7 @@ func (a *Article) Search(ctx *gin.Context) {
 
 	articles, err := a.ArticleService.SearchArticle(ctx, filterData)
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
+		if errors.Is(err, repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"No articles found with given data",
@@ -231,7 +231,7 @@ func (a *Article) Create(ctx *gin.Context) {
 				"id":         article.ID,
 				"title":      article.Title,
 				"content":    article.Content,
-				"comments" : article.Comments,
+				"comments":   article.Comments,
 				"author_id":  article.AuthorID,
 				"created_at": article.CreatedAt,
 			},
@@ -289,7 +289,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 	)
 
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
+		if errors.Is(err, repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"Article not found for update",
@@ -318,7 +318,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 				"id":         article.ID,
 				"title":      article.Title,
 				"content":    article.Content,
-				"comments" : article.Comments,
+				"comments":   article.Comments,
 				"author":     article.Author,
 				"updated_at": article.UpdatedAt,
 			},
@@ -341,7 +341,7 @@ func (a *Article) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	err := a.ArticleService.Delete(ctx, uint(helpers.StringToInt(id)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrArticleNotFound) {
+		if errors.Is(err, repository.ErrArticleNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"Article not found for deletion",

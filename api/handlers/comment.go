@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	postgres_repository "blog/database/postgres/repo"
+	"blog/internal/repository"
 	"blog/internal/service/comment"
 	"blog/utils"
 	"errors"
@@ -109,10 +109,10 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	var input struct {
-        Content string `json:"content" binding:"required"`
-    }
-    
-    err := ctx.ShouldBindJSON(&input)
+		Content string `json:"content" binding:"required"`
+	}
+
+	err := ctx.ShouldBindJSON(&input)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
 			http.StatusBadRequest,
@@ -125,13 +125,13 @@ func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetInt("id"))
-	comment, err := a.commentService.UpdateComment(ctx,userID,
+	comment, err := a.commentService.UpdateComment(ctx, userID,
 		uint(helpers.StringToInt(id)),
 		input.Content,
 	)
 
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrCommentNotFound) {
+		if errors.Is(err, repository.ErrCommentNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"comment not found for update",
@@ -184,7 +184,7 @@ func (a *CommentHandler) DeleteByID(ctx *gin.Context) {
 
 	err := a.commentService.DeleteComment(ctx, userID, uint(helpers.StringToInt(id)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrCommentNotFound) {
+		if errors.Is(err, repository.ErrCommentNotFound) {
 			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
 				http.StatusNotFound,
 				"comment not found for deletion",

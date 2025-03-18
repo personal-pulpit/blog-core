@@ -5,6 +5,7 @@ import (
 	"blog/internal/repository"
 	"blog/utils"
 	"context"
+	"fmt"
 )
 
 type ArticleService interface {
@@ -72,21 +73,21 @@ func (s *articleService) SearchArticle(ctx context.Context, filter map[string]st
 		} else if i == "publishedAt" {
 			parsedTime, err := utils.ParasTime(v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s",ErrParseTime,err,v)
 			}
 
 			articleFilter.PublishedAt = parsedTime
 		} else if i == "publishedAtGt" {
 			parsedTime, err := utils.ParasTime(v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s",ErrParseTime,err,v)
 			}
 
 			articleFilter.PublishedAtGT = parsedTime
 		} else if i == "publishedAtLt" {
 			parsedTime, err := utils.ParasTime(v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s",ErrParseTime,err,v)
 			}
 
 			articleFilter.PublishedAtLT = parsedTime
@@ -98,7 +99,7 @@ func (s *articleService) SearchArticle(ctx context.Context, filter map[string]st
 		return nil, err
 	}
 
-	return articles, err
+	return articles, nil
 }
 
 func (s *articleService) GetArticleByID(ctx context.Context, ID uint) (*model.Article, error) {
