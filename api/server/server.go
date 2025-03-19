@@ -1,6 +1,7 @@
 package server
 
 import (
+	"blog/api/middlewares/auth_middlewares"
 	"blog/api/routers"
 	"blog/api/validation"
 	"blog/internal/service/article"
@@ -13,12 +14,12 @@ import (
 )
 
 type ServerDependencies struct {
-	AuthManager   auth_manager.AuthManager
-	AuthService   authentication.AuthService
-	UserService   user.UserService
+	AuthManager    auth_manager.AuthManager
+	AuthService    authentication.AuthService
+	UserService    user.UserService
 	ArticleService article.ArticleService
 	CommentService comment.CommentService
-	Logger        logger.Logger
+	Logger         logger.Logger
 }
 
 func NewServerDependencies(
@@ -30,12 +31,12 @@ func NewServerDependencies(
 	logger logger.Logger,
 ) ServerDependencies {
 	return ServerDependencies{
-		AuthManager:   authManager,
-		AuthService:   authService,
-		UserService:   userService,
+		AuthManager:    authManager,
+		AuthService:    authService,
+		UserService:    userService,
 		ArticleService: articleService,
 		CommentService: commentService,
-		Logger:        logger,
+		Logger:         logger,
 	}
 }
 
@@ -45,14 +46,18 @@ func InitServer(port int, deps ServerDependencies) error {
 		return err
 	}
 
-	router := routers.InitRouters(
-		deps.AuthManager,
+	routerDeps := routers.NewRouterDeps(
 		deps.AuthService,
 		deps.UserService,
 		deps.ArticleService,
 		deps.CommentService,
+		auth_middlewares.NewUserAuthMiddleware(deps.AuthManager),
 		deps.Logger,
 	)
-	
+
+	router := routers.InitRouters(
+		routerDeps,
+	)
+
 	return router.Run(fmt.Sprintf(":%d", port))
 }

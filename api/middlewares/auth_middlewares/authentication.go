@@ -6,17 +6,24 @@ import (
 	"blog/api/helpers/common"
 	"blog/internal/model"
 	"blog/pkg/auth_manager"
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-type UserAuthMiddleware struct {
-	AuthManager auth_manager.AuthManager
+type AuthManager interface {
+	IsAccessTokenBlacklisted(ctx context.Context, accessToken string) bool
+	DecodeAccessToken(ctx context.Context, accessToken string) (*auth_manager.AccessTokenClaims, error)
+	SetAccessTokenIntoBlacklist(ctx context.Context, accessToken string, expiresAt time.Duration) error
 }
 
-func NewUserAuthMiddleware(authManger auth_manager.AuthManager) *UserAuthMiddleware {
+type UserAuthMiddleware struct {
+	AuthManager AuthManager
+}
+
+func NewUserAuthMiddleware(authManger AuthManager) *UserAuthMiddleware {
 	return &UserAuthMiddleware{
 		AuthManager: authManger,
 	}
