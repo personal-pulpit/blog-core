@@ -16,8 +16,12 @@ A robust blog platform backend written in Go, featuring a clean architecture wit
   
 - **Article Management**
   - CRUD operations for blog posts
+  - Search functionality
   - PostgreSQL for data persistence
-  
+
+- **Comment Management**
+  - Commenting system for blog posts  
+
 - **Infrastructure**
   - PostgreSQL database
   - Redis cache
@@ -46,17 +50,22 @@ go mod download
 go run main.go
 ```
 
-## 🏗️ Project Structure
+## 🏗️ Project Structure(shorted)
 
 ```
 blog-core/
 ├── api/
+│   ├── handlers/   # HTTP request handlers
+│   ├── middleware/ # Middleware functions
+│   └── routes/     # HTTP routes
 │   └── server/        # HTTP server and routing
 ├── config/           # Configuration management
 ├── database/
 │   ├── postgres/     # PostgreSQL connection and repositories
 │   └── redis/        # Redis connection and operations
 ├── internal/
+│   ├── model/        # Data models
+│   ├── repository/   # Database repositories
 │   └── service/      # Business logic services
 ├── pkg/
 │   ├── auth_manager/ # Authentication utilities
@@ -71,16 +80,34 @@ blog-core/
   - POST `/auth/register`
   - POST `/auth/login`
   - POST `/auth/verify-email`
+  - GET `/auth/authenticate`
+  - POST `/auth/refresh-token`
+  - POST `/auth/logout`
+  - POST `/auth/change-password`
+  - POST `/auth//reset-password/request`
+  - POST `/auth/reset-password/submit`
 
 - **Users**
-  - GET `/users/profile`
-  - PUT `/users/update`
+  - GET `/users/me`
+  - GET `/users/{id}`
+  - PATCH `/users/update`
+  - DELETE `/users/delete`
 
 - **Articles**
   - GET `/articles`
-  - POST `/articles`
-  - PUT `/articles/{id}`
+  - POST `/articles/create`
+  - GET `/articles/{id}`
+  - GET `/articles/search`
+  - PATCH `/articles/{id}`
   - DELETE `/articles/{id}`
+
+- **Comments**
+  - POST  `/comments/create`
+  - PATCH `/comments/{id}`
+  - DELETE `/comments/{id}`
+
+## 📝 Documentation
+After ran go run main.go open: http://localhost:8000/swagger/index.html in your browser
 
 ## 🤝 Contributing
 
@@ -117,6 +144,7 @@ git push origin feature/amazing-feature
 - [PostgreSQL](https://www.postgresql.org/)
 - [Redis](https://redis.io/)
 - [JWT](https://jwt.io/)
+- [Swagger](https://swagger.io/)
 - [Zap](https://github.com/uber-go/zap)
 
 ## 🙏 Acknowledgments
