@@ -7,7 +7,6 @@ import (
 	"blog/internal/model"
 	"blog/pkg/auth_manager"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -74,7 +73,7 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 func (m *UserAuthMiddleware) EnsureLoggedIn() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		is_logged := common.GetUserStatus(ctx)
-		
+
 		if is_logged {
 			ctx.Next()
 		} else {
@@ -121,7 +120,7 @@ func (m *UserAuthMiddleware) EnsureAdmin() gin.HandlerFunc {
 		isLogged := common.GetUserStatus(ctx)
 		role := ctx.GetString("role")
 
-		if role == strconv.Itoa(int(model.AdminRole)) && isLogged {
+		if common.IsAdmin(model.Role(helpers.StringToInt(role))) && isLogged {
 			ctx.Next()
 		} else {
 			helpers.RespondWithError(ctx, http.StatusForbidden, "Admin Access Required", map[string]interface{}{

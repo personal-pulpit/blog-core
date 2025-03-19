@@ -43,7 +43,7 @@ func InitRouters(authManager auth_manager.AuthManager, authService authenticatio
 	
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(middlewares.LimitByRequest())
+	r.Use(middlewares.LimitByRequest(1))
 
 	//swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
