@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	postgres_repository "blog/database/postgres/repo"
 	"time"
 
+	"blog/internal/repository"
 	"blog/internal/service/user"
 
 	"blog/utils"
@@ -47,35 +47,26 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 
 	user, err := u.UserService.GetUserProfile(ctx, id)
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrUserNotFound) {
-			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound,
-				"User not found",
-				map[string]interface{}{
-					"error":   err.Error(),
-					"user_id": id,
-				}))
+		if errors.Is(err, repository.ErrUserNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "User not found", map[string]interface{}{
+				"error":   err.Error(),
+				"user_id": id,
+			})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, helpers.NewHttpResponse(
-			http.StatusInternalServerError,
-			"Failed to retrieve user profile",
-			map[string]interface{}{
-				"error": err.Error(),
-			}))
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to retrieve user profile", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK,
-		"Profile retrieved successfully",
-		map[string]interface{}{
-			"user": user,
-			"role": ctx.GetString("role"),
-			"metadata": map[string]interface{}{
-				"timestamp": time.Now(),
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Profile retrieved successfully", map[string]interface{}{
+		"user": user,
+		"role": ctx.GetString("role"),
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+		},
+	})
 }
 
 // @Summary Get user profile by ID
@@ -92,34 +83,25 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 
 	user, err := u.UserService.GetUserProfile(ctx, uint(helpers.StringToInt(id)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrUserNotFound) {
-			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound,
-				"User not found",
-				map[string]interface{}{
-					"error":   err.Error(),
-					"user_id": id,
-				}))
+		if errors.Is(err, repository.ErrUserNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "User not found", map[string]interface{}{
+				"error":   err.Error(),
+				"user_id": id,
+			})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, helpers.NewHttpResponse(
-			http.StatusInternalServerError,
-			"Failed to retrieve user profile",
-			map[string]interface{}{
-				"error": err.Error(),
-			}))
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to retrieve user profile", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK,
-		"Profile retrieved successfully",
-		map[string]interface{}{
-			"user": user,
-			"metadata": map[string]interface{}{
-				"timestamp": time.Now(),
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Profile retrieved successfully", map[string]interface{}{
+		"user": user,
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+		},
+	})
 }
 
 // @Summary Update user profile
@@ -137,21 +119,15 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&ui)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
-			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-				http.StatusBadRequest,
-				"Missing required fields",
-				map[string]interface{}{
-					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-					"required_fields":   []string{"firstName", "lastName", "biography"},
-				}))
+			helpers.RespondWithError(ctx, http.StatusBadRequest, "Missing required fields", map[string]interface{}{
+				"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
+				"required_fields":   []string{"firstName", "lastName", "biography"},
+			})
 			return
 		}
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Invalid update data",
-			map[string]interface{}{
-				"validation_errors": utils.GetValidationError(err),
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid update data", map[string]interface{}{
+			"validation_errors": utils.GetValidationError(err),
+		})
 		return
 	}
 
@@ -163,26 +139,20 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 		ui.Biography,
 	)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Profile update failed",
-			map[string]interface{}{
-				"error":   err.Error(),
-				"user_id": id,
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Profile update failed", map[string]interface{}{
+			"error":   err.Error(),
+			"user_id": id,
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK,
-		"Profile updated successfully",
-		map[string]interface{}{
-			"user": user,
-			"metadata": map[string]interface{}{
-				"timestamp":  time.Now(),
-				"updated_at": time.Now(),
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Profile updated successfully", map[string]interface{}{
+		"user": user,
+		"metadata": map[string]interface{}{
+			"timestamp":  time.Now(),
+			"updated_at": time.Now(),
+		},
+	})
 }
 
 // @Summary Delete user account
@@ -199,44 +169,32 @@ func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&input)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
-			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-				http.StatusBadRequest,
-				"Password is required for account deletion",
-				map[string]interface{}{
-					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-					"required_fields":   []string{"password"},
-				}))
+			helpers.RespondWithError(ctx, http.StatusBadRequest, "Password is required for account deletion", map[string]interface{}{
+				"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
+				"required_fields":   []string{"password"},
+			})
 			return
 		}
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Invalid deletion request",
-			map[string]interface{}{
-				"validation_errors": utils.GetValidationError(err),
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid deletion request", map[string]interface{}{
+			"validation_errors": utils.GetValidationError(err),
+		})
 		return
 	}
 
 	id := uint(ctx.GetInt("id"))
 	err = u.UserService.DeleteAccount(ctx, id, input.Password)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Account deletion failed",
-			map[string]interface{}{
-				"error":   err.Error(),
-				"user_id": id,
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Account deletion failed", map[string]interface{}{
+			"error":   err.Error(),
+			"user_id": id,
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK,
-		"Account deleted successfully",
-		map[string]interface{}{
-			"metadata": map[string]interface{}{
-				"deleted_at": time.Now(),
-				"user_id":    id,
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Account deleted successfully", map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"deleted_at": time.Now(),
+			"user_id":    id,
+		},
+	})
 }

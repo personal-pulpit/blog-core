@@ -13,7 +13,7 @@ import (
 
 type AuthTestSuite struct {
 	suite.Suite
-	repo      repository.AuthPostgresRepository
+	repo      repository.AuthRepository
 	savedAuth *model.Auth
 }
 
@@ -29,7 +29,7 @@ func (s *AuthTestSuite) TestA_Create() {
 		Valid bool
 	}{
 		{
-			auth:  model.NewAuth(1, "password",model.UserRole),
+			auth:  model.NewAuth(1, "password", model.UserRole),
 			Valid: true,
 		},
 	}
@@ -241,7 +241,6 @@ func (s *AuthTestSuite) TestH_UnlockAccount() {
 		}
 	}
 }
-
 
 func (s *AuthTestSuite) TestI_DeleteByID() {
 	ctx := context.TODO()

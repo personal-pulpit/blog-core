@@ -13,7 +13,7 @@ import (
 
 type UserTestSuite struct {
 	suite.Suite
-	userRepo repository.UserPostgresRepository
+	userRepo repository.UserRepository
 
 	service user.UserService
 

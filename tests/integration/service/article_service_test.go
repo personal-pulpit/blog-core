@@ -14,8 +14,8 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo            repository.ArticlePostgresRepository
-	userRepo        repository.UserPostgresRepository
+	repo            repository.ArticleRepository
+	userRepo        repository.UserRepository
 	service         article.ArticleService
 	article         *model.Article
 	articleAuthorID uint
@@ -97,8 +97,8 @@ func (s *ArticleTestSuite) TestC_SearchArticles() {
 		},
 		{
 			filterData: map[string]string{
-				"title":       "fake",
-				"publishedAt": time.Now().Format("2006-01-02 15:04:05.999999999-07"),
+				"title":         "fake",
+				"publishedAt":   time.Now().Format("2006-01-02 15:04:05.999999999-07"),
 				"publishedAtLt": time.Now().Format("2006-01-02 15:04:05.999999999-07"),
 			},
 			Valid: true,

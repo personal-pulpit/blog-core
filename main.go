@@ -51,6 +51,15 @@ func main() {
 	articleService := article.NewArticleService(articlePostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
 
-	err = server.InitServer(config.Server.Port, authManager, authService, userService, articleService,commentService, logger)
+	serverDeps := server.NewServerDependencies(
+		authManager,
+		authService,
+		userService,
+		articleService,
+		commentService,
+		logger,
+	)
+
+	err = server.InitServer(config.Server.Port, serverDeps)
 	checkError(logger, "Server", err)
 }

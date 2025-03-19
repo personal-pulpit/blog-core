@@ -4,6 +4,8 @@ import (
 	"blog/internal/model"
 	"blog/internal/repository"
 	"context"
+	"database/sql"
+	"fmt"
 	"strings"
 
 	"errors"
@@ -15,11 +17,7 @@ type articlePostgresRepo struct {
 	postgresCLI *gorm.DB
 }
 
-var (
-	ErrArticleNotFound = errors.New("article not found")
-)
-
-func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticlePostgresRepository {
+func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticleRepository {
 	return &articlePostgresRepo{
 		postgresCLI: postgresCLI,
 	}
@@ -29,7 +27,7 @@ func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, erro
 	var articles = []model.Article{}
 
 	if err := a.postgresCLI.WithContext(ctx).Preload("Author").Preload("Comments").Find(&articles).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get all articles: %w: %v", repository.ErrDatabase,err)
 	}
 
 	return articles, nil
@@ -66,8 +64,12 @@ func (a *articlePostgresRepo) SearchArticles(ctx context.Context, filter *model.
 		query = query.Where(strings.Join(conditions, " OR "), args...)
 	}
 
-	if err := query.Preload("Author").Preload("Comments").Find(&articles).Error; err != nil {
-		return nil, err
+	err := query.Preload("Author").Preload("Comments").Find(&articles).Error
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrArticleNotFound
+		}
+		return nil, fmt.Errorf("search articles: args:  %v\n%w: %v",args, repository.ErrDatabase,err )
 	}
 
 	return articles, nil
@@ -78,7 +80,10 @@ func (a *articlePostgresRepo) GetArticleByID(ctx context.Context, ID uint) (*mod
 
 	err := a.postgresCLI.WithContext(ctx).Preload("Author").Preload("Comments").First(article, ID).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrArticleNotFound
+		}
+		return nil, fmt.Errorf("get article by id: article ID:  %d\n%w: %v",ID, repository.ErrDatabase,err )
 	}
 
 	return article, nil
@@ -87,7 +92,7 @@ func (a *articlePostgresRepo) GetArticleByID(ctx context.Context, ID uint) (*mod
 func (a *articlePostgresRepo) Create(ctx context.Context, articleModel *model.Article) (*model.Article, error) {
 	err := a.postgresCLI.WithContext(ctx).Create(&articleModel).Error
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create article: %v \n%w: %v",articleModel, repository.ErrDatabase, err)
 	}
 
 	return articleModel, nil
@@ -96,13 +101,9 @@ func (a *articlePostgresRepo) Create(ctx context.Context, articleModel *model.Ar
 func (a *articlePostgresRepo) UpdateByID(ctx context.Context, ID uint, title, content string) (*model.Article, error) {
 	article := new(model.Article)
 
-	err := a.postgresCLI.WithContext(ctx).First(article, ID).Error
+	article,err  := a.GetArticleByID(ctx,ID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return article, ErrArticleNotFound
-		}
-
-		return article, err
+		return nil,err
 	}
 
 	article.Title = title
@@ -110,10 +111,10 @@ func (a *articlePostgresRepo) UpdateByID(ctx context.Context, ID uint, title, co
 
 	err = a.postgresCLI.WithContext(ctx).Save(article).Error
 	if err != nil {
-		return article, err
+		return nil, fmt.Errorf("update article by id: article ID:%d ,title:%s ,content:%s\n%w: %v",ID,title,content ,repository.ErrDatabase,err)
 	}
 
-	return article, err
+	return article, nil
 }
 
 func (a *articlePostgresRepo) DeleteByID(ctx context.Context, ID uint) error {
@@ -121,11 +122,11 @@ func (a *articlePostgresRepo) DeleteByID(ctx context.Context, ID uint) error {
 
 	result := a.postgresCLI.WithContext(ctx).Delete(article, ID)
 	if result.Error != nil {
-		return result.Error
+		return fmt.Errorf("delete article by id: article ID:%d \n%w: %v",ID,repository.ErrDatabase,result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return ErrArticleNotFound
+		return repository.ErrArticleNotFound
 	}
 
 	return nil

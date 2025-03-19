@@ -13,9 +13,9 @@ import (
 type CommentTestSuite struct {
 	suite.Suite
 	repo        repository.CommentRepository
-	userRepo    repository.UserPostgresRepository
-	articleRepo repository.ArticlePostgresRepository
-	commentID  uint
+	userRepo    repository.UserRepository
+	articleRepo repository.ArticleRepository
+	commentID   uint
 	articleID   uint
 	userID      uint
 }
@@ -180,12 +180,12 @@ func (s *CommentTestSuite) TestE_DeleteCommentByID() {
 	}
 
 	//Ensure user exists after deleting its comment
-	user,err:=s.userRepo.GetUserByID(ctx,s.userID)
+	user, err := s.userRepo.GetUserByID(ctx, s.userID)
 	s.Nil(err)
 	s.NotNil(user)
 
 	//Ensure article exists after deleting its comment
-	article,err:=s.articleRepo.GetArticleByID(ctx,s.articleID)
+	article, err := s.articleRepo.GetArticleByID(ctx, s.articleID)
 	s.Nil(err)
 	s.NotNil(article)
 }

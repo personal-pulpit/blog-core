@@ -14,8 +14,8 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo        repository.ArticlePostgresRepository
-	userRepo    repository.UserPostgresRepository
+	repo        repository.ArticleRepository
+	userRepo    repository.UserRepository
 	commentRepo repository.CommentRepository
 	article     *model.Article
 
@@ -178,7 +178,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 		},
 
 		{
-			articleID: 1000,
+			articleID: 0,
 			title:     "article 2",
 			content:   "my fav article",
 			authorID:  "2",
@@ -194,6 +194,7 @@ func (s *ArticleTestSuite) TestE_ModifyArticle() {
 			s.NotEmpty(savedArticle.UpdatedAt)
 		} else if !tc.Valid {
 			s.Error(err)
+			s.Nil(savedArticle)
 		}
 	}
 }
@@ -241,7 +242,7 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 
 	// Ensure the article's comments is deleted
 	comments, err = s.commentRepo.GetAll(ctx)
- 	s.NoError(err)
+	s.NoError(err)
 	s.Equal(0, len(comments))
 }
 

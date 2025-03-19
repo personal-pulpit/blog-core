@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type AuthPostgresRepository interface {
+type AuthRepository interface {
 	Create(ctx context.Context, authModel *model.Auth) (*model.Auth, error)
 	GetUserAuth(ctx context.Context,ID uint) (*model.Auth, error)
 	ChangePassword(ctx context.Context,ID uint, hashedPassword string) error
@@ -16,6 +16,4 @@ type AuthPostgresRepository interface {
 	LockAccount(ctx context.Context,ID uint, lockDuration time.Duration) error
 	UnlockAccount(ctx context.Context,ID uint) error
 	DeleteByID(ctx context.Context,ID uint) error
-}
-type AuthRedisRepository interface {
 }

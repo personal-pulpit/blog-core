@@ -8,16 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func LimitByRequest() gin.HandlerFunc {
-	limiter := tollbooth.NewLimiter(1, nil)
+func LimitByRequest(limit float64) gin.HandlerFunc {
+	limiter := tollbooth.NewLimiter(limit, nil)
 	return func(ctx *gin.Context) {
 		err := tollbooth.LimitByRequest(limiter, ctx.Writer, ctx.Request)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusTooManyRequests, helpers.NewHttpResponse(
-				http.StatusTooManyRequests, err.Error(),nil,
-			))
-		} else {
-			ctx.Next()
+			helpers.RespondWithError(ctx, http.StatusTooManyRequests, err.Error(), nil)
+			return
 		}
+		ctx.Next()
 	}
 }

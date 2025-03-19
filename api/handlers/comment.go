@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"blog/api/helpers"
-	postgres_repository "blog/database/postgres/repo"
+	"blog/internal/repository"
 	"blog/internal/service/comment"
 	"blog/utils"
 	"errors"
@@ -42,24 +42,19 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 	err := ctx.ShouldBindJSON(&ci)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
-			ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-				http.StatusBadRequest,
-				"Missing required fields",
-				map[string]interface{}{
-					"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-					"provided_fields":   ci,
-				}))
+			helpers.RespondWithError(ctx, http.StatusBadRequest, "Missing required fields", map[string]interface{}{
+				"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
+				"provided_fields":   ci,
+			})
 			return
 		}
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Invalid input data",
-			map[string]interface{}{
-				"validation_errors": utils.GetValidationError(err),
-				"provided_data":     ci,
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid input data", map[string]interface{}{
+			"validation_errors": utils.GetValidationError(err),
+			"provided_data":     ci,
+		})
 		return
 	}
+
 	userID := uint(ctx.GetInt("id"))
 	comment, err := a.commentService.AddComment(
 		ctx,
@@ -68,32 +63,26 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 		uint(helpers.StringToInt(ci.ArticleID)),
 	)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Failed to create comment",
-			map[string]interface{}{
-				"error": err.Error(),
-				"input": ci,
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create comment", map[string]interface{}{
+			"error": err.Error(),
+			"input": ci,
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, helpers.NewHttpResponse(
-		http.StatusCreated,
-		"comment created successfully",
-		map[string]interface{}{
-			"comment": map[string]interface{}{
-				"id":         comment.ID,
-				"content":    comment.Content,
-				"user_id":    comment.UserID,
-				"article_id": comment.ArticleID,
-				"created_at": comment.CreatedAt,
-			},
-			"metadata": map[string]interface{}{
-				"timestamp": time.Now(),
-				"status":    "published",
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusCreated, "Comment created successfully", map[string]interface{}{
+		"comment": map[string]interface{}{
+			"id":         comment.ID,
+			"content":    comment.Content,
+			"user_id":    comment.UserID,
+			"article_id": comment.ArticleID,
+			"created_at": comment.CreatedAt,
+		},
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+			"status":    "published",
+		},
+	})
 }
 
 // @Summary Update an comment by ID
@@ -109,64 +98,48 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	var input struct {
-        Content string `json:"content" binding:"required"`
-    }
-    
-    err := ctx.ShouldBindJSON(&input)
+		Content string `json:"content" binding:"required"`
+	}
+
+	err := ctx.ShouldBindJSON(&input)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Invalid update data",
-			map[string]interface{}{
-				"validation_errors": utils.GetValidationError(err),
-				"provided_data":     input.Content,
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid update data", map[string]interface{}{
+			"validation_errors": utils.GetValidationError(err),
+			"provided_data":     input.Content,
+		})
 		return
 	}
 
 	userID := uint(ctx.GetInt("id"))
-	comment, err := a.commentService.UpdateComment(ctx,userID,
-		uint(helpers.StringToInt(id)),
-		input.Content,
-	)
-
+	comment, err := a.commentService.UpdateComment(ctx, userID, uint(helpers.StringToInt(id)), input.Content)
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrCommentNotFound) {
-			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound,
-				"comment not found for update",
-				map[string]interface{}{
-					"comment_id": id,
-					"error":      err.Error(),
-				}))
+		if errors.Is(err, repository.ErrCommentNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "Comment not found for update", map[string]interface{}{
+				"comment_id": id,
+				"error":      err.Error(),
+			})
 			return
 		}
 
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Failed to update comment",
-			map[string]interface{}{
-				"comment_id": id,
-				"error":      err.Error(),
-			}))
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to update comment", map[string]interface{}{
+			"comment_id": id,
+			"error":      err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK,
-		"comment updated successfully",
-		map[string]interface{}{
-			"comment": map[string]interface{}{
-				"id":         comment.ID,
-				"content":    comment.Content,
-				"user_id":    comment.UserID,
-				"article_id": comment.ArticleID,
-				"updated_at": comment.UpdatedAt,
-			},
-			"metadata": map[string]interface{}{
-				"timestamp": time.Now(),
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Comment updated successfully", map[string]interface{}{
+		"comment": map[string]interface{}{
+			"id":         comment.ID,
+			"content":    comment.Content,
+			"user_id":    comment.UserID,
+			"article_id": comment.ArticleID,
+			"updated_at": comment.UpdatedAt,
+		},
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+		},
+	})
 }
 
 // @Summary Delete an comment by ID
@@ -184,34 +157,25 @@ func (a *CommentHandler) DeleteByID(ctx *gin.Context) {
 
 	err := a.commentService.DeleteComment(ctx, userID, uint(helpers.StringToInt(id)))
 	if err != nil {
-		if errors.Is(err, postgres_repository.ErrCommentNotFound) {
-			ctx.JSON(http.StatusNotFound, helpers.NewHttpResponse(
-				http.StatusNotFound,
-				"comment not found for deletion",
-				map[string]interface{}{
-					"comment_id": id,
-					"error":      err.Error(),
-				}))
-			return
-		}
-		ctx.JSON(http.StatusBadRequest, helpers.NewHttpResponse(
-			http.StatusBadRequest,
-			"Failed to delete comment",
-			map[string]interface{}{
+		if errors.Is(err, repository.ErrCommentNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "Comment not found for deletion", map[string]interface{}{
 				"comment_id": id,
 				"error":      err.Error(),
-			}))
+			})
+			return
+		}
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete comment", map[string]interface{}{
+			"comment_id": id,
+			"error":      err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, helpers.NewHttpResponse(
-		http.StatusOK,
-		"comment deleted successfully",
-		map[string]interface{}{
-			"deleted_comment_id": id,
-			"metadata": map[string]interface{}{
-				"timestamp": time.Now(),
-				"status":    "deleted",
-			},
-		}))
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Comment deleted successfully", map[string]interface{}{
+		"deleted_comment_id": id,
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+			"status":    "deleted",
+		},
+	})
 }

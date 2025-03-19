@@ -49,6 +49,7 @@ func GetRedisDB(cfg *config.Redis) (*redis.Client, error) {
 func CloseRedis() {
 	err := redisInstance.Close()
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 }

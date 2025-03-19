@@ -18,8 +18,8 @@ import (
 
 type AuthTestSuite struct {
 	suite.Suite
-	authRepo repository.AuthPostgresRepository
-	userRepo repository.UserPostgresRepository
+	authRepo repository.AuthRepository
+	userRepo repository.UserRepository
 	service  authentication.AuthService
 
 	user               *model.User
@@ -203,25 +203,25 @@ func (s *AuthTestSuite) TestD_Authenticate() {
 func (s *AuthTestSuite) TestE_ChangePassword() {
 	ctx := context.TODO()
 	testCases := []struct {
-		userID uint
+		userID      uint
 		oldPassword string
 		newPassword string
 		Valid       bool
 	}{
 		{
-			userID: s.user.ID,
+			userID:      s.user.ID,
 			oldPassword: s.password,
 			newPassword: "newPassForMeVerySecure",
 			Valid:       true,
 		},
 		{
-			userID: 565674651121324,
+			userID:      565674651121324,
 			oldPassword: s.password,
 			newPassword: "newPassForMeVerySecure",
 			Valid:       false,
 		},
 		{
-			userID: s.user.ID,
+			userID:      s.user.ID,
 			oldPassword: "Invalid",
 			newPassword: "newPassForMeVerySecure",
 			Valid:       false,
@@ -372,6 +372,7 @@ func (s *AuthTestSuite) quickLogin(ctx context.Context, email string, password s
 func getVerificationCodeFromRedis(ctx context.Context) string {
 	keys, err := redisCLI.Keys(ctx, "*").Result()
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 
@@ -379,6 +380,7 @@ func getVerificationCodeFromRedis(ctx context.Context) string {
 
 	code, err := redisCLI.Get(ctx, codeKey).Result()
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 
