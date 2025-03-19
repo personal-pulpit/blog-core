@@ -372,6 +372,7 @@ func (s *AuthTestSuite) quickLogin(ctx context.Context, email string, password s
 func getVerificationCodeFromRedis(ctx context.Context) string {
 	keys, err := redisCLI.Keys(ctx, "*").Result()
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 
@@ -379,6 +380,7 @@ func getVerificationCodeFromRedis(ctx context.Context) string {
 
 	code, err := redisCLI.Get(ctx, codeKey).Result()
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 

@@ -15,6 +15,7 @@ func generateRandomNumber(length int) int {
 
 	randomNumber, err := rand.Int(rand.Reader, big.NewInt(max-min))
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 

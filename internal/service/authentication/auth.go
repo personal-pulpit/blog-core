@@ -367,6 +367,7 @@ func (a *authenticateManager) IsAccessTokenBlacklisted(ctx context.Context, acce
 func convertString2Uint(strID string) uint {
 	ID, err := strconv.Atoi(strID)
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 	return uint(ID)

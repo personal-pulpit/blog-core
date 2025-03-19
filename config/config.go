@@ -115,6 +115,7 @@ func GetConfigInstance() *Config {
 func GetEnv() Env {
 	err := godotenv.Load(ConfigsDirPath() + "/../" + ".env")
 	if err != nil {
+		//TODO:manage panics
 		panic(err)
 	}
 
