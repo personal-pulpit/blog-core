@@ -13,3 +13,5 @@ coverage:
 ##swagger generate
 swag_gen:
 	swag init
+
+before_push: unit_test integration_repo_test integration_service_test
