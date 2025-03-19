@@ -1,7 +1,7 @@
 package model
 
 import (
-		"time"
+	"time"
 )
 
 type Article struct {
@@ -13,6 +13,7 @@ type Article struct {
     AuthorID  uint
     Author    *User   `gorm:"foreignKey:AuthorID"`
     Comments  []Comment `gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE;"`
+	Categories []Category `gorm:"many2many:article_categories;"`
 }
 
 type ArticleFilter struct {
@@ -22,10 +23,11 @@ type ArticleFilter struct {
 	PublishedAtLT *time.Time
 }
 
-func NewArticle(title, content string, authorID uint) *Article {
+func NewArticle(title, content string, authorID uint,categories []Category) *Article {
 	return &Article{
 		Title:    title,
 		Content:  content,
 		AuthorID: authorID,
+		Categories: categories,
 	}
 }
