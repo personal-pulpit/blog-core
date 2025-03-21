@@ -41,6 +41,14 @@ definitions:
     - article_id
     - content
     type: object
+  handlers.createCategoryInput:
+    properties:
+      name:
+        example: Technology
+        type: string
+    required:
+    - name
+    type: object
   handlers.deleteAccountInput:
     properties:
       password:
@@ -707,6 +715,172 @@ paths:
       summary: Verify user email
       tags:
       - auth
+  /api/v1/categories:
+    get:
+      description: Retrieve all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved categories
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to fetch categories
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get all categories
+      tags:
+      - categories
+  /api/v1/categories/{id}:
+    delete:
+      description: Delete a category by its ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: Category not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to delete category
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Delete a category by ID
+      tags:
+      - categories
+    get:
+      description: Retrieve a category by its ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: Category not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed fetch category
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get a category by ID
+      tags:
+      - categories
+  /api/v1/categories/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new category with the provided name
+      parameters:
+      - description: Category input
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Category created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid category data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to create category
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Create a new category
+      tags:
+      - categories
   /api/v1/comments/{id}:
     delete:
       description: Delete an comment by its ID

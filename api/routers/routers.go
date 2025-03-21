@@ -10,6 +10,7 @@ import (
 	"blog/internal/service/authentication"
 	"blog/internal/service/comment"
 	"blog/internal/service/user"
+	"blog/internal/service/category"
 	"blog/pkg/logger"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -18,15 +19,14 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-
-
 type RouterDeps struct {
-	authServiceRouter    authentication.AuthService
-	userServiceRouter    user.UserService
-	articleServiceRouter article.ArticleService
-	commentServiceRouter comment.CommentService
-	authMiddleware       *auth_middlewares.UserAuthMiddleware
-	logger               logger.Logger
+	authServiceRouter     authentication.AuthService
+	userServiceRouter     user.UserService
+	articleServiceRouter  article.ArticleService
+	commentServiceRouter  comment.CommentService
+	categoryServiceRouter category.CategoryService
+	authMiddleware        *auth_middlewares.UserAuthMiddleware
+	logger                logger.Logger
 }
 
 func NewRouterDeps(
@@ -34,6 +34,7 @@ func NewRouterDeps(
 	userServiceRouter user.UserService,
 	articleServiceRouter article.ArticleService,
 	commentServiceRouter comment.CommentService,
+	categoryServiceRouter category.CategoryService,
 	authMiddleware *auth_middlewares.UserAuthMiddleware,
 	logger logger.Logger,
 ) RouterDeps {
@@ -42,6 +43,7 @@ func NewRouterDeps(
 		userServiceRouter:    userServiceRouter,
 		articleServiceRouter: articleServiceRouter,
 		commentServiceRouter: commentServiceRouter,
+		categoryServiceRouter: categoryServiceRouter,
 		authMiddleware:       authMiddleware,
 		logger:               logger,
 	}
@@ -63,15 +65,15 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 
 	v1 := r.Group("/api/v1", authMiddleware.SetUserStatus())
 	{
-		praseRouters(v1.Group("/auth"),routerDeps)
-		praseRouters(v1.Group("/users"),routerDeps)
-		praseRouters(v1.Group("/articles"),routerDeps)
-		praseRouters(v1.Group("/comments"),routerDeps)
+		praseRouters(v1.Group("/auth"), routerDeps)
+		praseRouters(v1.Group("/users"), routerDeps)
+		praseRouters(v1.Group("/articles"), routerDeps)
+		praseRouters(v1.Group("/comments"), routerDeps)
 	}
 
 	return r
 }
-func praseRouters(r *gin.RouterGroup,routerDeps RouterDeps) {
+func praseRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 
 	switch r.BasePath() {
 
@@ -119,6 +121,15 @@ func praseRouters(r *gin.RouterGroup,routerDeps RouterDeps) {
 			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.Create)
 			r.PATCH("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.UpdateByID)
 			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.DeleteByID)
+		}
+	case "/api/v1/category":
+		{
+			categoryHandler := handlers.NewCategoryHandler(routerDeps.categoryServiceRouter)
+
+			r.GET("", categoryHandler.GetAll)
+			r.GET("/:id", categoryHandler.GetByID)
+			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.Create)
+			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.DeleteByID)
 		}
 	}
 }
