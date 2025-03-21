@@ -10,6 +10,5 @@ type CategoryRepository interface {
 	GetAllCategories(ctx context.Context) ([]model.Category, error)
 	GetCategoryByID(ctx context.Context, categoryID uint) (*model.Category, error)
 	GetCategoryByName(ctx context.Context, name string) (*model.Category, error)
-
 	DeleteCategoryByID(ctx context.Context, categoryID uint) error
 }

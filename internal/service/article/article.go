@@ -9,7 +9,7 @@ import (
 )
 
 type ArticleService interface {
-	Create(ctx context.Context, title, content string, authorID uint) (*model.Article, error)
+	Create(ctx context.Context, title, content string, authorID uint,categoriesName []string) (*model.Article, error)
 	Update(ctx context.Context, ID uint, title, content string) (*model.Article, error)
 	Delete(ctx context.Context, articleID uint) error
 	GetAll(ctx context.Context) ([]model.Article, error)
@@ -18,17 +18,32 @@ type ArticleService interface {
 }
 
 type articleService struct {
-	articlePostgresRepo repository.ArticleRepository
+	articleRepo repository.ArticleRepository
+	categoryRepo repository.CategoryRepository
 }
 
-func NewArticleService(repo repository.ArticleRepository) ArticleService {
-	return &articleService{repo}
+func NewArticleService(articleRepo repository.ArticleRepository,categoryRepo repository.CategoryRepository) ArticleService {
+	return &articleService{
+		articleRepo: articleRepo,
+		categoryRepo: categoryRepo,
+	}
 }
 
-func (s *articleService) Create(ctx context.Context, title, content string, authorID uint) (*model.Article, error) {
-	articleModel := model.NewArticle(title, content, authorID)
+func (s *articleService) Create(ctx context.Context, title, content string, authorID uint,categoriesName []string) (*model.Article, error) {
+	var categories = []model.Category{}
 
-	article, err := s.articlePostgresRepo.Create(ctx, articleModel)
+	for _, categoryName := range categoriesName {
+		category, err := s.categoryRepo.GetCategoryByName(ctx, categoryName)
+		if err != nil {
+			return nil, err
+		}
+
+		categories = append(categories, *category)
+	}
+
+	articleModel := model.NewArticle(title, content, authorID,categories)
+
+	article, err := s.articleRepo.Create(ctx, articleModel)
 
 	if err != nil {
 		return nil, err
@@ -38,7 +53,7 @@ func (s *articleService) Create(ctx context.Context, title, content string, auth
 }
 
 func (s *articleService) Update(ctx context.Context, ID uint, title, content string) (*model.Article, error) {
-	article, err := s.articlePostgresRepo.UpdateByID(ctx, ID, title, content)
+	article, err := s.articleRepo.UpdateByID(ctx, ID, title, content)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +62,7 @@ func (s *articleService) Update(ctx context.Context, ID uint, title, content str
 }
 
 func (s *articleService) Delete(ctx context.Context, articleID uint) error {
-	err := s.articlePostgresRepo.DeleteByID(ctx, articleID)
+	err := s.articleRepo.DeleteByID(ctx, articleID)
 	if err != nil {
 		return err
 	}
@@ -56,7 +71,7 @@ func (s *articleService) Delete(ctx context.Context, articleID uint) error {
 }
 
 func (s *articleService) GetAll(ctx context.Context) ([]model.Article, error) {
-	articles, err := s.articlePostgresRepo.GetAll(ctx)
+	articles, err := s.articleRepo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +109,7 @@ func (s *articleService) SearchArticle(ctx context.Context, filter map[string]st
 		}
 	}
 
-	articles, err := s.articlePostgresRepo.SearchArticles(ctx, articleFilter)
+	articles, err := s.articleRepo.SearchArticles(ctx, articleFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +118,7 @@ func (s *articleService) SearchArticle(ctx context.Context, filter map[string]st
 }
 
 func (s *articleService) GetArticleByID(ctx context.Context, ID uint) (*model.Article, error) {
-	article, err := s.articlePostgresRepo.GetArticleByID(ctx, ID)
+	article, err := s.articleRepo.GetArticleByID(ctx, ID)
 
 	if err != nil {
 		return nil, err

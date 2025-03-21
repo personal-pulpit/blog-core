@@ -26,7 +26,7 @@ func (s *CommentTestSuite) SetupSuite() {
 	s.articleRepo = postgres_repository.NewArticlePostgresRepo(db)
 	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
-	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user2", "user2", "<TEST>", "user2"))
+	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user2", "user2", "<TEST-COMMENT>", "user2"))
 	s.Nil(err)
 	s.NotNil(user)
 	tx.Commit()

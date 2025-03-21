@@ -13,7 +13,7 @@ type Article struct {
     AuthorID  uint
     Author    *User   `gorm:"foreignKey:AuthorID"`
     Comments  []Comment `gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE;"`
-	Categories []Category `gorm:"many2many:article_categories;"`
+	Categories []Category `gorm:"many2many:article_categories;constraint:OnDelete:CASCADE;"`
 }
 
 type ArticleFilter struct {

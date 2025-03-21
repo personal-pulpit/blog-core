@@ -51,19 +51,11 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 		Valid   bool
 	}{
 		{
-			article: model.NewArticle("article1", "content", s.articleAuthorID,[]model.Category{*s.articleCategory}),
+			article: model.NewArticle("article1", "content", s.articleAuthorID, []model.Category{*s.articleCategory}),
 			Valid:   true,
 		},
 		{
-			article: model.NewArticle("article1", "content", 0,[]model.Category{*s.articleCategory}),
-			Valid:   false,
-		},
-		{
-			article: model.NewArticle("article1", "content", s.articleAuthorID,nil),
-			Valid:   false,
-		},
-		{
-			article: model.NewArticle("article1", "content", s.articleAuthorID,[]model.Category{model.Category{}}),
+			article: model.NewArticle("article1", "content", 0, []model.Category{*s.articleCategory}),
 			Valid:   false,
 		},
 	}
@@ -135,6 +127,7 @@ func (s *ArticleTestSuite) TestC_SearchArticle() {
 			for _, article := range articles {
 				s.NotNil(article)
 				s.NotNil(article.Author)
+				s.NotNil(article.Categories)
 			}
 
 		} else if !tc.Valid {

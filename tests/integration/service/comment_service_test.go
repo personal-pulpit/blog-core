@@ -26,6 +26,7 @@ func (s *CommentTestSuite) SetupSuite() {
 	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
 	userRepo := postgres_repository.NewUserPostgresRepository(db)
 	articleRepo := postgres_repository.NewArticlePostgresRepo(db)
+	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
 	userModel := model.NewUser("user1 firstName", "user1 lastName", "afakeonce@fake.come", "user1 biography")
 	user, tx, err := userRepo.Create(context.TODO(), userModel)
@@ -35,7 +36,12 @@ func (s *CommentTestSuite) SetupSuite() {
 
 	s.userID = user.ID
 
-	article, err := articleRepo.Create(context.TODO(), model.NewArticle("article1", "content of article1", user.ID))
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	s.NoError(err)
+	s.NotNil(category)
+
+
+	article, err := articleRepo.Create(context.TODO(), model.NewArticle("article1", "content of article1", user.ID, []model.Category{*category}))
 	s.NoError(err)
 	s.NotNil(article)
 

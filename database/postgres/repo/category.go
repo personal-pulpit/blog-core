@@ -59,9 +59,16 @@ func (c *categoryPostgresRepository) GetCategoryByName(ctx context.Context, name
 }
 
 func (c *categoryPostgresRepository) DeleteCategoryByID(ctx context.Context, categoryID uint) error {
-	err := c.db.WithContext(ctx).Delete(&model.Category{}, categoryID).Error
+	result := c.db.WithContext(ctx).Delete(&model.Category{}, categoryID)
+	
+	err := result.Error
+
 	if err != nil {
 		return fmt.Errorf("delete category by id: id:%d \n%w: %v", categoryID,repository.ErrDatabase, err)
+	}
+
+	if result.RowsAffected == 0 {
+		return repository.ErrCategoryNotFound
 	}
 
 	return nil
