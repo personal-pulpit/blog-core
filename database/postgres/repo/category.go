@@ -30,7 +30,7 @@ func (c *categoryPostgresRepository) CreateCategory(ctx context.Context, categor
 
 func (c *categoryPostgresRepository) GetAllCategories(ctx context.Context) ([]model.Category, error) {
 	var categories []model.Category
-	err := c.db.WithContext(ctx).Preload("Articles").Find(&categories).Error
+	err := c.db.WithContext(ctx).Preload("Articles").Preload("Articles.Author").Find(&categories).Error
 	if err != nil {
 		return nil, fmt.Errorf("get all categories: %w: %v", repository.ErrDatabase, err)
 	}
@@ -40,8 +40,12 @@ func (c *categoryPostgresRepository) GetAllCategories(ctx context.Context) ([]mo
 
 func (c *categoryPostgresRepository) GetCategoryByID(ctx context.Context, categoryID uint) (*model.Category, error) {
 	category := new(model.Category)
-	err := c.db.WithContext(ctx).Preload("Articles").First(category, categoryID).Error
+	err := c.db.WithContext(ctx).Preload("Articles").Preload("Articles.Author").First(category, categoryID).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, repository.ErrCategoryNotFound
+		}
+
 		return nil, fmt.Errorf("get category by id: id:%d \n%w: %v", categoryID,repository.ErrDatabase, err)
 	}
 

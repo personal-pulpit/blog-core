@@ -69,6 +69,8 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 		praseRouters(v1.Group("/users"), routerDeps)
 		praseRouters(v1.Group("/articles"), routerDeps)
 		praseRouters(v1.Group("/comments"), routerDeps)
+		praseRouters(v1.Group("/categories"), routerDeps)
+
 	}
 
 	return r
@@ -122,7 +124,7 @@ func praseRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 			r.PATCH("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.UpdateByID)
 			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.DeleteByID)
 		}
-	case "/api/v1/category":
+	case "/api/v1/categories":
 		{
 			categoryHandler := handlers.NewCategoryHandler(routerDeps.categoryServiceRouter)
 
