@@ -22,6 +22,7 @@ type Article struct {
 type articleInput struct {
 	Title   string `json:"title" binding:"required" example:"My First Article"`                      // Title of the article
 	Content string `json:"content" binding:"required" example:"This is the content of the article."` // Content of the article
+	CategoriesName []string `json:"categories" binding:"required"` // Categories of the article
 }
 
 // NewArticleHandler creates a new Article handler.
@@ -97,6 +98,7 @@ func (a *Article) GetByID(ctx *gin.Context) {
 				"content":    article.Content,
 				"author":     article.Author,
 				"comments":   article.Comments,
+				"categories": article.Categories,
 				"created_at": article.CreatedAt,
 				"updated_at": article.UpdatedAt,
 			},
@@ -190,7 +192,7 @@ func (a *Article) Create(ctx *gin.Context) {
 	}
 
 	authorID := uint(ctx.GetInt("id"))
-	article, err := a.ArticleService.Create(ctx, ai.Title, ai.Content, authorID)
+	article, err := a.ArticleService.Create(ctx, ai.Title, ai.Content, authorID,ai.CategoriesName)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create article", map[string]interface{}{
 			"error": err.Error(),
@@ -205,6 +207,7 @@ func (a *Article) Create(ctx *gin.Context) {
 			"title":      article.Title,
 			"content":    article.Content,
 			"comments":   article.Comments,
+			"categories": article.Categories,
 			"author_id":  article.AuthorID,
 			"created_at": article.CreatedAt,
 		},
@@ -272,6 +275,7 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 			"title":      article.Title,
 			"content":    article.Content,
 			"comments":   article.Comments,
+			"categories": article.Categories,
 			"author":     article.Author,
 			"updated_at": article.UpdatedAt,
 		},

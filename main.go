@@ -7,6 +7,7 @@ import (
 	redis "blog/database/redis"
 	"blog/internal/service/article"
 	"blog/internal/service/authentication"
+	"blog/internal/service/category"
 	"blog/internal/service/comment"
 	"blog/internal/service/user"
 	email "blog/pkg/email_manager"
@@ -41,6 +42,7 @@ func main() {
 	authPostgresRepo := postgres_repository.NewAuthPostgresRepository(postgresCLI)
 	userPostgresRepo := postgres_repository.NewUserPostgresRepository(postgresCLI)
 	commentPostgresRepo := postgres_repository.NewCommentPostgresRepository(postgresCLI)
+	categoryPostgresRepo := postgres_repository.NewCategoryRepository(postgresCLI)
 
 	hashManager := hash.NewHashManager(hash.DefaultHashParams)
 	authManager := auth_manager.NewAuthManger(redisCLI, config.Jwt)
@@ -48,8 +50,9 @@ func main() {
 	emailService := email.NewEmailService(&config.Email)
 	authService := authentication.NewAuthenticateService(authPostgresRepo, userPostgresRepo, authManager, hashManager, emailService)
 	userService := user.NewUserService(userPostgresRepo, authPostgresRepo)
-	articleService := article.NewArticleService(articlePostgresRepo)
+	articleService := article.NewArticleService(articlePostgresRepo,categoryPostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
+	categoryService := category.NewCategoryService(categoryPostgresRepo)
 
 	serverDeps := server.NewServerDependencies(
 		authManager,
@@ -57,6 +60,7 @@ func main() {
 		userService,
 		articleService,
 		commentService,
+		categoryService,
 		logger,
 	)
 

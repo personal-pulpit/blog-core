@@ -14,16 +14,21 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
+	//TODO: delete it
 	repo            repository.ArticleRepository
 	userRepo        repository.UserRepository
 	service         article.ArticleService
 	article         *model.Article
 	articleAuthorID uint
+
+	categoryName string
 }
 
 func (s *ArticleTestSuite) SetupSuite() {
 	s.repo = postgres_repository.NewArticlePostgresRepo(db)
-	s.service = article.NewArticleService(s.repo)
+	categoryRepo := postgres_repository.NewCategoryRepository(db)
+
+	s.service = article.NewArticleService(s.repo, categoryRepo)
 
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
 
@@ -32,6 +37,12 @@ func (s *ArticleTestSuite) SetupSuite() {
 	s.NotNil(user)
 	tx.Commit()
 	s.articleAuthorID = user.ID
+
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	s.NoError(err)
+	s.NotNil(category)
+
+	s.categoryName = category.Name
 }
 
 func (s *ArticleTestSuite) TestA_CreateArticle() {
@@ -58,7 +69,7 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 	}
 
 	for _, tc := range testCases {
-		article, err := s.service.Create(ctx, tc.title, tc.content, tc.authorID)
+		article, err := s.service.Create(ctx, tc.title, tc.content, tc.authorID, []string{s.categoryName})
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(article)

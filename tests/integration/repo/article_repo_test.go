@@ -20,12 +20,14 @@ type ArticleTestSuite struct {
 	article     *model.Article
 
 	articleAuthorID uint
+	articleCategory *model.Category
 }
 
 func (s *ArticleTestSuite) SetupSuite() {
 	s.repo = postgres_repository.NewArticlePostgresRepo(db)
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
 	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
+	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
 	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user1", "user1", "<EMAIL>", "user1"))
 	s.Nil(err)
@@ -33,6 +35,12 @@ func (s *ArticleTestSuite) SetupSuite() {
 	tx.Commit()
 
 	s.articleAuthorID = user.ID
+
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	s.Nil(err)
+	s.NotNil(category)
+
+	s.articleCategory = category
 }
 
 func (s *ArticleTestSuite) TestA_CreateArticle() {
@@ -43,11 +51,11 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 		Valid   bool
 	}{
 		{
-			article: model.NewArticle("article1", "content", s.articleAuthorID),
+			article: model.NewArticle("article1", "content", s.articleAuthorID, []model.Category{*s.articleCategory}),
 			Valid:   true,
 		},
 		{
-			article: model.NewArticle("article1", "content", 0),
+			article: model.NewArticle("article1", "content", 0, []model.Category{*s.articleCategory}),
 			Valid:   false,
 		},
 	}
@@ -119,6 +127,7 @@ func (s *ArticleTestSuite) TestC_SearchArticle() {
 			for _, article := range articles {
 				s.NotNil(article)
 				s.NotNil(article.Author)
+				s.NotNil(article.Categories)
 			}
 
 		} else if !tc.Valid {
@@ -152,6 +161,7 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 			s.NotNil(article)
 			s.NotNil(article.Author)
 			s.NotNil(article.Comments)
+			s.NotNil(article.Categories)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)

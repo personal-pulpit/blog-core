@@ -8,5 +8,6 @@ var (
 	ErrUserNotFound            = errors.New("user not found")
 	ErrCommentNotFound            = errors.New("comment not found")
 	ErrArticleNotFound = errors.New("article not found")
+	ErrCategoryNotFound = errors.New("category not found")
 	ErrDatabase = errors.New("database error")
 )

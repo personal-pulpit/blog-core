@@ -19,6 +19,8 @@ type UserTestSuite struct {
 
 	usersArticleID uint
 	usersCommentID uint
+
+	articleCategory *model.Category
 }
 
 func (s *UserTestSuite) SetupSuite() {
@@ -28,6 +30,13 @@ func (s *UserTestSuite) SetupSuite() {
 	//get helper repos
 	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
 	s.articleRepo = postgres_repository.NewArticlePostgresRepo(db)
+	categoryRepo := postgres_repository.NewCategoryRepository(db)
+
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	s.Nil(err)
+	s.NotNil(category)
+
+	s.articleCategory = category
 }
 
 func (s *UserTestSuite) TestA_Create() {
@@ -56,7 +65,7 @@ func (s *UserTestSuite) TestA_Create() {
 
 			s.savedUser = user
 
-			article, err := s.articleRepo.Create(ctx, model.NewArticle("article1", "content", user.ID))
+			article, err := s.articleRepo.Create(ctx, model.NewArticle("article1", "content", user.ID, []model.Category{*s.articleCategory}))
 			s.Nil(err)
 			s.NotNil(article)
 

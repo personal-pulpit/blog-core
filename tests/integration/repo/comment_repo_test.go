@@ -24,15 +24,20 @@ func (s *CommentTestSuite) SetupSuite() {
 	s.repo = postgres_repository.NewCommentPostgresRepository(db)
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
 	s.articleRepo = postgres_repository.NewArticlePostgresRepo(db)
+	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
-	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user2", "user2", "<TEST>", "user2"))
+	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user2", "user2", "<TEST-COMMENT>", "user2"))
 	s.Nil(err)
 	s.NotNil(user)
 	tx.Commit()
 
 	s.userID = user.ID
 
-	article, err := s.articleRepo.Create(context.TODO(), model.NewArticle("article1", "content", s.userID))
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	s.Nil(err)
+	s.NotNil(category)
+
+	article, err := s.articleRepo.Create(context.TODO(), model.NewArticle("article1", "content", s.userID,[]model.Category{*category}))
 	s.Nil(err)
 	s.NotNil(article)
 
