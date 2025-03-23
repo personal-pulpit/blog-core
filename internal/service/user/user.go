@@ -12,7 +12,6 @@ type UserService interface {
 	AddProfileImage(ctx context.Context, ID uint, image []byte) error
 	GetUserProfile(ctx context.Context, ID uint) (*model.User, error)
 	GetProfileImageURL(ctx context.Context, ID uint) (string, error)
-	// UpdateProfileImage(ctx context.Context, ID uint, image []byte) error
 	UpdateProfile(ctx context.Context, ID uint, FirstName, lastName, biography string) (*model.User, error)
 	DeleteAccount(ctx context.Context, ID uint, password string) error
 	DeleteProfileImage(ctx context.Context, ID uint) error
@@ -45,6 +44,16 @@ func (u *userManager) AddProfileImage(ctx context.Context, ID uint, image []byte
 	}
 
 	err := u.objectStorageRepo.UploadFile(ctx, objStorage.ProfileImageBucketName, object)
+	if err != nil {
+		return err
+	}
+
+	url,err := u.GetProfileImageURL(ctx, ID)
+	if err != nil {
+		return err
+	}
+
+	err = u.userCacheRepo.SetUserProfileImageURL(ctx, ID, url,objStorage.ExpirationTime)
 	if err != nil {
 		return err
 	}

@@ -39,11 +39,6 @@ func (m *minioStorageRepo) UploadFile(ctx context.Context, bucketName string, ob
 	return nil
 }
 
-//	func (m *minioStorageRepo) DownloadFile(ctx context.Context, bucketName, objectName string) (io.ReadCloser, error) {
-//		object, err := m.client.GetObject(ctx, bucketName, objectName, minio.GetObjectOptions{})
-//		if err != nil {
-//			return nil, err
-//		}
 
 func (m *minioStorageRepo) GetObjectURL(ctx context.Context, bucketName, objectName string) (string, error) {
 	objectPath := "profile-images/" + objectName
@@ -54,9 +49,9 @@ func (m *minioStorageRepo) GetObjectURL(ctx context.Context, bucketName, objectN
 		// If StatObject returns an error, it's likely the object doesn't exist.
 		// You can check the error type to be more precise (minio.ErrorResponse).
 		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
-			return "", ErrObjectNotFound // Or a specific error
+			return "", ErrObjectNotFound 
 		}
-		return "", err // Return other errors
+		return "", err 
 	}
 
 	url, err := m.client.PresignedGetObject(ctx, bucketName, objectPath, ExpirationTime, nil)

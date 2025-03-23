@@ -103,7 +103,7 @@ func praseRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 			r.GET("/me", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetCurrentUser)
 			r.POST("/add-profile-picture", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.AddProfileImage)
 			r.GET("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
-			r.GET("/profile-picture-url/:id", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetProfileImageURL)
+			r.GET("/profile-picture-url/:id", userHandler.GetProfileImageURL)
 			r.PATCH("/update", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
 			r.DELETE("/delete", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
 			r.DELETE("/delete-profile-picture", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.DeleteProfileImage)
