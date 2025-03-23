@@ -17,6 +17,7 @@ require (
 	github.com/swaggo/swag/example/celler v0.0.0-20241228122856-94ff0fcc3585
 	github.com/tahadostifam/go-auth-manager v0.0.0-00010101000000-000000000000
 	github.com/testcontainers/testcontainers-go v0.34.0
+	go.uber.org/mock v0.5.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.10
 )

@@ -2,18 +2,22 @@ package service
 
 import (
 	postgres_repository "blog/database/postgres/repo"
+	redis_repo "blog/database/redis/repo"
 	"blog/internal/model"
 	"blog/internal/repository"
 	"blog/internal/service/user"
+	"blog/mocks"
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 type UserTestSuite struct {
 	suite.Suite
-	userRepo repository.UserRepository
+
+	userRepo   repository.UserRepository
 
 	service user.UserService
 
@@ -24,8 +28,13 @@ type UserTestSuite struct {
 func (s *UserTestSuite) SetupSuite() {
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
 	authRepo := postgres_repository.NewAuthPostgresRepository(db)
+	cacheRepo := redis_repo.NewRedisRepository(redisCLI)
 
-	s.service = user.NewUserService(s.userRepo, authRepo)
+	ctrl := gomock.NewController(s.T())
+
+	objectStorageRepo := mocks.NewMockStorageRepository(ctrl)
+
+	s.service = user.NewUserService(s.userRepo, cacheRepo, authRepo, objectStorageRepo)
 
 	userModel := model.NewUser("user1 firstName", "user1 lastName", "setupsuitemail@fake.come", "user1 biography")
 	user, tx, err := s.userRepo.Create(context.TODO(), userModel)

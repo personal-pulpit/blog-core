@@ -24,7 +24,7 @@ type userManager struct {
 	objectStorageRepo objStorage.StorageRepository
 }
 
-func NewUserService(userPostgresRepo repository.UserRepository,userCacheRepo repository.UserCacheRepository, authPostgresRepo repository.AuthRepository, objectStorage objStorage.StorageRepository) UserService {
+func NewUserService(userPostgresRepo repository.UserRepository, userCacheRepo repository.UserCacheRepository, authPostgresRepo repository.AuthRepository, objectStorage objStorage.StorageRepository) UserService {
 	return &userManager{
 		userPostgresRepo:  userPostgresRepo,
 		authPostgresRepo:  authPostgresRepo,
@@ -34,6 +34,11 @@ func NewUserService(userPostgresRepo repository.UserRepository,userCacheRepo rep
 }
 
 func (u *userManager) AddProfileImage(ctx context.Context, ID uint, image []byte) error {
+	_, err := u.userPostgresRepo.GetUserByID(ctx, ID)
+	if err != nil {
+		return err
+	}
+
 	fileName := file.GenerateFileName(ID)
 
 	object := objStorage.Object{
@@ -43,17 +48,17 @@ func (u *userManager) AddProfileImage(ctx context.Context, ID uint, image []byte
 		Size:        int64(len(image)),
 	}
 
-	err := u.objectStorageRepo.UploadFile(ctx, objStorage.ProfileImageBucketName, object)
+	err = u.objectStorageRepo.UploadFile(ctx, objStorage.ProfileImageBucketName, object)
 	if err != nil {
 		return err
 	}
 
-	url,err := u.GetProfileImageURL(ctx, ID)
+	url, err := u.GetProfileImageURL(ctx, ID)
 	if err != nil {
 		return err
 	}
 
-	err = u.userCacheRepo.SetUserProfileImageURL(ctx, ID, url,objStorage.ExpirationTime)
+	err = u.userCacheRepo.SetUserProfileImageURL(ctx, ID, url, objStorage.ExpirationTime)
 	if err != nil {
 		return err
 	}
@@ -70,8 +75,8 @@ func (u *userManager) GetUserProfile(ctx context.Context, ID uint) (*model.User,
 }
 
 func (u *userManager) GetProfileImageURL(ctx context.Context, ID uint) (string, error) {
-	cachedURL,err := u.userCacheRepo.GetUserProfileImageURL(ctx,ID)
-	
+	cachedURL, err := u.userCacheRepo.GetUserProfileImageURL(ctx, ID)
+
 	//TODO log error
 	if err == nil {
 		return cachedURL, nil
@@ -84,7 +89,7 @@ func (u *userManager) GetProfileImageURL(ctx context.Context, ID uint) (string, 
 		return "", err
 	}
 
-	err = u.userCacheRepo.SetUserProfileImageURL(ctx, ID, url,objStorage.ExpirationTime )
+	err = u.userCacheRepo.SetUserProfileImageURL(ctx, ID, url, objStorage.ExpirationTime)
 	if err != nil {
 		return "", err
 	}
