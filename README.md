@@ -13,6 +13,7 @@ A robust blog platform backend written in Go, featuring a clean architecture wit
   - User registration and login
   - Email verification system
   - Welcome email functionality
+  - User Profile Managements:Delete,Upload,Get
   
 - **Article Management**
   - CRUD operations for blog posts
@@ -20,11 +21,15 @@ A robust blog platform backend written in Go, featuring a clean architecture wit
   - PostgreSQL for data persistence
 
 - **Comment Management**
-  - Commenting system for blog posts  
+  - Commenting system for blog articles  
 
+- **Category Management**
+  - Categories for each article
+ 
 - **Infrastructure**
   - PostgreSQL database
   - Redis cache
+  - MinIO Object Storage
   - Email service integration
   - Structured logging with Zap
 
@@ -34,6 +39,7 @@ A robust blog platform backend written in Go, featuring a clean architecture wit
 - Go 1.19+
 - PostgreSQL
 - Redis
+- MinIO 
 - Make (optional)
 
 ### Installation
@@ -92,6 +98,9 @@ blog-core/
   - GET `/users/{id}`
   - PATCH `/users/update`
   - DELETE `/users/delete`
+  - POST `/users/add-profile-picture` 
+  - GET `/users/profile-picture-url/{id}`
+  - DELETE `/users/delete-profile-picture`
 
 - **Articles**
   - GET `/articles`
@@ -106,6 +115,12 @@ blog-core/
   - PATCH `/comments/{id}`
   - DELETE `/comments/{id}`
 
+- **Categories**
+  - POST  `/categories/create`
+  - GET  `/categories/` 
+  - GET `/categories/{id}`
+  - DELETE `/categories/{id}`
+   
 ## 📝 Documentation
 After ran go run main.go open: http://localhost:8000/swagger/index.html in your browser
 
@@ -128,6 +143,12 @@ git push origin feature/amazing-feature
 ```
 
 5. Open a Pull Request
+
+## TODO
+- Complete User Service tests
+- Refactor Swagger  Docs
+- Recommendation Articles system
+- Search Categories by titles 
 
 ## 📝 Development Guidelines
 
