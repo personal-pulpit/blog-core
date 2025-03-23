@@ -1,6 +1,11 @@
 definitions:
   handlers.articleInput:
     properties:
+      categories:
+        description: Categories of the article
+        items:
+          type: string
+        type: array
       content:
         description: Content of the article
         example: This is the content of the article.
@@ -10,6 +15,7 @@ definitions:
         example: My First Article
         type: string
     required:
+    - categories
     - content
     - title
     type: object
@@ -1015,6 +1021,53 @@ paths:
       summary: Get user profile by ID
       tags:
       - users
+  /api/v1/users/add-profile-picture:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a profile image for the currently authenticated user
+      parameters:
+      - description: Profile image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile image uploaded successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid image file
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to upload profile image
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Upload profile image
+      tags:
+      - users
   /api/v1/users/delete:
     delete:
       consumes:
@@ -1051,6 +1104,35 @@ paths:
                   type: object
               type: object
       summary: Delete user account
+      tags:
+      - users
+  /api/v1/users/delete-profile-picture:
+    delete:
+      description: Delete the profile image of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile image deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to delete profile image
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Delete profile image
       tags:
       - users
   /api/v1/users/me:
@@ -1090,6 +1172,51 @@ paths:
                   type: object
               type: object
       summary: Get current user profile
+      tags:
+      - users
+  /api/v1/users/profile-picture-url/{id}:
+    get:
+      description: Retrieve the profile image URL of a user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile image URL retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: Profile image not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to retrieve profile image URL
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get profile image URL
       tags:
       - users
   /api/v1/users/update:
