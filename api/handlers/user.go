@@ -106,6 +106,15 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 	})
 }
 
+// @Summary Get profile image URL
+// @Description Retrieve the profile image URL of a user by their ID
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image URL retrieved successfully"
+// @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image not found"
+// @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve profile image URL"
+// @Router /api/v1/users/profile-picture-url/{id} [get]
 func (u *UserHandler) GetProfileImageURL(ctx *gin.Context) {
 	id := ctx.Param("id")
 
@@ -137,6 +146,16 @@ func (u *UserHandler) GetProfileImageURL(ctx *gin.Context) {
 	})
 }
 
+// @Summary Upload profile image
+// @Description Upload a profile image for the currently authenticated user
+// @Tags users
+// @Accept multipart/form-data
+// @Produce json
+// @Param image formData file true "Profile image file"
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image uploaded successfully"
+// @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid image file"
+// @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to upload profile image"
+// @Router /api/v1/users/add-profile-picture [post]
 func (u *UserHandler) AddProfileImage(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 
@@ -268,6 +287,13 @@ func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	})
 }
 
+// @Summary Delete profile image
+// @Description Delete the profile image of the currently authenticated user
+// @Tags users
+// @Produce json
+// @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image deleted successfully"
+// @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to delete profile image"
+// @Router /api/v1/users/delete-profile-picture [delete]
 func (u *UserHandler) DeleteProfileImage(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 
