@@ -12,6 +12,7 @@ import (
 	"blog/internal/service/user"
 	email "blog/pkg/email_manager"
 	"blog/pkg/logger"
+	objStorage "blog/pkg/object_storage"
 	"blog/utils/hash"
 
 	postgres_repository "blog/database/postgres/repo"
@@ -38,19 +39,23 @@ func main() {
 
 	defer redis.CloseRedis()
 
+	minioClient, err := objStorage.NewMinioClient(config.MinIO)
+	checkError(logger, "MinIO", err)
+
 	articlePostgresRepo := postgres_repository.NewArticlePostgresRepo(postgresCLI)
 	authPostgresRepo := postgres_repository.NewAuthPostgresRepository(postgresCLI)
 	userPostgresRepo := postgres_repository.NewUserPostgresRepository(postgresCLI)
 	commentPostgresRepo := postgres_repository.NewCommentPostgresRepository(postgresCLI)
 	categoryPostgresRepo := postgres_repository.NewCategoryRepository(postgresCLI)
+	objStorageRepo := objStorage.NewMinioStorageRepo(minioClient)
 
 	hashManager := hash.NewHashManager(hash.DefaultHashParams)
 	authManager := auth_manager.NewAuthManger(redisCLI, config.Jwt)
 
 	emailService := email.NewEmailService(&config.Email)
 	authService := authentication.NewAuthenticateService(authPostgresRepo, userPostgresRepo, authManager, hashManager, emailService)
-	userService := user.NewUserService(userPostgresRepo, authPostgresRepo)
-	articleService := article.NewArticleService(articlePostgresRepo,categoryPostgresRepo)
+	userService := user.NewUserService(userPostgresRepo, authPostgresRepo, objStorageRepo)
+	articleService := article.NewArticleService(articlePostgresRepo, categoryPostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
 	categoryService := category.NewCategoryService(categoryPostgresRepo)
 

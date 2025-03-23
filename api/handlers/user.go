@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"blog/api/helpers"
+	objStorage "blog/pkg/object_storage"
+	"blog/utils/file"
 	"time"
 
 	"blog/internal/repository"
@@ -104,6 +106,72 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 	})
 }
 
+func (u *UserHandler) GetProfileImageURL(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	ID := uint(helpers.StringToInt(id))
+
+	url, err := u.UserService.GetProfileImageURL(ctx, ID)
+	if err != nil {
+		if err == objStorage.ErrObjectNotFound {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "Failed to retrieve profile image URL with provided id", map[string]interface{}{
+				"user_id": id,
+				"error":   err.Error(),
+			})
+
+			return
+		}
+
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to retrieve profile image URL", map[string]interface{}{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Profile image URL retrieved successfully", map[string]interface{}{
+		"url": url,
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+		},
+	})
+}
+
+func (u *UserHandler) AddProfileImage(ctx *gin.Context) {
+	id := uint(ctx.GetInt("id"))
+
+	imageFile, err := ctx.FormFile("image")
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to upload profile image", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	fileData, err := file.CheckFile(imageFile)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to upload profile image", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	err = u.UserService.AddProfileImage(ctx, id, fileData)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to upload profile image", map[string]interface{}{
+			"error":   err.Error(),
+			"user_id": id,
+		})
+		return
+	}
+
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Profile Image uploaded successfully", map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+		},
+	})
+}
+
 // @Summary Update user profile
 // @Description Update the profile of the currently authenticated user
 // @Tags users
@@ -166,6 +234,7 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 // @Router /api/v1/users/delete [delete]
 func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	var input deleteAccountInput
+
 	err := ctx.ShouldBindJSON(&input)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
@@ -195,6 +264,25 @@ func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 		"metadata": map[string]interface{}{
 			"deleted_at": time.Now(),
 			"user_id":    id,
+		},
+	})
+}
+
+func (u *UserHandler) DeleteProfileImage(ctx *gin.Context) {
+	id := uint(ctx.GetInt("id"))
+
+	err := u.UserService.DeleteProfileImage(ctx, id)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to delete profile image", map[string]interface{}{
+			"error":   err.Error(),
+			"user_id": id,
+		})
+		return
+	}
+
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Profile Image deleted successfully", map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
 		},
 	})
 }

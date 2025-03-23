@@ -22,6 +22,7 @@ type (
 		Redis    Redis    `koanf:"redis"`
 		Logger   Logger   `koanf:"logger"`
 		Email    Email    `koanf:"email"`
+		MinIO MinIO `kooanf:"minio"`
 	}
 
 	Server struct {
@@ -61,6 +62,15 @@ type (
 		Password    string `koanf:"password"`
 		Host        string `koanf:"host"`
 		Port        string `koanf:"port"`
+	}
+
+	MinIO struct{
+		Port int `koanf:"port"`
+		Endpoint string `koanf:"endpoint"`
+		AccessKey string `koanf:"access_key"`
+		SecretKey string `koanf:"secret_key"`
+		BucketName string `koanf:"bucket_name"`
+		UseSSL bool `koanf:"use_ssl"`
 	}
 )
 

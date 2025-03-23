@@ -15,6 +15,13 @@ redis:
   password: "password"
   db:       0
   protocol: 3
+minio:
+  port: 9000
+  endpoint: 127.0.0.1
+  access_key: HCO9fwsfLbBbZBltvdr9
+  secret_key: zpXGpO0Nj3K8V8IabDiZVyFXoa8IYjugtbXtuxvH
+  bucket_name: blog
+  use_ssl: false
 logger:
   log_file_path: ../logs/log.log   
   logger_name: zap
