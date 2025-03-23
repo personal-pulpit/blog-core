@@ -11,7 +11,7 @@ import (
 type UserService interface {
 	AddProfileImage(ctx context.Context, ID uint, image []byte) error
 	GetUserProfile(ctx context.Context, ID uint) (*model.User, error)
-	GetProfileImageURL(ctx context.Context, ID uint) (string,error)
+	GetProfileImageURL(ctx context.Context, ID uint) (string, error)
 	// UpdateProfileImage(ctx context.Context, ID uint, image []byte) error
 	UpdateProfile(ctx context.Context, ID uint, FirstName, lastName, biography string) (*model.User, error)
 	DeleteAccount(ctx context.Context, ID uint, password string) error
@@ -19,16 +19,18 @@ type UserService interface {
 }
 
 type userManager struct {
-	userPostgresRepo repository.UserRepository
-	authPostgresRepo repository.AuthRepository
+	userPostgresRepo  repository.UserRepository
+	userCacheRepo     repository.UserCacheRepository
+	authPostgresRepo  repository.AuthRepository
 	objectStorageRepo objStorage.StorageRepository
 }
 
-func NewUserService(userPostgresRepo repository.UserRepository, authPostgresRepo repository.AuthRepository,objectStorage objStorage.StorageRepository) UserService {
+func NewUserService(userPostgresRepo repository.UserRepository,userCacheRepo repository.UserCacheRepository, authPostgresRepo repository.AuthRepository, objectStorage objStorage.StorageRepository) UserService {
 	return &userManager{
-		userPostgresRepo: userPostgresRepo,
-		authPostgresRepo: authPostgresRepo,
+		userPostgresRepo:  userPostgresRepo,
+		authPostgresRepo:  authPostgresRepo,
 		objectStorageRepo: objectStorage,
+		userCacheRepo:     userCacheRepo,
 	}
 }
 
@@ -59,11 +61,23 @@ func (u *userManager) GetUserProfile(ctx context.Context, ID uint) (*model.User,
 }
 
 func (u *userManager) GetProfileImageURL(ctx context.Context, ID uint) (string, error) {
+	cachedURL,err := u.userCacheRepo.GetUserProfileImageURL(ctx,ID)
+	
+	//TODO log error
+	if err == nil {
+		return cachedURL, nil
+	}
+
 	fileName := file.GenerateFileName(ID)
 
-	url, err := u.objectStorageRepo.GetObjectURL(ctx, objStorage.ProfileImageBucketName,fileName)
+	url, err := u.objectStorageRepo.GetObjectURL(ctx, objStorage.ProfileImageBucketName, fileName)
 	if err != nil {
-		return "",err
+		return "", err
+	}
+
+	err = u.userCacheRepo.SetUserProfileImageURL(ctx, ID, url,objStorage.ExpirationTime )
+	if err != nil {
+		return "", err
 	}
 
 	return url, nil
@@ -85,8 +99,7 @@ func (u *userManager) UpdateProfile(ctx context.Context, ID uint, FirstName, las
 	return userModel, nil
 }
 
-
-func (u *userManager) DeleteProfileImage(ctx context.Context, ID uint) error{
+func (u *userManager) DeleteProfileImage(ctx context.Context, ID uint) error {
 	fileName := file.GenerateFileName(ID)
 
 	err := u.objectStorageRepo.DeleteFile(ctx, objStorage.ProfileImageBucketName, fileName)
@@ -94,9 +107,13 @@ func (u *userManager) DeleteProfileImage(ctx context.Context, ID uint) error{
 		return err
 	}
 
+	err = u.userCacheRepo.DestroyUserProfileImageURL(ctx, ID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
-
 
 func (u *userManager) DeleteAccount(ctx context.Context, ID uint, password string) error {
 	auth, err := u.authPostgresRepo.GetUserAuth(ctx, ID)

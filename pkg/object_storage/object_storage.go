@@ -15,6 +15,8 @@ type StorageRepository interface {
 	GetObjectURL(ctx context.Context, bucketName, objectName string) (string, error)
 }
 
+const ExpirationTime = time.Second*60*60
+
 type minioStorageRepo struct {
 	client *minio.Client
 }
@@ -57,7 +59,7 @@ func (m *minioStorageRepo) GetObjectURL(ctx context.Context, bucketName, objectN
 		return "", err // Return other errors
 	}
 
-	url, err := m.client.PresignedGetObject(ctx, bucketName, objectPath, time.Second*60*60, nil)
+	url, err := m.client.PresignedGetObject(ctx, bucketName, objectPath, ExpirationTime, nil)
 	if err != nil {
 		return "", err
 	}

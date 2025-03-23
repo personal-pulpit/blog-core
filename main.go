@@ -5,6 +5,7 @@ import (
 	"blog/config"
 	postgres "blog/database/postgres"
 	redis "blog/database/redis"
+	redis_repo "blog/database/redis/repo"
 	"blog/internal/service/article"
 	"blog/internal/service/authentication"
 	"blog/internal/service/category"
@@ -45,6 +46,7 @@ func main() {
 	articlePostgresRepo := postgres_repository.NewArticlePostgresRepo(postgresCLI)
 	authPostgresRepo := postgres_repository.NewAuthPostgresRepository(postgresCLI)
 	userPostgresRepo := postgres_repository.NewUserPostgresRepository(postgresCLI)
+	userCacheRepo := redis_repo.NewRedisRepository(redisCLI)
 	commentPostgresRepo := postgres_repository.NewCommentPostgresRepository(postgresCLI)
 	categoryPostgresRepo := postgres_repository.NewCategoryRepository(postgresCLI)
 	objStorageRepo := objStorage.NewMinioStorageRepo(minioClient)
@@ -54,7 +56,7 @@ func main() {
 
 	emailService := email.NewEmailService(&config.Email)
 	authService := authentication.NewAuthenticateService(authPostgresRepo, userPostgresRepo, authManager, hashManager, emailService)
-	userService := user.NewUserService(userPostgresRepo, authPostgresRepo, objStorageRepo)
+	userService := user.NewUserService(userPostgresRepo,userCacheRepo, authPostgresRepo, objStorageRepo)
 	articleService := article.NewArticleService(articlePostgresRepo, categoryPostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
 	categoryService := category.NewCategoryService(categoryPostgresRepo)
