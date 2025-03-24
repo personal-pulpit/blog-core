@@ -27,6 +27,7 @@ type (
 
 	Server struct {
 		Port int `koanf:"port"`
+		CORS string `koanf:"cors"`
 	}
 
 	Postgres struct {

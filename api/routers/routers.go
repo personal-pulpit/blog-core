@@ -14,7 +14,7 @@ import (
 	"blog/pkg/logger"
 
 	swaggerFiles "github.com/swaggo/files"
-
+    "github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -58,8 +58,17 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	r.Use(middlewares.LimitByRequest(1))
+	r.Use(middlewares.LimitByRequest(4))
+	
+	configInstance := config.GetConfigInstance() 
 
+	config := cors.DefaultConfig()
+   	config.AllowOrigins = []string{configInstance.Server.CORS} // Allow your frontend origin
+    	config.AllowMethods = []string{"POST", "OPTIONS", "GET", "PUT", "DELETE"} // Allow required methods
+    	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"} // Allow required headers
+    	config.AllowCredentials = true
+    	
+	r.Use(cors.New(config))
 	//swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
