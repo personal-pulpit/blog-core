@@ -148,7 +148,10 @@ git push origin feature/amazing-feature
 - Complete User Service tests
 - Refactor Swagger  Docs
 - Recommendation Articles system
-- Search Categories by titles 
+- Search Categories by titles
+- Bookmarks management
+- Likes managemnet
+- Tags management  
 
 ## 📝 Development Guidelines
 
@@ -167,6 +170,7 @@ git push origin feature/amazing-feature
 - [JWT](https://jwt.io/)
 - [Swagger](https://swagger.io/)
 - [Zap](https://github.com/uber-go/zap)
+- [MinIO](https://github.com/minio/minio)
 
 ## 🙏 Acknowledgments
 
