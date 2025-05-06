@@ -43,6 +43,10 @@ func (s *CategoryTestSuite) TestA_CreateCategory() {
 			Category: model.NewCategory("Category1"),
 			Valid:   true,
 		},
+		{
+			Category: model.NewCategory("Category1"),
+			Valid:   false,
+		},
 	}
 
 	for _, tc := range testCases {

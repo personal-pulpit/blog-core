@@ -87,6 +87,24 @@ func (a *articlePostgresRepo) GetArticleByID(ctx context.Context, ID uint) (*mod
 }
 
 func (a *articlePostgresRepo) Create(ctx context.Context, articleModel *model.Article) (*model.Article, error) {
+	var names []string
+	for _, cat := range articleModel.Categories {
+		names = append(names, cat.Name)
+	}
+
+	var existingCategories []model.Category
+	if err := a.postgresCLI.Where("name IN ?", names).Find(&existingCategories).Error; err != nil {
+		//custom error
+		return nil, fmt.Errorf("query categories: %w", err)
+	}
+
+	if len(existingCategories) != len(names) {
+		//custom error
+		return nil, fmt.Errorf("one or more categories do not exist")
+	}
+
+	articleModel.Categories = existingCategories
+
 	err := a.postgresCLI.WithContext(ctx).Create(&articleModel).Error
 	if err != nil {
 		return nil, fmt.Errorf("create article: %v \n%w: %v", articleModel, repository.ErrDatabase, err)

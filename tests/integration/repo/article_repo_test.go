@@ -46,6 +46,10 @@ func (s *ArticleTestSuite) SetupSuite() {
 func (s *ArticleTestSuite) TestA_CreateArticle() {
 	ctx := context.TODO()
 
+	notExistingCategory1 := model.NewCategory("notExistingCategory")
+	notExistingCategory2 := model.NewCategory("notExistingCategory2")
+	notExistingCategory2.ID = 5
+
 	testCases := []struct {
 		article *model.Article
 		Valid   bool
@@ -55,7 +59,15 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 			Valid:   true,
 		},
 		{
-			article: model.NewArticle("article1", "content", 0, []model.Category{*s.articleCategory}),
+			article: model.NewArticle("article0", "content", s.articleAuthorID, []model.Category{*notExistingCategory1}),
+			Valid:  false,
+		},
+		{
+			article: model.NewArticle("article1", "content", s.articleAuthorID, []model.Category{*notExistingCategory2}),
+			Valid:  false,
+		},
+		{
+			article: model.NewArticle("article2", "content", 0, []model.Category{*s.articleCategory}),
 			Valid:   false,
 		},
 	}
