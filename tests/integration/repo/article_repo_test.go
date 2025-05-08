@@ -16,6 +16,7 @@ type ArticleTestSuite struct {
 	suite.Suite
 	repo        repository.ArticleRepository
 	userRepo    repository.UserRepository
+	categoryRepo repository.CategoryRepository
 	commentRepo repository.CommentRepository
 	article     *model.Article
 
@@ -40,6 +41,7 @@ func (s *ArticleTestSuite) SetupSuite() {
 	s.Nil(err)
 	s.NotNil(category)
 
+	s.categoryRepo = categoryRepo
 	s.articleCategory = category
 }
 
@@ -253,7 +255,7 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 		}
 	}
 
-	// Ensure the user is deleted
+	// Ensure the article is deleted
 	_, err = s.repo.GetArticleByID(ctx, s.article.ID)
 	s.Error(err)
 
@@ -266,6 +268,11 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 	comments, err = s.commentRepo.GetAll(ctx)
 	s.NoError(err)
 	s.Equal(0, len(comments))
+
+	// Ensure the article's category exists
+	category, err := s.categoryRepo.GetCategoryByID(ctx,s.articleCategory.ID)
+	s.NoError(err)
+	s.NotNil(category)
 }
 
 func TestArticleTestSuite(t *testing.T) {
