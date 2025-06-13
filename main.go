@@ -10,6 +10,7 @@ import (
 	"blog/internal/service/authentication"
 	"blog/internal/service/category"
 	"blog/internal/service/comment"
+	"blog/internal/service/like"
 	"blog/internal/service/user"
 	email "blog/pkg/email_manager"
 	"blog/pkg/logger"
@@ -49,6 +50,7 @@ func main() {
 	userCacheRepo := redis_repo.NewRedisRepository(redisCLI)
 	commentPostgresRepo := postgres_repository.NewCommentPostgresRepository(postgresCLI)
 	categoryPostgresRepo := postgres_repository.NewCategoryRepository(postgresCLI)
+	likePostgresRepo := postgres_repository.NewLikePostgresRepository(postgresCLI)
 	objStorageRepo := objStorage.NewMinioStorageRepo(minioClient)
 
 	hashManager := hash.NewHashManager(hash.DefaultHashParams)
@@ -60,6 +62,7 @@ func main() {
 	articleService := article.NewArticleService(articlePostgresRepo, categoryPostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
 	categoryService := category.NewCategoryService(categoryPostgresRepo)
+	likeService := like.NewLikeService(likePostgresRepo)
 
 	serverDeps := server.NewServerDependencies(
 		authManager,
@@ -68,6 +71,7 @@ func main() {
 		articleService,
 		commentService,
 		categoryService,
+		likeService,
 		logger,
 	)
 
