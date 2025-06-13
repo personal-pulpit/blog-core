@@ -16,11 +16,13 @@ type ArticleTestSuite struct {
 	suite.Suite
 	repo        repository.ArticleRepository
 	userRepo    repository.UserRepository
+	likeRepo repository.LikeRepository
 	categoryRepo repository.CategoryRepository
 	commentRepo repository.CommentRepository
 	article     *model.Article
 
 	articleAuthorID uint
+	articleLikeID uint
 	articleCategory *model.Category
 }
 
@@ -29,6 +31,7 @@ func (s *ArticleTestSuite) SetupSuite() {
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
 	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
 	categoryRepo := postgres_repository.NewCategoryRepository(db)
+	s.likeRepo = postgres_repository.NewLikePostgresRepository(db)
 
 	user, tx, err := s.userRepo.Create(context.TODO(), model.NewUser("user1", "user1", "<EMAIL>", "user1"))
 	s.Nil(err)
@@ -89,6 +92,12 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 			s.Nil(err)
 			s.NotNil(comment2)
 
+			like,err := s.likeRepo.Create(ctx,model.NewLike(s.articleAuthorID,s.article.ID))
+			s.Nil(err)
+			s.NotNil(like)
+
+			s.articleLikeID = like.ID
+
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)
@@ -142,6 +151,7 @@ func (s *ArticleTestSuite) TestC_SearchArticle() {
 				s.NotNil(article)
 				s.NotNil(article.Author)
 				s.NotNil(article.Categories)
+				s.NotNil(article.Likes)
 			}
 
 		} else if !tc.Valid {
@@ -176,6 +186,7 @@ func (s *ArticleTestSuite) TestD_GetArticleByID() {
 			s.NotNil(article.Author)
 			s.NotNil(article.Comments)
 			s.NotNil(article.Categories)
+			s.NotNil(article.Likes)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(article)
@@ -273,6 +284,10 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 	category, err := s.categoryRepo.GetCategoryByID(ctx,s.articleCategory.ID)
 	s.NoError(err)
 	s.NotNil(category)
+
+	// Ensure the article's likes deleted
+	_, err = s.likeRepo.GetByID(ctx,s.articleLikeID)
+	s.Error(err)
 }
 
 func TestArticleTestSuite(t *testing.T) {

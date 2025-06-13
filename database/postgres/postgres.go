@@ -40,6 +40,7 @@ func GetPostgresqlDB(cfg *config.Postgres) (*gorm.DB,error) {
 	Migration(&model.Article{})
 	Migration(&model.Comment{})
 	Migration(&model.Category{})
-
+	Migration(&model.Like{})
+	
 	return postgresInstance,nil
 }

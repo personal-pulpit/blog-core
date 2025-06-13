@@ -15,6 +15,7 @@ type User struct {
 	Biography string `gorm:"type:text;size:500;NOT NULL"`
 	Articles  []Article `gorm:"foreignKey:AuthorID;constraint:OnDelete:CASCADE"`
 	Comments []Comment `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Likes []Like `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 func NewUser(firstName, lastName, email, biography string) *User {

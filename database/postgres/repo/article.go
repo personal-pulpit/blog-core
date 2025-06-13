@@ -23,7 +23,7 @@ func NewArticlePostgresRepo(postgresCLI *gorm.DB) repository.ArticleRepository {
 func (a *articlePostgresRepo) GetAll(ctx context.Context) ([]model.Article, error) {
 	var articles = []model.Article{}
 
-	if err := a.postgresCLI.WithContext(ctx).Preload("Author").Preload("Comments").Preload("Categories").Find(&articles).Error; err != nil {
+	if err := a.postgresCLI.WithContext(ctx).Preload("Author").Preload("Comments").Preload("Categories").Preload("Likes").Find(&articles).Error; err != nil {
 		return nil, fmt.Errorf("get all articles: %w: %v", repository.ErrDatabase, err)
 	}
 
@@ -61,7 +61,7 @@ func (a *articlePostgresRepo) SearchArticles(ctx context.Context, filter *model.
 		query = query.Where(strings.Join(conditions, " OR "), args...)
 	}
 
-	err := query.Preload("Author").Preload("Comments").Preload("Categories").Find(&articles).Error
+	err := query.Preload("Author").Preload("Comments").Preload("Categories").Preload("Likes").Find(&articles).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, repository.ErrArticleNotFound
@@ -75,7 +75,7 @@ func (a *articlePostgresRepo) SearchArticles(ctx context.Context, filter *model.
 func (a *articlePostgresRepo) GetArticleByID(ctx context.Context, ID uint) (*model.Article, error) {
 	article := new(model.Article)
 
-	err := a.postgresCLI.WithContext(ctx).Preload("Author").Preload("Comments").Preload("Categories").First(article, ID).Error
+	err := a.postgresCLI.WithContext(ctx).Preload("Author").Preload("Comments").Preload("Categories").Preload("Likes").First(article, ID).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, repository.ErrArticleNotFound
