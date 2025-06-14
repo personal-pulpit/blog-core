@@ -8,6 +8,7 @@ import (
 	auth_middlewares "blog/api/middlewares/auth_middlewares"
 	"blog/internal/service/article"
 	"blog/internal/service/authentication"
+	"blog/internal/service/bookmark"
 	"blog/internal/service/category"
 	"blog/internal/service/comment"
 	"blog/internal/service/like"
@@ -26,7 +27,8 @@ type RouterDeps struct {
 	articleServiceRouter  article.ArticleService
 	commentServiceRouter  comment.CommentService
 	categoryServiceRouter category.CategoryService
-	likeServiceRouter like.LikeService
+	likeServiceRouter     like.LikeService
+	bookmarkServiceRouter bookmark.BookmarkService
 	authMiddleware        *auth_middlewares.UserAuthMiddleware
 	logger                logger.Logger
 }
@@ -38,18 +40,20 @@ func NewRouterDeps(
 	commentServiceRouter comment.CommentService,
 	categoryServiceRouter category.CategoryService,
 	likeServiceRouter like.LikeService,
+	bookmarkServiceRouter bookmark.BookmarkService,
 	authMiddleware *auth_middlewares.UserAuthMiddleware,
 	logger logger.Logger,
 ) RouterDeps {
 	return RouterDeps{
-		authServiceRouter:    authServiceRouter,
-		userServiceRouter:    userServiceRouter,
-		articleServiceRouter: articleServiceRouter,
-		commentServiceRouter: commentServiceRouter,
+		authServiceRouter:     authServiceRouter,
+		userServiceRouter:     userServiceRouter,
+		articleServiceRouter:  articleServiceRouter,
+		commentServiceRouter:  commentServiceRouter,
 		categoryServiceRouter: categoryServiceRouter,
-		likeServiceRouter: likeServiceRouter,
-		authMiddleware:       authMiddleware,
-		logger:               logger,
+		likeServiceRouter:     likeServiceRouter,
+		bookmarkServiceRouter: bookmarkServiceRouter,
+		authMiddleware:        authMiddleware,
+		logger:                logger,
 	}
 }
 
@@ -63,15 +67,15 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(middlewares.LimitByRequest(4))
-	
-	configInstance := config.GetConfigInstance() 
+
+	configInstance := config.GetConfigInstance()
 
 	config := cors.DefaultConfig()
-   	config.AllowOrigins = []string{configInstance.Server.CORS} // Allow your frontend origin
-    	config.AllowMethods = []string{"POST", "OPTIONS", "GET", "PUT", "DELETE"} // Allow required methods
-    	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"} // Allow required headers
-    	config.AllowCredentials = true
-    	
+	config.AllowOrigins = []string{configInstance.Server.CORS}                // Allow your frontend origin
+	config.AllowMethods = []string{"POST", "OPTIONS", "GET", "PUT", "DELETE"} // Allow required methods
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"} // Allow required headers
+	config.AllowCredentials = true
+
 	r.Use(cors.New(config))
 	//swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -84,7 +88,7 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 		praseRouters(v1.Group("/comments"), routerDeps)
 		praseRouters(v1.Group("/categories"), routerDeps)
 		praseRouters(v1.Group("/likes"), routerDeps)
-
+		praseRouters(v1.Group("/bookmarks"), routerDeps)
 	}
 
 	return r
@@ -156,6 +160,13 @@ func praseRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 
 			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.Create)
 			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.DeleteByID)
+		}
+	case "/api/v1/bookmarks":
+		{
+			bookmarkHandler := handlers.NewBookmarkHandler(routerDeps.bookmarkServiceRouter)
+			r.GET("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.GetUsersBookmarks)
+			r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.Create)
+			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.DeleteByID)
 		}
 	}
 }

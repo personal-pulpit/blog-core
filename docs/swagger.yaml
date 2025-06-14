@@ -19,6 +19,14 @@ definitions:
     - content
     - title
     type: object
+  handlers.bookmarkInput:
+    properties:
+      article_id:
+        example: "1"
+        type: string
+    required:
+    - article_id
+    type: object
   handlers.changePasswordInput:
     properties:
       new_password:
@@ -1266,6 +1274,62 @@ paths:
       summary: Update user profile
       tags:
       - users
+  /bookmarks:
+    get:
+      description: Retrieve all bookmarks for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bookmarks retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: No bookmarks found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to retrieve bookmarks
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all bookmarks for the authenticated user
+      tags:
+      - Bookmarks
+    post:
+      consumes:
+      - application/json
+      description: Allows the authenticated user to create a bookmark for an article
+        by its ID
+      parameters:
+      - description: Bookmark input
+        in: body
+        name: bookmarkInput
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.bookmarkInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Bookmark created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input or article ID
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a bookmark
+      tags:
+      - Bookmarks
   /likes:
     post:
       consumes:
