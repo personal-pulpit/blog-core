@@ -98,7 +98,7 @@ func (c *CategoryHandler) GetByID(ctx *gin.Context) {
 // @Success 201 {object} helpers.HttpResponse{data=map[string]interface{}} "Category created successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid category data"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to create category"
-// @Router /api/v1/categories/create [post]
+// @Router /api/v1/categories [post]
 func (c *CategoryHandler) Create(ctx *gin.Context) {
 	var ci = new(createCategoryInput)
 

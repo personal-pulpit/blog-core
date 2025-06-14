@@ -81,92 +81,85 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	v1 := r.Group("/api/v1", authMiddleware.SetUserStatus())
+
 	{
-		praseRouters(v1.Group("/auth"), routerDeps)
-		praseRouters(v1.Group("/users"), routerDeps)
-		praseRouters(v1.Group("/articles"), routerDeps)
-		praseRouters(v1.Group("/comments"), routerDeps)
-		praseRouters(v1.Group("/categories"), routerDeps)
-		praseRouters(v1.Group("/likes"), routerDeps)
-		praseRouters(v1.Group("/bookmarks"), routerDeps)
+		praseAuthRouters(v1.Group("/auth"), routerDeps)
+		praseUserRouters(v1.Group("/users"), routerDeps)
+		praseArticleRouters(v1.Group("/articles"), routerDeps)
+		praseCommentRouters(v1.Group("/comments"), routerDeps)
+		praseCategoryRouters(v1.Group("/categories"), routerDeps)
+		praseLikeRouters(v1.Group("/likes"), routerDeps)
+		praseBookmarkRouters(v1.Group("/bookmarks"), routerDeps)
 	}
 
 	return r
 }
-func praseRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 
-	switch r.BasePath() {
+func praseAuthRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	authHandler := handlers.NewAuthHandler(routerDeps.authServiceRouter)
 
-	case "/api/v1/auth":
-		{
-			authHandler := handlers.NewAuthHandler(routerDeps.authServiceRouter)
+	r.POST("/register", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.Register)
+	r.POST("/verify-email", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.VerifyEmail)
+	r.POST("/login", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
+	r.POST("/logout", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.Logout(), authHandler.Logout)
+	r.GET("/authenticate", authHandler.Authenticate)
+	r.POST("/refresh-token", authHandler.RefreshToken)
+	r.POST("/change-password", routerDeps.authMiddleware.EnsureLoggedIn(), authHandler.ChangePassword)
+	r.POST("/reset-password/request", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.SendResetPasswordVerification)
+	r.POST("/reset-password/submit", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.SubmitResetPassword)
+}
 
-			r.POST("/register", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.Register)
-			r.POST("/verify-email", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.VerifyEmail)
-			r.POST("/login", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.Login)
-			r.POST("/logout", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.Logout(), authHandler.Logout)
-			r.GET("/authenticate", authHandler.Authenticate)
-			r.POST("/refresh-token", authHandler.RefreshToken)
-			r.POST("/change-password", routerDeps.authMiddleware.EnsureLoggedIn(), authHandler.ChangePassword)
-			r.POST("/reset-password/request", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.SendResetPasswordVerification)
-			r.POST("/reset-password/submit", routerDeps.authMiddleware.EnsureNotLoggedIn(), authHandler.SubmitResetPassword)
-		}
-
-	case "/api/v1/users":
-		{
-			userHandler := &handlers.UserHandler{
-				UserService: routerDeps.userServiceRouter,
-			}
-
-			r.GET("/me", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetCurrentUser)
-			r.POST("/add-profile-picture", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.AddProfileImage)
-			r.GET("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
-			r.GET("/profile-picture-url/:id", userHandler.GetProfileImageURL)
-			r.PATCH("/update", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
-			r.DELETE("/delete", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
-			r.DELETE("/delete-profile-picture", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.DeleteProfileImage)
-		}
-	case "/api/v1/articles":
-		{
-			articleHandler := handlers.NewArticleHandler(routerDeps.articleServiceRouter)
-
-			r.GET("", articleHandler.GetAll)
-			r.GET("/:id", articleHandler.GetByID)
-			r.GET("/search", articleHandler.Search)
-			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), articleHandler.Create)
-			r.PATCH("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), articleHandler.UpdateByID)
-			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), articleHandler.DeleteByID)
-		}
-	case "/api/v1/comments":
-		{
-			commentHandler := handlers.NewCommentHandler(routerDeps.commentServiceRouter)
-
-			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.Create)
-			r.PATCH("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.UpdateByID)
-			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.DeleteByID)
-		}
-	case "/api/v1/categories":
-		{
-			categoryHandler := handlers.NewCategoryHandler(routerDeps.categoryServiceRouter)
-
-			r.GET("", categoryHandler.GetAll)
-			r.GET("/:id", categoryHandler.GetByID)
-			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.Create)
-			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.DeleteByID)
-		}
-	case "/api/v1/likes":
-		{
-			likeHandler := handlers.NewLikeHandler(routerDeps.likeServiceRouter)
-
-			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.Create)
-			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.DeleteByID)
-		}
-	case "/api/v1/bookmarks":
-		{
-			bookmarkHandler := handlers.NewBookmarkHandler(routerDeps.bookmarkServiceRouter)
-			r.GET("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.GetUsersBookmarks)
-			r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.Create)
-			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.DeleteByID)
-		}
+func praseUserRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	userHandler := &handlers.UserHandler{
+		UserService: routerDeps.userServiceRouter,
 	}
+
+	r.GET("", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetCurrentUser)
+	r.POST("/profile-picture", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.AddProfileImage)
+	r.GET("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.GetUser)
+	r.GET("/:id/profile-picture-url", userHandler.GetProfileImageURL)
+	r.PATCH("", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.UpdateProfile)
+	r.DELETE("", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.DeleteAccount)
+	r.DELETE("/profile-picture", routerDeps.authMiddleware.EnsureLoggedIn(), userHandler.DeleteProfileImage)
+}
+
+func praseArticleRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	articleHandler := handlers.NewArticleHandler(routerDeps.articleServiceRouter)
+
+	r.GET("", articleHandler.GetArticles)
+	r.GET("/:id", articleHandler.GetByID)
+	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), articleHandler.Create)
+	r.PATCH("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), articleHandler.UpdateByID)
+	r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), articleHandler.DeleteByID)
+}
+
+func praseCommentRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	commentHandler := handlers.NewCommentHandler(routerDeps.commentServiceRouter)
+
+	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.Create)
+	r.PATCH("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.UpdateByID)
+	r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), commentHandler.DeleteByID)
+}
+
+func praseCategoryRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	categoryHandler := handlers.NewCategoryHandler(routerDeps.categoryServiceRouter)
+
+	r.GET("", categoryHandler.GetAll)
+	r.GET("/:id", categoryHandler.GetByID)
+	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.Create)
+	r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.DeleteByID)
+}
+
+func praseLikeRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	likeHandler := handlers.NewLikeHandler(routerDeps.likeServiceRouter)
+
+	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.Create)
+	r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.DeleteByID)
+}
+
+func praseBookmarkRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
+	bookmarkHandler := handlers.NewBookmarkHandler(routerDeps.bookmarkServiceRouter)
+	r.GET("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.GetUsersBookmarks)
+	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.Create)
+	r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.DeleteByID)
 }

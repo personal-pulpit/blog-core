@@ -36,7 +36,7 @@ type commentInput struct {
 // @Param comment body commentInput true "comment input"
 // @Success 201 {object} map[string]interface{} "comment created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid input data"
-// @Router /api/v1/comments/create [post]
+// @Router /api/v1/comments [post]
 func (a *CommentHandler) Create(ctx *gin.Context) {
 	var ci commentInput
 	err := ctx.ShouldBindJSON(&ci)
