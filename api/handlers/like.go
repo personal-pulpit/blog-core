@@ -27,7 +27,16 @@ type likeInput struct {
 	ArticleID string `json:"article_id" binding:"required" example:"1"`                             // ID of the article
 }
 
-//TODO:generate docs
+// @Summary      Like an article
+// @Description  Allows the authenticated user to like an article by its ID
+// @Tags         Likes
+// @Accept       json
+// @Produce      json
+// @Param        likeInput  body      likeInput  true  "Like input"
+// @Security     BearerAuth
+// @Success      201  {object}  map[string]interface{}  "Like created successfully"
+// @Failure      400  {object}  map[string]interface{}  "Invalid input or article ID"
+// @Router       /likes [post]
 func (a *LikeHandler) Create(ctx *gin.Context) {
 	var li likeInput
 	err := ctx.ShouldBindJSON(&li)
@@ -75,7 +84,17 @@ func (a *LikeHandler) Create(ctx *gin.Context) {
 	})
 }
 
-//TODO:generate docs
+
+// @Summary      Delete a like
+// @Description  Allows the authenticated user to remove their like from an article
+// @Tags         Likes
+// @Param        id   path      int  true  "Like ID"
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}  "Like deleted successfully"
+// @Failure      400  {object}  map[string]interface{}  "Failed to delete like"
+// @Failure      404  {object}  map[string]interface{}  "Like not found"
+// @Router       /likes/{id} [delete]
 func (a *LikeHandler) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	userID := uint(ctx.GetInt("id"))

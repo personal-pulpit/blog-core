@@ -62,6 +62,15 @@ definitions:
     required:
     - password
     type: object
+  handlers.likeInput:
+    properties:
+      article_id:
+        description: ID of the article
+        example: "1"
+        type: string
+    required:
+    - article_id
+    type: object
   handlers.loginInput:
     properties:
       email:
@@ -1257,4 +1266,66 @@ paths:
       summary: Update user profile
       tags:
       - users
+  /likes:
+    post:
+      consumes:
+      - application/json
+      description: Allows the authenticated user to like an article by its ID
+      parameters:
+      - description: Like input
+        in: body
+        name: likeInput
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.likeInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Like created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input or article ID
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Like an article
+      tags:
+      - Likes
+  /likes/{id}:
+    delete:
+      description: Allows the authenticated user to remove their like from an article
+      parameters:
+      - description: Like ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Like deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Failed to delete like
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Like not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a like
+      tags:
+      - Likes
 swagger: "2.0"
