@@ -30,7 +30,7 @@ func (u *userPostgresRepo) GetUserByEmail(ctx context.Context, email string) (*m
 }
 func (u *userPostgresRepo) GetUserByID(ctx context.Context, ID uint) (*model.User, error) {
 	user := &model.User{}
-	err := u.postgresCLI.WithContext(ctx).Preload("Articles").Preload("Comments").First(user, ID).Error
+	err := u.postgresCLI.WithContext(ctx).Preload("Articles").Preload("Comments").Preload("Likes.Article.Comments").Preload("Likes.Article.Categories").First(user, ID).Error
 	if err != nil {
 		return nil, fmt.Errorf("get user by id: user ID:  %d\n%w: %v", ID, repository.ErrDatabase, err)
 	}

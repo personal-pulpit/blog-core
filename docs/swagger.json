@@ -1854,6 +1854,102 @@
                     }
                 }
             }
+        },
+        "/likes": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows the authenticated user to like an article by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Likes"
+                ],
+                "summary": "Like an article",
+                "parameters": [
+                    {
+                        "description": "Like input",
+                        "name": "likeInput",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.likeInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Like created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or article ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/likes/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows the authenticated user to remove their like from an article",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Likes"
+                ],
+                "summary": "Delete a like",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Like ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Like deleted successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Failed to delete like",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Like not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1942,6 +2038,19 @@
             "properties": {
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.likeInput": {
+            "type": "object",
+            "required": [
+                "article_id"
+            ],
+            "properties": {
+                "article_id": {
+                    "description": "ID of the article",
+                    "type": "string",
+                    "example": "1"
                 }
             }
         },

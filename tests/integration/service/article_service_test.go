@@ -38,7 +38,7 @@ func (s *ArticleTestSuite) SetupSuite() {
 	tx.Commit()
 	s.articleAuthorID = user.ID
 
-	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("article-category-service1"))
 	s.NoError(err)
 	s.NotNil(category)
 

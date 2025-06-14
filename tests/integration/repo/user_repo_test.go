@@ -14,11 +14,14 @@ type UserTestSuite struct {
 	suite.Suite
 	repo        repository.UserRepository
 	savedUser   *model.User
+
 	commentRepo repository.CommentRepository
 	articleRepo repository.ArticleRepository
+	likeRepo repository.LikeRepository
 
 	usersArticleID uint
 	usersCommentID uint
+	usersLikeID uint
 
 	articleCategory *model.Category
 }
@@ -30,9 +33,10 @@ func (s *UserTestSuite) SetupSuite() {
 	//get helper repos
 	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
 	s.articleRepo = postgres_repository.NewArticlePostgresRepo(db)
+	s.likeRepo = postgres_repository.NewLikePostgresRepository(db)
 	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
-	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("user-category1"))
 	s.Nil(err)
 	s.NotNil(category)
 
@@ -76,6 +80,12 @@ func (s *UserTestSuite) TestA_Create() {
 			s.NotNil(comment)
 
 			s.usersCommentID = comment.ID
+
+			like, err := s.likeRepo.Create(ctx, model.NewLike(user.ID, article.ID))
+			s.Nil(err)
+			s.NotNil(like)
+
+			s.usersLikeID = like.ID
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(user)
@@ -106,6 +116,7 @@ func (s *UserTestSuite) TestB_GetUserByID() {
 			s.NoError(err)
 			s.NotNil(user)
 			s.NotNil(user.Comments)
+			s.NotNil(user.Likes)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(user)
@@ -239,6 +250,10 @@ func (s *UserTestSuite) TestF_DeleteUser() {
 
 	// Ensure the user's comment is deleted
 	_, err = s.commentRepo.GetByID(ctx, s.usersCommentID)
+	s.Error(err)
+
+	// Ensure the user's like is deleted
+	_, err = s.likeRepo.GetByID(ctx, s.usersLikeID)
 	s.Error(err)
 }
 func TestUserTestSuite(t *testing.T) {

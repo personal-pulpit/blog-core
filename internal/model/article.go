@@ -12,6 +12,7 @@ type Article struct {
     Content   string `gorm:"type:text;NOT NULL"`
     AuthorID  uint
     Author    *User   `gorm:"foreignKey:AuthorID"`
+	Likes []Like `gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE;"`
     Comments  []Comment `gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE;"`
 	Categories []Category `gorm:"many2many:article_categories;constraint:OnDelete:CASCADE;"`
 }

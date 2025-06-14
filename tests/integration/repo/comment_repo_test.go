@@ -33,7 +33,7 @@ func (s *CommentTestSuite) SetupSuite() {
 
 	s.userID = user.ID
 
-	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("comment-category1"))
 	s.Nil(err)
 	s.NotNil(category)
 

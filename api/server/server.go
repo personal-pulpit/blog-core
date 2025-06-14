@@ -8,6 +8,7 @@ import (
 	"blog/internal/service/authentication"
 	"blog/internal/service/category"
 	"blog/internal/service/comment"
+	"blog/internal/service/like"
 	"blog/internal/service/user"
 	"blog/pkg/auth_manager"
 	"blog/pkg/logger"
@@ -21,6 +22,7 @@ type ServerDependencies struct {
 	ArticleService article.ArticleService
 	CommentService comment.CommentService
 	CategoryService category.CategoryService
+	LikeService like.LikeService
 	Logger         logger.Logger
 }
 
@@ -31,6 +33,7 @@ func NewServerDependencies(
 	articleService article.ArticleService,
 	commentService comment.CommentService,
 	categoryService category.CategoryService,
+	likeService like.LikeService,
 	logger logger.Logger,
 ) ServerDependencies {
 	return ServerDependencies{
@@ -40,6 +43,7 @@ func NewServerDependencies(
 		ArticleService: articleService,
 		CommentService: commentService,
 		CategoryService: categoryService,
+		LikeService: likeService,
 		Logger:         logger,
 	}
 }
@@ -56,6 +60,7 @@ func InitServer(port int, deps ServerDependencies) error {
 		deps.ArticleService,
 		deps.CommentService,
 		deps.CategoryService,
+		deps.LikeService,
 		auth_middlewares.NewUserAuthMiddleware(deps.AuthManager),
 		deps.Logger,
 	)

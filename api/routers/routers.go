@@ -8,14 +8,15 @@ import (
 	auth_middlewares "blog/api/middlewares/auth_middlewares"
 	"blog/internal/service/article"
 	"blog/internal/service/authentication"
-	"blog/internal/service/comment"
-	"blog/internal/service/user"
 	"blog/internal/service/category"
+	"blog/internal/service/comment"
+	"blog/internal/service/like"
+	"blog/internal/service/user"
 	"blog/pkg/logger"
 
-	swaggerFiles "github.com/swaggo/files"
-    "github.com/gin-contrib/cors"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
@@ -25,6 +26,7 @@ type RouterDeps struct {
 	articleServiceRouter  article.ArticleService
 	commentServiceRouter  comment.CommentService
 	categoryServiceRouter category.CategoryService
+	likeServiceRouter like.LikeService
 	authMiddleware        *auth_middlewares.UserAuthMiddleware
 	logger                logger.Logger
 }
@@ -35,6 +37,7 @@ func NewRouterDeps(
 	articleServiceRouter article.ArticleService,
 	commentServiceRouter comment.CommentService,
 	categoryServiceRouter category.CategoryService,
+	likeServiceRouter like.LikeService,
 	authMiddleware *auth_middlewares.UserAuthMiddleware,
 	logger logger.Logger,
 ) RouterDeps {
@@ -44,6 +47,7 @@ func NewRouterDeps(
 		articleServiceRouter: articleServiceRouter,
 		commentServiceRouter: commentServiceRouter,
 		categoryServiceRouter: categoryServiceRouter,
+		likeServiceRouter: likeServiceRouter,
 		authMiddleware:       authMiddleware,
 		logger:               logger,
 	}
@@ -79,6 +83,7 @@ func InitRouters(routerDeps RouterDeps) *gin.Engine {
 		praseRouters(v1.Group("/articles"), routerDeps)
 		praseRouters(v1.Group("/comments"), routerDeps)
 		praseRouters(v1.Group("/categories"), routerDeps)
+		praseRouters(v1.Group("/likes"), routerDeps)
 
 	}
 
@@ -144,6 +149,13 @@ func praseRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 			r.GET("/:id", categoryHandler.GetByID)
 			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.Create)
 			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.DeleteByID)
+		}
+	case "/api/v1/likes":
+		{
+			likeHandler := handlers.NewLikeHandler(routerDeps.likeServiceRouter)
+
+			r.POST("/create", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.Create)
+			r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.DeleteByID)
 		}
 	}
 }
