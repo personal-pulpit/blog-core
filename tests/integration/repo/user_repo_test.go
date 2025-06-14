@@ -36,7 +36,7 @@ func (s *UserTestSuite) SetupSuite() {
 	s.likeRepo = postgres_repository.NewLikePostgresRepository(db)
 	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
-	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("category1"))
+	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("user-category1"))
 	s.Nil(err)
 	s.NotNil(category)
 

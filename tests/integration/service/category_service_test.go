@@ -27,7 +27,7 @@ func (s *CategoryTestSuite) SetupSuite() {
 func (s *CategoryTestSuite) TestA_CreateCategory() {
 	ctx := context.TODO()
 
-	category, err := s.service.CreateCategory(ctx, "category1")
+	category, err := s.service.CreateCategory(ctx, "category")
 
 	s.NoError(err)
 	s.NotNil(category)

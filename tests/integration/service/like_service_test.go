@@ -27,7 +27,7 @@ func (s *LikeTestSuite) SetupSuite() {
 	userRepo := postgres_repository.NewUserPostgresRepository(db)
 	articleRepo := postgres_repository.NewArticlePostgresRepo(db)
 
-	userModel := model.NewUser("user1 firstName", "user1 lastName", "afakeonce@fake.come", "user1 biography")
+	userModel := model.NewUser("user1 firstName", "user1 lastName", "sdudjkalakakd@fake.com", "user1 biography")
 	user, tx, err := userRepo.Create(context.TODO(), userModel)
 	s.NoError(err)
 	s.NotNil(user)
