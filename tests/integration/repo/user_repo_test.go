@@ -18,11 +18,12 @@ type UserTestSuite struct {
 	commentRepo repository.CommentRepository
 	articleRepo repository.ArticleRepository
 	likeRepo repository.LikeRepository
+	bookmarkRepo repository.BookmarkRepository
 
 	usersArticleID uint
 	usersCommentID uint
 	usersLikeID uint
-
+	usersBookmarkID uint
 	articleCategory *model.Category
 }
 
@@ -34,6 +35,7 @@ func (s *UserTestSuite) SetupSuite() {
 	s.commentRepo = postgres_repository.NewCommentPostgresRepository(db)
 	s.articleRepo = postgres_repository.NewArticlePostgresRepo(db)
 	s.likeRepo = postgres_repository.NewLikePostgresRepository(db)
+	s.bookmarkRepo = postgres_repository.NewBookmarkPostgresRepository(db)
 	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
 	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("user-category1"))
@@ -86,6 +88,12 @@ func (s *UserTestSuite) TestA_Create() {
 			s.NotNil(like)
 
 			s.usersLikeID = like.ID
+
+			bookmark, err := s.bookmarkRepo.Create(ctx, model.NewBookmark(user.ID, article.ID))
+			s.Nil(err)
+			s.NotNil(bookmark)
+
+			s.usersBookmarkID = bookmark.ID
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(user)
@@ -117,6 +125,7 @@ func (s *UserTestSuite) TestB_GetUserByID() {
 			s.NotNil(user)
 			s.NotNil(user.Comments)
 			s.NotNil(user.Likes)
+			s.NotNil(user.Bookmarks)
 		} else if !tc.Valid {
 			s.Error(err)
 			s.Nil(user)
@@ -255,6 +264,12 @@ func (s *UserTestSuite) TestF_DeleteUser() {
 	// Ensure the user's like is deleted
 	_, err = s.likeRepo.GetByID(ctx, s.usersLikeID)
 	s.Error(err)
+
+	// Ensure an error occur
+	_, err = s.bookmarkRepo.GetByID(ctx, s.usersBookmarkID)
+	s.Error(err)
+
+
 }
 func TestUserTestSuite(t *testing.T) {
 	suite.Run(t, new(UserTestSuite))
