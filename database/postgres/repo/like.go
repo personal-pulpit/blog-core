@@ -38,11 +38,22 @@ func (l *likePostgresRepository) GetByID(ctx context.Context, ID uint)(*model.Li
 	return like,nil
 }
 
-func (l *likePostgresRepository) DeleteByID(ctx context.Context, ID uint) error {
-	result := l.postgresCLI.WithContext(ctx).Delete(&model.Like{},ID)
+func(l *likePostgresRepository) GetByUserID(ctx context.Context, userID uint) ([]model.Like, error) {
+	var likes []model.Like
+
+	err := l.postgresCLI.WithContext(ctx).Where("user_id = ?", userID).Preload("Article").Find(&likes).Error
+	if err != nil {
+		return nil, fmt.Errorf("get likes by user id: %w: %v", repository.ErrDatabase, err)
+	}
+
+	return likes, nil
+}
+
+func (l *likePostgresRepository) DeleteByArticleIDAndUserID(ctx context.Context, articleID,userID uint) error {
+	result := l.postgresCLI.WithContext(ctx).Where("article_id = ? AND user_id = ?", articleID, userID).Delete(&model.Like{})
 
 	if result.Error != nil {
-		return fmt.Errorf("delete like: %d\n%w: %v", ID, repository.ErrDatabase, result.Error)
+		return fmt.Errorf("delete like: %d\n%w: %v", articleID, repository.ErrDatabase, result.Error)
 	}
 
 	if result.RowsAffected == 0 {

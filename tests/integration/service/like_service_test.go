@@ -17,7 +17,7 @@ type LikeTestSuite struct {
 
 	service like.LikeService
 
-	likeID uint
+	likeID    uint
 	articleID uint
 	userID    uint
 }
@@ -41,7 +41,7 @@ func (s *LikeTestSuite) SetupSuite() {
 
 	s.articleID = article.ID
 
-	s.service = like.NewLikeService(s.likeRepo)
+	s.service = like.NewLikeService(s.likeRepo,userRepo)
 }
 
 func (s *LikeTestSuite) TestA_CreateLike() {
@@ -55,36 +55,63 @@ func (s *LikeTestSuite) TestA_CreateLike() {
 	s.likeID = like.ID
 }
 
-func (s *LikeTestSuite) TestC_DeleteLIke() {
+func (s *LikeTestSuite) TestB_GetUserLikes(){
 	ctx := context.TODO()
 
 	testCases := []struct {
-		likeID uint
-		userID uint
+		userID    uint
 		Valid     bool
 	}{
 		{
-			likeID: 0,
-			userID:s.userID,
+			userID:    0,
 			Valid:     false,
 		},
 		{
-			likeID: s.likeID,
-			userID: 0,
-			Valid:     false,
-		},
-		{
-			likeID: s.likeID,
-			userID:s.userID,
+			userID:    s.userID,
 			Valid:     true,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.service.DeleteLike(ctx, tc.userID,tc.likeID)
+		likes,err := s.service.GetUserLikes(ctx, tc.userID)
 		if tc.Valid {
 			s.NoError(err)
+			s.NotNil(likes)
+		} else if !tc.Valid {
+			s.Error(err)
+		}
+	}
+}
 
+func (s *LikeTestSuite) TestC_DeleteLIke() {
+	ctx := context.TODO()
+
+	testCases := []struct {
+		userID    uint
+		articleID uint
+		Valid     bool
+	}{
+		{
+			userID:    s.userID,
+			articleID: 0,
+			Valid:     false,
+		},
+		{
+			userID:    0,
+			articleID: s.likeID,
+			Valid:     false,
+		},
+		{
+			userID:    s.userID,
+			articleID: s.articleID,
+			Valid:     true,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := s.service.DeleteLike(ctx, tc.articleID, tc.userID)
+		if tc.Valid {
+			s.NoError(err)
 		} else if !tc.Valid {
 			s.Error(err)
 		}

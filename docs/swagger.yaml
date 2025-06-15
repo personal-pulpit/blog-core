@@ -1284,7 +1284,52 @@ paths:
       summary: Create a bookmark
       tags:
       - Bookmarks
+  /bookmarks/article/{id}:
+    delete:
+      description: Retrieve a bookmark by its ID for the authenticated user
+      parameters:
+      - description: ArticleID ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bookmark retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid bookmark ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Bookmark not found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a bookmark by ID
+      tags:
+      - Bookmarks
   /likes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Likes retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to retrieve likes
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all likes for the authenticated user
     post:
       consumes:
       - application/json
@@ -1309,12 +1354,10 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
       summary: Like an article
       tags:
       - Likes
-  /likes/{id}:
+  /likes/article/{id}:
     delete:
       description: Allows the authenticated user to remove their like from an article
       parameters:
@@ -1341,8 +1384,6 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
       summary: Delete a like
       tags:
       - Likes

@@ -52,15 +52,15 @@ func (b *bookmarkPostgresRepository) GetByUserID(ctx context.Context, userID uin
 	return bookmarks, nil
 }
 
-func (b *bookmarkPostgresRepository) DeleteByID(ctx context.Context, bookmarkID uint) error {
-	result := b.postgresCLI.WithContext(ctx).Delete(&model.Bookmark{}, bookmarkID)
+func (b *bookmarkPostgresRepository) DeleteByArticleIDAndUserID(ctx context.Context, articleID uint, userID uint) error {
+	result := b.postgresCLI.WithContext(ctx).Where("article_id = ? AND user_id = ?", articleID, userID).Delete(&model.Bookmark{})
 
 	if result.Error != nil {
 		return fmt.Errorf("delete bookmark: %w", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("no bookmark found with id: %d", bookmarkID)
+		return fmt.Errorf("no bookmark found with article id: %d and user id: %d", articleID, userID)
 	}
 
 	return nil

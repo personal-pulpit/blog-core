@@ -10,7 +10,7 @@ type BookmarkService interface {
 	CreateBookmark(ctx context.Context,userID, articleID uint) (*model.Bookmark, error)
 	GetBookmarkByID(ctx context.Context,bookmarkID uint) (*model.Bookmark, error)
 	GetUsersBookmarks(ctx context.Context,userID uint) ([]model.Bookmark, error)
-	DeleteBookmark(ctx context.Context,ownerID,bookmarkID uint) error
+	DeleteBookmark(ctx context.Context,articleID,ownerID uint) error
 }
 
 type bookmarkServiceImpl struct {
@@ -45,24 +45,6 @@ func (s *bookmarkServiceImpl) GetUsersBookmarks(ctx context.Context, userID uint
 }
 
 
-func (s *bookmarkServiceImpl) DeleteBookmark(ctx context.Context,ownerID, bookmarkID uint) error {
-	err := s.checkBookmarkOwner(ctx, ownerID, bookmarkID)
-	if err != nil {
-		return err
-	}
-
-	return s.bookmarkRepo.DeleteByID(ctx, bookmarkID)
-}
-
-
-func (s *bookmarkServiceImpl) checkBookmarkOwner(ctx context.Context, ownerID, bookmarkID uint) error {
-	bookmark, err := s.bookmarkRepo.GetByID(ctx, bookmarkID)
-	if err != nil {
-		return err
-	}
-
-	if bookmark.UserID != ownerID {
-		return ErrPermissionDenied
-	}
-	return nil
+func (s *bookmarkServiceImpl) DeleteBookmark(ctx context.Context,articleID,ownerID uint) error {
+	return s.bookmarkRepo.DeleteByArticleIDAndUserID(ctx, articleID,ownerID)
 }

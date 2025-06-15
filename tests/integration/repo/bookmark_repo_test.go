@@ -121,26 +121,35 @@ func (s *BookmarkTestSuite) TestC_GetBookmarkByID() {
 }
 
 
-func (s *BookmarkTestSuite) TestD_DeleteBookmarkByID() {
+func (s *BookmarkTestSuite) TestD_DeleteBookmarkByArticleIDAndUserID() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		bookmarkID uint
-		Valid      bool
+		articleID uint
+		userID    uint
+		Valid     bool
 	}{
 		{
-			bookmarkID: s.bookmarkID,
-			Valid:      true,
+			articleID: s.articleID,
+			userID:    s.userID,
+			Valid:     true,
 		},
 
 		{
-			bookmarkID: 0,
-			Valid:      false,
+			articleID: s.articleID,
+			userID:    0,
+			Valid:     false,
+		},
+
+		{
+			articleID: 0,
+			userID:    s.userID,
+			Valid:     false,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.repo.DeleteByID(ctx, tc.bookmarkID)
+		err := s.repo.DeleteByArticleIDAndUserID(ctx, tc.articleID,tc.userID)
 		if tc.Valid {
 			s.NoError(err)
 		} else if !tc.Valid {

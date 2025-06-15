@@ -1880,13 +1880,74 @@ const docTemplate = `{
                 }
             }
         },
-        "/likes": {
-            "post": {
-                "security": [
+        "/bookmarks/article/{id}": {
+            "delete": {
+                "description": "Retrieve a bookmark by its ID for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookmarks"
+                ],
+                "summary": "Get a bookmark by ID",
+                "parameters": [
                     {
-                        "BearerAuth": []
+                        "type": "string",
+                        "description": "ArticleID ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "Bookmark retrieved successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid bookmark ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Bookmark not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/likes": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get all likes for the authenticated user",
+                "responses": {
+                    "200": {
+                        "description": "Likes retrieved successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve likes",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
                 "description": "Allows the authenticated user to like an article by its ID",
                 "consumes": [
                     "application/json"
@@ -1927,13 +1988,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/likes/{id}": {
+        "/likes/article/{id}": {
             "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Allows the authenticated user to remove their like from an article",
                 "produces": [
                     "application/json"

@@ -64,7 +64,7 @@ func main() {
 	articleService := article.NewArticleService(articlePostgresRepo, categoryPostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
 	categoryService := category.NewCategoryService(categoryPostgresRepo)
-	likeService := like.NewLikeService(likePostgresRepo)
+	likeService := like.NewLikeService(likePostgresRepo,userPostgresRepo)
 	bookmarkService := bookmark.NewBookmarkService(bookmarkPostgresRepo,userPostgresRepo)
 
 	serverDeps := server.NewServerDependencies(

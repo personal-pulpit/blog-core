@@ -24,7 +24,7 @@ func NewLikeHandler(likeService like.LikeService) *LikeHandler {
 
 // likeInput represents the input for creating a like.
 type likeInput struct {
-	ArticleID string `json:"article_id" binding:"required" example:"1"`                             // ID of the article
+	ArticleID string `json:"article_id" binding:"required" example:"1"` // ID of the article
 }
 
 // @Summary      Like an article
@@ -33,7 +33,6 @@ type likeInput struct {
 // @Accept       json
 // @Produce      json
 // @Param        likeInput  body      likeInput  true  "Like input"
-// @Security     BearerAuth
 // @Success      201  {object}  map[string]interface{}  "Like created successfully"
 // @Failure      400  {object}  map[string]interface{}  "Invalid input or article ID"
 // @Router       /likes [post]
@@ -84,39 +83,87 @@ func (a *LikeHandler) Create(ctx *gin.Context) {
 	})
 }
 
+//@Summary      Get all likes for the authenticated user
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "Likes retrieved successfully"
+// @Failure      500  {object}  map[string]interface{}  "Failed to retrieve likes"
+// @Router       /likes [get]
+func (a *LikeHandler) GetUserLikes(ctx *gin.Context) {
+	userID := uint(ctx.GetInt("id"))
+
+	likes, err := a.likeService.GetUserLikes(ctx, userID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to retrieve likes", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if len(likes) == 0 {
+		helpers.RespondWithSuccess(ctx, http.StatusOK, "No likes found", map[string]interface{}{
+			"likes": []interface{}{},
+			"metadata": map[string]interface{}{
+				"timestamp": time.Now(),
+			},
+		})
+		return
+	}
+
+	var response []map[string]interface{}
+	for _, like := range likes {
+		response = append(response, map[string]interface{}{
+			"id":         like.ID,
+			"user_id":    like.UserID,
+			"article_id": like.ArticleID,
+			"created_at": like.CreatedAt,
+			"article": map[string]interface{}{
+				"id":    like.Article.ID,
+				"title": like.Article.Title,
+			},
+		})
+	}
+
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Likes retrieved successfully", map[string]interface{}{
+		"likes": response,
+		"metadata": map[string]interface{}{
+			"timestamp": time.Now(),
+			"count":     len(response),
+			"status":    "success",
+		},
+	})
+}
 
 // @Summary      Delete a like
 // @Description  Allows the authenticated user to remove their like from an article
 // @Tags         Likes
 // @Param        id   path      int  true  "Like ID"
 // @Produce      json
-// @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}  "Like deleted successfully"
 // @Failure      400  {object}  map[string]interface{}  "Failed to delete like"
 // @Failure      404  {object}  map[string]interface{}  "Like not found"
-// @Router       /likes/{id} [delete]
+// @Router       /likes/article/{id} [delete]
 func (a *LikeHandler) DeleteByID(ctx *gin.Context) {
-	id := ctx.Param("id")
+	articleID := ctx.Param("id")
 	userID := uint(ctx.GetInt("id"))
 
-	err := a.likeService.DeleteLike(ctx, userID, uint(helpers.StringToInt(id)))
+	err := a.likeService.DeleteLike(ctx, uint(helpers.StringToInt(articleID)), userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrLikeNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Like not found for deletion", map[string]interface{}{
-				"like_id": id,
-				"error":   err.Error(),
+				"article_id": articleID,
+				"error":      err.Error(),
 			})
 			return
 		}
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete like", map[string]interface{}{
-			"like_id": id,
-			"error":   err.Error(),
+			"article_id": articleID,
+			"error":      err.Error(),
 		})
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK, "Like deleted successfully", map[string]interface{}{
-		"deleted_like_id": id,
+		"deleted_article_like_id": articleID,
 		"metadata": map[string]interface{}{
 			"timestamp": time.Now(),
 			"status":    "deleted",
