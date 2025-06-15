@@ -6,6 +6,7 @@ import (
 	"blog/internal/service/category"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,23 +32,59 @@ func NewCategoryHandler(categoryService category.CategoryService) *CategoryHandl
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Successfully retrieved categories"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to fetch categories"
 // @Router /api/v1/categories [get]
-func (c *CategoryHandler) GetAll(ctx *gin.Context) {
-	categories, err := c.categoryService.GetAllCategories(ctx)
-	if err != nil {
-		helpers.RespondWithError(ctx, http.StatusInternalServerError,
-			"Failed to fetch categories",
+func (c *CategoryHandler) GetCategories(ctx *gin.Context) {
+	title := ctx.Query("title")
+
+	if title == "" {
+		categories, err := c.categoryService.GetAllCategories(ctx)
+		if err != nil {
+			helpers.RespondWithError(ctx, http.StatusInternalServerError,
+				"Failed to fetch categories",
+				map[string]interface{}{
+					"error": err.Error(),
+					"count": 0,
+				})
+			return
+		}
+
+		helpers.RespondWithSuccess(ctx, http.StatusOK,
+			"Successfully retrieved categories",
 			map[string]interface{}{
-				"error": err.Error(),
-				"count": 0,
+				"categories": categories,
+				"count":      len(categories),
 			})
+
+		return 
+	}
+
+	category, err := c.categoryService.GetCategoryByTitle(ctx, title)
+	if err != nil {
+		if errors.Is(err, repository.ErrCategoryNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "No category found with given title", map[string]interface{}{
+				"title": title,
+				"error": err.Error(),
+			})
+			return
+		}
+
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to search category", map[string]interface{}{
+			"title": title,
+			"error": err.Error(),
+		})
+
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK,
-		"Successfully retrieved categories",
+		"Category found successfully",
 		map[string]interface{}{
-			"categories": categories,
-			"count":      len(categories),
+			"category": category,
+			"search_criteria": map[string]interface{}{
+				"title": title,
+			},
+			"metadata": map[string]interface{}{
+				"timestamp": time.Now(),
+			},
 		})
 }
 

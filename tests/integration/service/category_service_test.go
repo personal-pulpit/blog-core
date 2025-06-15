@@ -16,6 +16,7 @@ type CategoryTestSuite struct {
 	service category.CategoryService
 
 	categoryID uint
+	categoryTitle string
 }
 
 func (s *CategoryTestSuite) SetupSuite() {
@@ -33,6 +34,7 @@ func (s *CategoryTestSuite) TestA_CreateCategory() {
 	s.NotNil(category)
 
 	s.categoryID = category.ID
+	s.categoryTitle = category.Name
 }
 
 func (s *CategoryTestSuite) TestB_GetAllCategories() {
@@ -72,7 +74,38 @@ func (s *CategoryTestSuite) TestC_GetCategoryByID() {
 	}
 }
 
-func (s *CategoryTestSuite) TestD_DeleteCategory() {
+func (s *CategoryTestSuite) TestD_GetCategoryByName() {
+	ctx := context.TODO()
+
+	testCases := []struct {
+		categoryTitle string
+		Valid         bool
+	}{
+		{
+			categoryTitle: s.categoryTitle,
+			Valid:         true,
+		},
+
+		{
+			categoryTitle: "non-existing-category",
+			Valid:         false,
+		},
+	}
+
+	for _, tc := range testCases {
+		category, err := s.service.GetCategoryByTitle(ctx, tc.categoryTitle)
+		if tc.Valid {
+			s.NoError(err)
+			s.NotNil(category)
+			s.NotNil(category.Articles)
+		} else if !tc.Valid {
+			s.Error(err)
+		}
+	}
+
+}
+
+func (s *CategoryTestSuite) TestE_DeleteCategory() {
 	ctx := context.TODO()
 
 	testCases := []struct {

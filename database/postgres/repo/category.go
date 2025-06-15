@@ -46,7 +46,7 @@ func (c *categoryPostgresRepository) GetCategoryByID(ctx context.Context, catego
 			return nil, repository.ErrCategoryNotFound
 		}
 
-		return nil, fmt.Errorf("get category by id: id:%d \n%w: %v", categoryID,repository.ErrDatabase, err)
+		return nil, fmt.Errorf("get category by id: id:%d \n%w: %v", categoryID, repository.ErrDatabase, err)
 	}
 
 	return category, nil
@@ -54,9 +54,10 @@ func (c *categoryPostgresRepository) GetCategoryByID(ctx context.Context, catego
 
 func (c *categoryPostgresRepository) GetCategoryByName(ctx context.Context, name string) (*model.Category, error) {
 	category := new(model.Category)
-	err := c.db.WithContext(ctx).Where("name = ?", name).First(category).Error
+
+	err := c.db.WithContext(ctx).Where("name = ?", name).Preload("Articles").First(category).Error
 	if err != nil {
-		return nil, fmt.Errorf("get category by name: name:%s \n%w: %v", name,repository.ErrDatabase, err)
+		return nil, fmt.Errorf("get category by name: name:%s \n%w: %v", name, repository.ErrDatabase, err)
 	}
 
 	return category, nil
@@ -64,11 +65,11 @@ func (c *categoryPostgresRepository) GetCategoryByName(ctx context.Context, name
 
 func (c *categoryPostgresRepository) DeleteCategoryByID(ctx context.Context, categoryID uint) error {
 	result := c.db.WithContext(ctx).Delete(&model.Category{}, categoryID)
-	
+
 	err := result.Error
 
 	if err != nil {
-		return fmt.Errorf("delete category by id: id:%d \n%w: %v", categoryID,repository.ErrDatabase, err)
+		return fmt.Errorf("delete category by id: id:%d \n%w: %v", categoryID, repository.ErrDatabase, err)
 	}
 
 	if result.RowsAffected == 0 {
@@ -77,7 +78,3 @@ func (c *categoryPostgresRepository) DeleteCategoryByID(ctx context.Context, cat
 
 	return nil
 }
-
-
-
-

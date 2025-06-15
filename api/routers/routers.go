@@ -144,7 +144,7 @@ func praseCommentRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 func praseCategoryRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 	categoryHandler := handlers.NewCategoryHandler(routerDeps.categoryServiceRouter)
 
-	r.GET("", categoryHandler.GetAll)
+	r.GET("", categoryHandler.GetCategories)
 	r.GET("/:id", categoryHandler.GetByID)
 	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.Create)
 	r.DELETE("/:id", routerDeps.authMiddleware.EnsureLoggedIn(), routerDeps.authMiddleware.EnsureAdmin(), categoryHandler.DeleteByID)
@@ -160,6 +160,7 @@ func praseLikeRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 
 func praseBookmarkRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 	bookmarkHandler := handlers.NewBookmarkHandler(routerDeps.bookmarkServiceRouter)
+
 	r.GET("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.GetUserBookmarks)
 	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.Create)
 	r.DELETE("/article/:id", routerDeps.authMiddleware.EnsureLoggedIn(), bookmarkHandler.Delete)
