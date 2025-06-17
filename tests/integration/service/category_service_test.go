@@ -15,7 +15,7 @@ type CategoryTestSuite struct {
 
 	service category.CategoryService
 
-	categoryID uint
+	categoryID    uint
 	categoryTitle string
 }
 

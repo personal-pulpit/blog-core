@@ -83,7 +83,7 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 func (u *UserHandler) GetUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	ID,err := helpers.StringToInt(id)
+	ID, err := helpers.StringToInt(id)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid user ID", map[string]interface{}{
 			"error":         "User ID must be a valid integer",

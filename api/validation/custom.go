@@ -13,6 +13,7 @@ type CustomError struct {
 	Value   string
 	Message string
 }
+
 var ErrInitializeValidations = errors.New("initialize validations failed")
 var (
 	emailValidatior validator.Func = func(fld validator.FieldLevel) bool {
@@ -22,15 +23,14 @@ var (
 	}
 )
 
-func InitValidations()error{
+func InitValidations() error {
 	val, ok := binding.Validator.Engine().(*validator.Validate)
 	if ok {
 		err := val.RegisterValidation("emailvalidatior", emailValidatior)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		return nil
 	}
 	return ErrInitializeValidations
 }
-

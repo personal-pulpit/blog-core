@@ -14,9 +14,9 @@ type CategoryTestSuite struct {
 	suite.Suite
 	repo        repository.CategoryRepository
 	articleRepo repository.ArticleRepository
-	categoryID   uint
+	categoryID  uint
 	articleID   uint
-	userID uint 
+	userID      uint
 }
 
 func (s *CategoryTestSuite) SetupSuite() {
@@ -37,15 +37,15 @@ func (s *CategoryTestSuite) TestA_CreateCategory() {
 
 	testCases := []struct {
 		Category *model.Category
-		Valid   bool
+		Valid    bool
 	}{
 		{
 			Category: model.NewCategory("Category1"),
-			Valid:   true,
+			Valid:    true,
 		},
 		{
 			Category: model.NewCategory("Category1"),
-			Valid:   false,
+			Valid:    false,
 		},
 	}
 
@@ -55,10 +55,10 @@ func (s *CategoryTestSuite) TestA_CreateCategory() {
 			s.NoError(err)
 			s.NotNil(Category)
 
-			article,err := s.articleRepo.Create(ctx, model.NewArticle("articleCategoryTest", "This is category test", s.userID, []model.Category{*Category}))
+			article, err := s.articleRepo.Create(ctx, model.NewArticle("articleCategoryTest", "This is category test", s.userID, []model.Category{*Category}))
 			s.NoError(err)
 			s.NotNil(article)
-			
+
 			s.articleID = article.ID
 			s.categoryID = Category.ID
 
@@ -113,21 +113,21 @@ func (s *CategoryTestSuite) TestD_DeleteCategoryByID() {
 
 	testCases := []struct {
 		CategoryID uint
-		Valid     bool
+		Valid      bool
 	}{
 		{
 			CategoryID: s.categoryID,
-			Valid:     true,
+			Valid:      true,
 		},
 
 		{
 			CategoryID: 0,
-			Valid:     false,
+			Valid:      false,
 		},
 
 		{
 			CategoryID: s.categoryID,
-			Valid:     false,
+			Valid:      false,
 		},
 	}
 

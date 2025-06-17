@@ -38,11 +38,10 @@ func (s *categoryService) GetCategoryByID(ctx context.Context, categoryID uint) 
 	return s.categoryRepo.GetCategoryByID(ctx, categoryID)
 }
 
-func (s *categoryService) GetCategoryByTitle(ctx context.Context,  title string) (*model.Category, error) {
-	
+func (s *categoryService) GetCategoryByTitle(ctx context.Context, title string) (*model.Category, error) {
+
 	return s.categoryRepo.GetCategoryByName(ctx, title)
 }
-
 
 func (s *categoryService) DeleteCategoryByID(ctx context.Context, categoryID uint) error {
 	return s.categoryRepo.DeleteCategoryByID(ctx, categoryID)

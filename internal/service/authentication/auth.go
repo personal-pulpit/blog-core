@@ -331,7 +331,7 @@ func (a *authenticateManager) SubmitResetPassword(ctx context.Context, token str
 		return err
 	}
 
-	ID,err := helpers.StringToInt(tokenClaims.UserID)
+	ID, err := helpers.StringToInt(tokenClaims.UserID)
 	if err != nil {
 		return fmt.Errorf("%s : %w", "Invalid ID format", err)
 	}

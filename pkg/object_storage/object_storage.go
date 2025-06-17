@@ -15,7 +15,7 @@ type StorageRepository interface {
 	GetObjectURL(ctx context.Context, bucketName, objectName string) (string, error)
 }
 
-const ExpirationTime = time.Second*60*60
+const ExpirationTime = time.Second * 60 * 60
 
 type minioStorageRepo struct {
 	client *minio.Client
@@ -39,7 +39,6 @@ func (m *minioStorageRepo) UploadFile(ctx context.Context, bucketName string, ob
 	return nil
 }
 
-
 func (m *minioStorageRepo) GetObjectURL(ctx context.Context, bucketName, objectName string) (string, error) {
 	objectPath := "profile-images/" + objectName
 
@@ -49,9 +48,9 @@ func (m *minioStorageRepo) GetObjectURL(ctx context.Context, bucketName, objectN
 		// If StatObject returns an error, it's likely the object doesn't exist.
 		// You can check the error type to be more precise (minio.ErrorResponse).
 		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
-			return "", ErrObjectNotFound 
+			return "", ErrObjectNotFound
 		}
-		return "", err 
+		return "", err
 	}
 
 	url, err := m.client.PresignedGetObject(ctx, bucketName, objectPath, ExpirationTime, nil)

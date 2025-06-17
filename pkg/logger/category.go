@@ -36,8 +36,8 @@ const (
 	HashPassword SubCategory = "HashPassword"
 
 	// Validation
-	EmailValidation       SubCategory = "EmailValidation"
-	UsernameValidation    SubCategory = "UsernameValidation"
+	EmailValidation    SubCategory = "EmailValidation"
+	UsernameValidation SubCategory = "UsernameValidation"
 )
 
 const (

@@ -54,7 +54,7 @@ func (c *CategoryHandler) GetCategories(ctx *gin.Context) {
 				"count":      len(categories),
 			})
 
-		return 
+		return
 	}
 
 	category, err := c.categoryService.GetCategoryByTitle(ctx, title)
@@ -100,7 +100,7 @@ func (c *CategoryHandler) GetCategories(ctx *gin.Context) {
 func (c *CategoryHandler) GetByID(ctx *gin.Context) {
 	strID := ctx.Param("id")
 
-	ID,err := helpers.StringToInt(strID)
+	ID, err := helpers.StringToInt(strID)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest,
 			"Invalid category ID", map[string]interface{}{
@@ -184,7 +184,7 @@ func (c *CategoryHandler) Create(ctx *gin.Context) {
 func (c *CategoryHandler) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	ID,err := helpers.StringToInt(id)
+	ID, err := helpers.StringToInt(id)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest,
 			"Invalid category ID", map[string]interface{}{
@@ -193,7 +193,7 @@ func (c *CategoryHandler) DeleteByID(ctx *gin.Context) {
 			})
 		return
 	}
-	
+
 	err = c.categoryService.DeleteCategoryByID(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrCategoryNotFound) {

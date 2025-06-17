@@ -36,9 +36,9 @@ func getDBInstance() *gorm.DB {
 		Image:        "postgres:latest",
 		ExposedPorts: []string{port},
 		Env: map[string]string{
-			"POSTGRES_USER":      postgresConfig.Username,
+			"POSTGRES_USER":     postgresConfig.Username,
 			"POSTGRES_PASSWORD": postgresConfig.Password,
-			"POSTGRES_DB":postgresConfig.DBName,
+			"POSTGRES_DB":       postgresConfig.DBName,
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port(port)).WithStartupTimeout(3 * time.Minute),
 	}
@@ -60,7 +60,7 @@ func getDBInstance() *gorm.DB {
 
 	postgresConfig.Port = genEndPort(endpoint)
 
-	time.Sleep(5*time.Second)
+	time.Sleep(5 * time.Second)
 	db, err := database.GetPostgresqlDB(postgresConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func genEndPort(endpoint string)int{
+func genEndPort(endpoint string) int {
 	endPort, err := strconv.Atoi(strings.Split(endpoint, ":")[1])
 	if err != nil {
 		log.Fatal(err)

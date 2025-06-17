@@ -11,4 +11,3 @@ type LikeRepository interface {
 	GetByUserID(ctx context.Context, userID uint) ([]model.Like, error)
 	DeleteByArticleIDAndUserID(ctx context.Context, articleID, userID uint) error
 }
-

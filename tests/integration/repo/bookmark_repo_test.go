@@ -82,13 +82,11 @@ func (s *BookmarkTestSuite) TestA_CreateBookmark() {
 func (s *BookmarkTestSuite) TestB_GetUserBookmarks() {
 	ctx := context.TODO()
 
-
 	bookmarks, err := s.repo.GetByUserID(ctx, s.userID)
 	s.NoError(err)
 	s.NotNil(bookmarks)
-	
-}
 
+}
 
 func (s *BookmarkTestSuite) TestC_GetBookmarkByID() {
 	ctx := context.TODO()
@@ -120,7 +118,6 @@ func (s *BookmarkTestSuite) TestC_GetBookmarkByID() {
 	}
 }
 
-
 func (s *BookmarkTestSuite) TestD_DeleteBookmarkByArticleIDAndUserID() {
 	ctx := context.TODO()
 
@@ -149,7 +146,7 @@ func (s *BookmarkTestSuite) TestD_DeleteBookmarkByArticleIDAndUserID() {
 	}
 
 	for _, tc := range testCases {
-		err := s.repo.DeleteByArticleIDAndUserID(ctx, tc.articleID,tc.userID)
+		err := s.repo.DeleteByArticleIDAndUserID(ctx, tc.articleID, tc.userID)
 		if tc.Valid {
 			s.NoError(err)
 		} else if !tc.Valid {

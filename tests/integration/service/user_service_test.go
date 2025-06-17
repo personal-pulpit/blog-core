@@ -17,7 +17,7 @@ import (
 type UserTestSuite struct {
 	suite.Suite
 
-	userRepo   repository.UserRepository
+	userRepo repository.UserRepository
 
 	service user.UserService
 

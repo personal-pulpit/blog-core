@@ -17,15 +17,15 @@ import (
 )
 
 type ServerDependencies struct {
-	AuthManager    auth_manager.AuthManager
-	AuthService    authentication.AuthService
-	UserService    user.UserService
-	ArticleService article.ArticleService
-	CommentService comment.CommentService
+	AuthManager     auth_manager.AuthManager
+	AuthService     authentication.AuthService
+	UserService     user.UserService
+	ArticleService  article.ArticleService
+	CommentService  comment.CommentService
 	CategoryService category.CategoryService
-	LikeService like.LikeService
-	BookmarkService bookmark.BookmarkService 
-	Logger         logger.Logger
+	LikeService     like.LikeService
+	BookmarkService bookmark.BookmarkService
+	Logger          logger.Logger
 }
 
 func NewServerDependencies(
@@ -40,15 +40,15 @@ func NewServerDependencies(
 	logger logger.Logger,
 ) ServerDependencies {
 	return ServerDependencies{
-		AuthManager:    authManager,
-		AuthService:    authService,
-		UserService:    userService,
-		ArticleService: articleService,
-		CommentService: commentService,
+		AuthManager:     authManager,
+		AuthService:     authService,
+		UserService:     userService,
+		ArticleService:  articleService,
+		CommentService:  commentService,
 		CategoryService: categoryService,
-		LikeService: likeService,
+		LikeService:     likeService,
 		BookmarkService: bookmarkService,
-		Logger:         logger,
+		Logger:          logger,
 	}
 }
 

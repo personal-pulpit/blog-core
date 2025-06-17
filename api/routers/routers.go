@@ -154,7 +154,7 @@ func praseLikeRouters(r *gin.RouterGroup, routerDeps RouterDeps) {
 	likeHandler := handlers.NewLikeHandler(routerDeps.likeServiceRouter)
 
 	r.GET("", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.GetUserLikes)
-	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.Create)	
+	r.POST("", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.Create)
 	r.DELETE("/article/:id", routerDeps.authMiddleware.EnsureLoggedIn(), likeHandler.DeleteByID)
 }
 

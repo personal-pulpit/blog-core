@@ -54,7 +54,7 @@ func (a *LikeHandler) Create(ctx *gin.Context) {
 		return
 	}
 
-	ID,err := helpers.StringToInt(li.ArticleID)
+	ID, err := helpers.StringToInt(li.ArticleID)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
 			"error": "Article ID must be a valid integer",
@@ -92,7 +92,7 @@ func (a *LikeHandler) Create(ctx *gin.Context) {
 	})
 }
 
-//@Summary      Get all likes for the authenticated user
+// @Summary      Get all likes for the authenticated user
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}  "Likes retrieved successfully"
 // @Failure      500  {object}  map[string]interface{}  "Failed to retrieve likes"

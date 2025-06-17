@@ -41,7 +41,7 @@ func (s *LikeTestSuite) SetupSuite() {
 
 	s.articleID = article.ID
 
-	s.service = like.NewLikeService(s.likeRepo,userRepo)
+	s.service = like.NewLikeService(s.likeRepo, userRepo)
 }
 
 func (s *LikeTestSuite) TestA_CreateLike() {
@@ -55,25 +55,25 @@ func (s *LikeTestSuite) TestA_CreateLike() {
 	s.likeID = like.ID
 }
 
-func (s *LikeTestSuite) TestB_GetUserLikes(){
+func (s *LikeTestSuite) TestB_GetUserLikes() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		userID    uint
-		Valid     bool
+		userID uint
+		Valid  bool
 	}{
 		{
-			userID:    0,
-			Valid:     false,
+			userID: 0,
+			Valid:  false,
 		},
 		{
-			userID:    s.userID,
-			Valid:     true,
+			userID: s.userID,
+			Valid:  true,
 		},
 	}
 
 	for _, tc := range testCases {
-		likes,err := s.service.GetUserLikes(ctx, tc.userID)
+		likes, err := s.service.GetUserLikes(ctx, tc.userID)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(likes)

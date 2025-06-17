@@ -20,7 +20,7 @@ type likeServiceImpl struct {
 	userRepo repository.UserRepository
 }
 
-func NewLikeService(likeRepo repository.LikeRepository,userRepo repository.UserRepository) LikeService {
+func NewLikeService(likeRepo repository.LikeRepository, userRepo repository.UserRepository) LikeService {
 	return &likeServiceImpl{
 		likeRepo: likeRepo,
 		userRepo: userRepo,
@@ -42,8 +42,6 @@ func (s *likeServiceImpl) GetUserLikes(ctx context.Context, userID uint) ([]mode
 	return user.Likes, nil
 }
 
-func (s *likeServiceImpl) DeleteLike(ctx context.Context, articleID,userID uint) error {
-	return s.likeRepo.DeleteByArticleIDAndUserID(ctx,articleID,userID )
+func (s *likeServiceImpl) DeleteLike(ctx context.Context, articleID, userID uint) error {
+	return s.likeRepo.DeleteByArticleIDAndUserID(ctx, articleID, userID)
 }
-
-

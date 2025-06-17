@@ -183,7 +183,7 @@ func (a *CommentHandler) DeleteByID(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetInt("id"))
-	
+
 	err = a.commentService.DeleteComment(ctx, userID, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrCommentNotFound) {

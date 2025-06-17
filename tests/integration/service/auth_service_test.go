@@ -77,9 +77,9 @@ func (s *AuthTestSuite) TestA_Register() {
 			s.NotNil(user)
 
 			s.user = user
-			verificationCode,err := getVerificationCodeFromRedis(ctx)
+			verificationCode, err := getVerificationCodeFromRedis(ctx)
 			s.NoError(err)
-			
+
 			s.verificationCode = verificationCode
 			s.password = tc.password
 		} else if !tc.Valid {
@@ -374,17 +374,17 @@ func (s *AuthTestSuite) quickLogin(ctx context.Context, email string, password s
 func getVerificationCodeFromRedis(ctx context.Context) (string, error) {
 	keys, err := redisCLI.Keys(ctx, "*").Result()
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	codeKey := keys[0]
 
 	code, err := redisCLI.Get(ctx, codeKey).Result()
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
-	return code,nil
+	return code, nil
 }
 
 func TestAuthSuite(t *testing.T) {

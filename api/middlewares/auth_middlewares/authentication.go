@@ -69,12 +69,11 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 				return
 			}
 
-
-			ID,err := helpers.StringToInt(accessTokenClaims.UserID)
+			ID, err := helpers.StringToInt(accessTokenClaims.UserID)
 			if err != nil {
 				helpers.RespondWithError(ctx, http.StatusInternalServerError, "Invalid User ID", map[string]interface{}{
-					"message":    "Failed to parse user ID from token",
-					"error":      err.Error(),
+					"message": "Failed to parse user ID from token",
+					"error":   err.Error(),
 					"metadata": map[string]interface{}{
 						"timestamp": time.Now(),
 					},
@@ -82,18 +81,18 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 				return
 			}
 
-			role,err := helpers.StringToInt(accessTokenClaims.Role)
+			role, err := helpers.StringToInt(accessTokenClaims.Role)
 			if err != nil {
 				helpers.RespondWithError(ctx, http.StatusInternalServerError, "Invalid Role", map[string]interface{}{
-					"message":    "Failed to parse user role from token",
-					"error":      err.Error(),
+					"message": "Failed to parse user role from token",
+					"error":   err.Error(),
 					"metadata": map[string]interface{}{
 						"timestamp": time.Now(),
 					},
 				})
 				return
 			}
-			ctx.Set("id",ID)
+			ctx.Set("id", ID)
 			ctx.Set("role", role)
 			ctx.Set("is_logged", true)
 		}
