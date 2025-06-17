@@ -20,9 +20,9 @@ type Article struct {
 
 // articleInput represents the input for creating or updating an article.
 type articleInput struct {
-	Title   string `json:"title" binding:"required" example:"My First Article"`                      // Title of the article
-	Content string `json:"content" binding:"required" example:"This is the content of the article."` // Content of the article
-	CategoriesName []string `json:"categories" binding:"required"` // Categories of the article
+	Title          string   `json:"title" binding:"required" example:"My First Article"`                      // Title of the article
+	Content        string   `json:"content" binding:"required" example:"This is the content of the article."` // Content of the article
+	CategoriesName []string `json:"categories" binding:"required"`                                            // Categories of the article
 }
 
 // NewArticleHandler creates a new Article handler.
@@ -39,88 +39,7 @@ func NewArticleHandler(articleService article.ArticleService) *Article {
 // @Success 200 {object} map[string]interface{} "Successfully retrieved articles"
 // @Failure 400 {object} map[string]interface{} "Failed to fetch articles"
 // @Router /api/v1/articles [get]
-func (a *Article) GetAll(ctx *gin.Context) {
-	articles, err := a.ArticleService.GetAll(ctx)
-	if err != nil {
-		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to fetch articles",
-			map[string]interface{}{
-				"error": err.Error(),
-				"count": 0,
-			})
-
-		return
-	}
-
-	helpers.RespondWithSuccess(ctx, http.StatusOK, "Successfully retrieved articles",
-		map[string]interface{}{
-			"count":     len(articles),
-			"timestamp": time.Now(),
-			"articles":  articles,
-		})
-}
-
-// @Summary Get an article by ID
-// @Description Retrieve an article by its ID
-// @Tags articles
-// @Produce json
-// @Param id path string true "Article ID"
-// @Success 200 {object} map[string]interface{} "Article retrieved successfully"
-// @Failure 404 {object} map[string]interface{} "Article not found"
-// @Failure 500 {object} map[string]interface{} "Failed to fetch article"
-// @Router /api/v1/articles/{id} [get]
-func (a *Article) GetByID(ctx *gin.Context) {
-	ID := ctx.Param("id")
-
-	article, err := a.ArticleService.GetArticleByID(ctx, uint(helpers.StringToInt(ID)))
-	if err != nil {
-		if errors.Is(err, repository.ErrArticleNotFound) {
-			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found",
-				map[string]interface{}{
-					"article_id": ID,
-					"error":      err.Error(),
-				})
-			return
-		}
-
-		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to fetch article",
-			map[string]interface{}{
-				"article_id": ID,
-				"error":      err.Error(),
-			})
-		return
-	}
-
-	helpers.RespondWithSuccess(ctx, http.StatusOK, "Article retrieved successfully",
-		map[string]interface{}{
-			"article": map[string]interface{}{
-				"id":         article.ID,
-				"title":      article.Title,
-				"content":    article.Content,
-				"author":     article.Author,
-				"comments":   article.Comments,
-				"categories": article.Categories,
-				"created_at": article.CreatedAt,
-				"updated_at": article.UpdatedAt,
-			},
-			"metadata": map[string]interface{}{
-				"timestamp": time.Now(),
-			},
-		})
-}
-
-// @Summary Search articles by title
-// @Description Search articles by title using a query string
-// @Tags articles
-// @Produce json
-// @Param title query string false "Search query"
-// @Param publishedAt query string false "Search query format: 2025-02-8 00:00:00.00000+00"
-// @Param publishedAtGT query string false "Search query format: 2025-02-8 00:00:00.00000+00"
-// @Param publishedAtLT query string false "Search query format: 2025-02-8 00:00:00.00000+00"
-// @Success 200 {object} map[string]interface{} "Articles found successfully"
-// @Failure 404 {object} map[string]interface{} "No articles found with given data"
-// @Failure 500 {object} map[string]interface{} "Failed to search articles"
-// @Router /api/v1/articles/search [get]
-func (a *Article) Search(ctx *gin.Context) {
+func (a *Article) GetArticles(ctx *gin.Context) {
 	var filterData = map[string]string{}
 
 	err := ctx.BindQuery(&filterData)
@@ -128,6 +47,28 @@ func (a *Article) Search(ctx *gin.Context) {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to bind query", map[string]interface{}{
 			"error": err.Error(),
 		})
+
+		return
+	}
+
+	if len(filterData) == 0 {
+		articles, err := a.ArticleService.GetAll(ctx)
+		if err != nil {
+			helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to fetch articles",
+				map[string]interface{}{
+					"error": err.Error(),
+					"count": 0,
+				})
+
+			return
+		}
+
+		helpers.RespondWithSuccess(ctx, http.StatusOK, "Successfully retrieved articles",
+			map[string]interface{}{
+				"count":     len(articles),
+				"timestamp": time.Now(),
+				"articles":  articles,
+			})
 
 		return
 	}
@@ -164,6 +105,63 @@ func (a *Article) Search(ctx *gin.Context) {
 		})
 }
 
+// @Summary Get an article by ID
+// @Description Retrieve an article by its ID
+// @Tags articles
+// @Produce json
+// @Param id path string true "Article ID"
+// @Success 200 {object} map[string]interface{} "Article retrieved successfully"
+// @Failure 404 {object} map[string]interface{} "Article not found"
+// @Failure 500 {object} map[string]interface{} "Failed to fetch article"
+// @Router /api/v1/articles/{id} [get]
+func (a *Article) GetByID(ctx *gin.Context) {
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": strID,
+		})
+		return
+	}
+
+	article, err := a.ArticleService.GetArticleByID(ctx, uint(ID))
+	if err != nil {
+		if errors.Is(err, repository.ErrArticleNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found",
+				map[string]interface{}{
+					"article_id": ID,
+					"error":      err.Error(),
+				})
+			return
+		}
+
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to fetch article",
+			map[string]interface{}{
+				"article_id": ID,
+				"error":      err.Error(),
+			})
+		return
+	}
+
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "Article retrieved successfully",
+		map[string]interface{}{
+			"article": map[string]interface{}{
+				"id":         article.ID,
+				"title":      article.Title,
+				"content":    article.Content,
+				"author":     article.Author,
+				"comments":   article.Comments,
+				"categories": article.Categories,
+				"created_at": article.CreatedAt,
+				"updated_at": article.UpdatedAt,
+			},
+			"metadata": map[string]interface{}{
+				"timestamp": time.Now(),
+			},
+		})
+}
+
 // @Summary Create a new article
 // @Description Create a new article with the provided title and content
 // @Tags articles
@@ -172,7 +170,7 @@ func (a *Article) Search(ctx *gin.Context) {
 // @Param article body articleInput true "Article input"
 // @Success 201 {object} map[string]interface{} "Article created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid input data"
-// @Router /api/v1/articles/create [post]
+// @Router /api/v1/articles [post]
 func (a *Article) Create(ctx *gin.Context) {
 	var ai articleInput
 	err := ctx.ShouldBindJSON(&ai)
@@ -192,7 +190,7 @@ func (a *Article) Create(ctx *gin.Context) {
 	}
 
 	authorID := uint(ctx.GetInt("id"))
-	article, err := a.ArticleService.Create(ctx, ai.Title, ai.Content, authorID,ai.CategoriesName)
+	article, err := a.ArticleService.Create(ctx, ai.Title, ai.Content, authorID, ai.CategoriesName)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create article", map[string]interface{}{
 			"error": err.Error(),
@@ -230,15 +228,24 @@ func (a *Article) Create(ctx *gin.Context) {
 // @Failure 404 {object} map[string]interface{} "Article not found for update"
 // @Router /api/v1/articles/{id} [patch]
 func (a *Article) UpdateByID(ctx *gin.Context) {
-	id := ctx.Param("id")
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": strID,
+		})
+		return
+	}
+
 	var ai = new(articleInput)
 
-	err := ctx.ShouldBind(ai)
+	err = ctx.ShouldBind(ai)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			helpers.RespondWithError(ctx, http.StatusBadRequest, "Missing required fields for update", map[string]interface{}{
 				"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-				"article_id":        id,
+				"article_id":        ID,
 				"provided_data":     ai,
 			})
 			return
@@ -246,24 +253,24 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid update data", map[string]interface{}{
 			"validation_errors": utils.GetValidationError(err),
-			"article_id":        id,
+			"article_id":        ID,
 			"provided_data":     ai,
 		})
 		return
 	}
 
-	article, err := a.ArticleService.Update(ctx, uint(helpers.StringToInt(id)), ai.Title, ai.Content)
+	article, err := a.ArticleService.Update(ctx, uint(ID), ai.Title, ai.Content)
 	if err != nil {
 		if errors.Is(err, repository.ErrArticleNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found for update", map[string]interface{}{
-				"article_id": id,
+				"article_id": ID,
 				"error":      err.Error(),
 			})
 			return
 		}
 
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to update article", map[string]interface{}{
-			"article_id": id,
+			"article_id": ID,
 			"error":      err.Error(),
 		})
 		return
@@ -295,25 +302,34 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Failed to delete article"
 // @Router /api/v1/articles/{id} [delete]
 func (a *Article) DeleteByID(ctx *gin.Context) {
-	id := ctx.Param("id")
-	err := a.ArticleService.Delete(ctx, uint(helpers.StringToInt(id)))
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": strID,
+		})
+		return
+	}
+
+	err = a.ArticleService.Delete(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrArticleNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found for deletion", map[string]interface{}{
-				"article_id": id,
+				"article_id": ID,
 				"error":      err.Error(),
 			})
 			return
 		}
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete article", map[string]interface{}{
-			"article_id": id,
+			"article_id": ID,
 			"error":      err.Error(),
 		})
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK, "Article deleted successfully", map[string]interface{}{
-		"deleted_article_id": id,
+		"deleted_article_id": ID,
 		"metadata": map[string]interface{}{
 			"timestamp": time.Now(),
 			"status":    "deleted",

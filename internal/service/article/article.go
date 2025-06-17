@@ -9,7 +9,7 @@ import (
 )
 
 type ArticleService interface {
-	Create(ctx context.Context, title, content string, authorID uint,categoriesName []string) (*model.Article, error)
+	Create(ctx context.Context, title, content string, authorID uint, categoriesName []string) (*model.Article, error)
 	Update(ctx context.Context, ID uint, title, content string) (*model.Article, error)
 	Delete(ctx context.Context, articleID uint) error
 	GetAll(ctx context.Context) ([]model.Article, error)
@@ -18,18 +18,18 @@ type ArticleService interface {
 }
 
 type articleService struct {
-	articleRepo repository.ArticleRepository
+	articleRepo  repository.ArticleRepository
 	categoryRepo repository.CategoryRepository
 }
 
-func NewArticleService(articleRepo repository.ArticleRepository,categoryRepo repository.CategoryRepository) ArticleService {
+func NewArticleService(articleRepo repository.ArticleRepository, categoryRepo repository.CategoryRepository) ArticleService {
 	return &articleService{
-		articleRepo: articleRepo,
+		articleRepo:  articleRepo,
 		categoryRepo: categoryRepo,
 	}
 }
 
-func (s *articleService) Create(ctx context.Context, title, content string, authorID uint,categoriesName []string) (*model.Article, error) {
+func (s *articleService) Create(ctx context.Context, title, content string, authorID uint, categoriesName []string) (*model.Article, error) {
 	var categories = []model.Category{}
 
 	for _, categoryName := range categoriesName {
@@ -41,7 +41,7 @@ func (s *articleService) Create(ctx context.Context, title, content string, auth
 		categories = append(categories, *category)
 	}
 
-	articleModel := model.NewArticle(title, content, authorID,categories)
+	articleModel := model.NewArticle(title, content, authorID, categories)
 
 	article, err := s.articleRepo.Create(ctx, articleModel)
 
@@ -88,21 +88,21 @@ func (s *articleService) SearchArticle(ctx context.Context, filter map[string]st
 		} else if i == "publishedAt" {
 			parsedTime, err := utils.ParasTime(v)
 			if err != nil {
-				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s",ErrParseTime,err,v)
+				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s", ErrParseTime, err, v)
 			}
 
 			articleFilter.PublishedAt = parsedTime
 		} else if i == "publishedAtGt" {
 			parsedTime, err := utils.ParasTime(v)
 			if err != nil {
-				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s",ErrParseTime,err,v)
+				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s", ErrParseTime, err, v)
 			}
 
 			articleFilter.PublishedAtGT = parsedTime
 		} else if i == "publishedAtLt" {
 			parsedTime, err := utils.ParasTime(v)
 			if err != nil {
-				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s",ErrParseTime,err,v)
+				return nil, fmt.Errorf("SearchArticle:%w: %v : \ntime: %s", ErrParseTime, err, v)
 			}
 
 			articleFilter.PublishedAtLT = parsedTime

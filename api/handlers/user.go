@@ -43,7 +43,7 @@ var (
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile retrieved successfully"
 // @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "User not found"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve user profile"
-// @Router /api/v1/users/me [get]
+// @Router /api/v1/users [get]
 func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 
@@ -83,7 +83,16 @@ func (u *UserHandler) GetCurrentUser(ctx *gin.Context) {
 func (u *UserHandler) GetUser(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	user, err := u.UserService.GetUserProfile(ctx, uint(helpers.StringToInt(id)))
+	ID, err := helpers.StringToInt(id)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid user ID", map[string]interface{}{
+			"error":         "User ID must be a valid integer",
+			"provided_data": id,
+		})
+		return
+	}
+
+	user, err := u.UserService.GetUserProfile(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "User not found", map[string]interface{}{
@@ -114,13 +123,20 @@ func (u *UserHandler) GetUser(ctx *gin.Context) {
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image URL retrieved successfully"
 // @Failure 404 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image not found"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to retrieve profile image URL"
-// @Router /api/v1/users/profile-picture-url/{id} [get]
+// @Router /api/v1/users/{id}/profile-picture-url/ [get]
 func (u *UserHandler) GetProfileImageURL(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	ID := uint(helpers.StringToInt(id))
+	ID, err := helpers.StringToInt(id)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid user ID", map[string]interface{}{
+			"error":         "User ID must be a valid integer",
+			"provided_data": id,
+		})
+		return
+	}
 
-	url, err := u.UserService.GetProfileImageURL(ctx, ID)
+	url, err := u.UserService.GetProfileImageURL(ctx, uint(ID))
 	if err != nil {
 		if err == objStorage.ErrObjectNotFound {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Failed to retrieve profile image URL with provided id", map[string]interface{}{
@@ -155,7 +171,7 @@ func (u *UserHandler) GetProfileImageURL(ctx *gin.Context) {
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image uploaded successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid image file"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to upload profile image"
-// @Router /api/v1/users/add-profile-picture [post]
+// @Router /api/v1/users/profile-picture [post]
 func (u *UserHandler) AddProfileImage(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 
@@ -199,7 +215,7 @@ func (u *UserHandler) AddProfileImage(ctx *gin.Context) {
 // @Param user body updateInput true "User profile data"
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile updated successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid update data"
-// @Router /api/v1/users/update [patch]
+// @Router /api/v1/users [patch]
 func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 	var ui updateInput
@@ -250,7 +266,7 @@ func (u *UserHandler) UpdateProfile(ctx *gin.Context) {
 // @Param input body deleteAccountInput true "Account deletion data"
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Account deleted successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid deletion request"
-// @Router /api/v1/users/delete [delete]
+// @Router /api/v1/users [delete]
 func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 	var input deleteAccountInput
 
@@ -293,7 +309,7 @@ func (u *UserHandler) DeleteAccount(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Profile image deleted successfully"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to delete profile image"
-// @Router /api/v1/users/delete-profile-picture [delete]
+// @Router /api/v1/users/profile-picture [delete]
 func (u *UserHandler) DeleteProfileImage(ctx *gin.Context) {
 	id := uint(ctx.GetInt("id"))
 

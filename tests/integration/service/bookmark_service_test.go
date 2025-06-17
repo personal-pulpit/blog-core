@@ -18,8 +18,8 @@ type BookmarkTestSuite struct {
 	service bookmark.BookmarkService
 
 	bookmarkID uint
-	articleID uint
-	userID    uint
+	articleID  uint
+	userID     uint
 }
 
 func (s *BookmarkTestSuite) SetupSuite() {
@@ -39,7 +39,6 @@ func (s *BookmarkTestSuite) SetupSuite() {
 	category, err := categoryRepo.CreateCategory(context.TODO(), model.NewCategory("bookmark-category1-service"))
 	s.NoError(err)
 	s.NotNil(category)
-
 
 	article, err := articleRepo.Create(context.TODO(), model.NewArticle("article1", "content of article1", user.ID, []model.Category{*category}))
 	s.NoError(err)
@@ -90,26 +89,25 @@ func (s *BookmarkTestSuite) TestB_GetBookmarkByID() {
 	}
 }
 
-func (s *BookmarkTestSuite) TestC_GetUserBookmarks(){
+func (s *BookmarkTestSuite) TestC_GetUserBookmarks() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		userID    uint
-		Valid     bool
+		userID uint
+		Valid  bool
 	}{
 		{
-			userID:    s.userID,
-			Valid:     true,
+			userID: s.userID,
+			Valid:  true,
 		},
 		{
-			userID:    0,
-			Valid:     false,
+			userID: 0,
+			Valid:  false,
 		},
-
 	}
 
 	for _, tc := range testCases {
-		bookmarks,err := s.service.GetUsersBookmarks(ctx, tc.userID)
+		bookmarks, err := s.service.GetUsersBookmarks(ctx, tc.userID)
 		if tc.Valid {
 			s.NoError(err)
 			s.NotNil(bookmarks)
@@ -121,35 +119,33 @@ func (s *BookmarkTestSuite) TestC_GetUserBookmarks(){
 	}
 }
 
-
-
 func (s *BookmarkTestSuite) TestD_DeleteBookmark() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		bookmarkID uint
 		userID    uint
+		articleID uint
 		Valid     bool
 	}{
 		{
-			bookmarkID: 0,
 			userID:    s.userID,
+			articleID: 0,
 			Valid:     false,
 		},
 		{
-			bookmarkID: s.bookmarkID,
 			userID:    0,
+			articleID: s.articleID,
 			Valid:     false,
 		},
 		{
-			bookmarkID: s.bookmarkID,
 			userID:    s.userID,
+			articleID: s.articleID,
 			Valid:     true,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.service.DeleteBookmark(ctx, tc.userID, tc.bookmarkID)
+		err := s.service.DeleteBookmark(ctx, tc.articleID, tc.userID)
 		if tc.Valid {
 			s.NoError(err)
 

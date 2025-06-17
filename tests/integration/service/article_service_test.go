@@ -14,8 +14,6 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	//TODO: delete it
-	repo            repository.ArticleRepository
 	userRepo        repository.UserRepository
 	service         article.ArticleService
 	article         *model.Article
@@ -25,10 +23,10 @@ type ArticleTestSuite struct {
 }
 
 func (s *ArticleTestSuite) SetupSuite() {
-	s.repo = postgres_repository.NewArticlePostgresRepo(db)
+	articleRepo := postgres_repository.NewArticlePostgresRepo(db)
 	categoryRepo := postgres_repository.NewCategoryRepository(db)
 
-	s.service = article.NewArticleService(s.repo, categoryRepo)
+	s.service = article.NewArticleService(articleRepo, categoryRepo)
 
 	s.userRepo = postgres_repository.NewUserPostgresRepository(db)
 

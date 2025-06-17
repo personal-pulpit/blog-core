@@ -54,11 +54,20 @@ func (h *BookmarkHandler) Create(ctx *gin.Context) {
 		return
 	}
 
+	ID, err := helpers.StringToInt(bi.ArticleID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error": "Article ID must be a valid integer",
+			"input": bi,
+		})
+		return
+	}
+
 	userID := uint(ctx.GetInt("id"))
 	bookmark, err := h.bookmarkService.CreateBookmark(
 		ctx,
 		userID,
-		uint(helpers.StringToInt(bi.ArticleID)),
+		uint(ID),
 	)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create bookmark", map[string]interface{}{
@@ -81,7 +90,6 @@ func (h *BookmarkHandler) Create(ctx *gin.Context) {
 	})
 }
 
-
 // @Summary      Get all bookmarks for the authenticated user
 // @Description  Retrieve all bookmarks for the authenticated user
 // @Tags         Bookmarks
@@ -91,7 +99,7 @@ func (h *BookmarkHandler) Create(ctx *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}  "No bookmarks found"
 // @Failure      500  {object}  map[string]interface{}  "Failed to retrieve bookmarks"
 // @Router       /bookmarks [get]
-func (a *BookmarkHandler) GetUsersBookmarks(ctx *gin.Context) {
+func (a *BookmarkHandler) GetUserBookmarks(ctx *gin.Context) {
 	userID := uint(ctx.GetInt("id"))
 
 	bookmarks, err := a.bookmarkService.GetUsersBookmarks(ctx, userID)
@@ -140,33 +148,42 @@ func (a *BookmarkHandler) GetUsersBookmarks(ctx *gin.Context) {
 // @Description  Retrieve a bookmark by its ID for the authenticated user
 // @Tags         Bookmarks
 // @Produce      json
-// @Param        id  path      string  true  "Bookmark ID" example:"1"
-// @Security     BearerAuth
+// @Param        id  path      string  true  "ArticleID ID" example:"1"
 // @Success      200  {object}  map[string]interface{}  "Bookmark retrieved successfully"
 // @Failure      404  {object}  map[string]interface{}  "Bookmark not found"
 // @Failure      400  {object}  map[string]interface{}  "Invalid bookmark ID"
-func (a *BookmarkHandler) DeleteByID(ctx *gin.Context) {
-	id := ctx.Param("id")
-	userID := uint(ctx.GetInt("id"))
-
-	err := a.bookmarkService.DeleteBookmark(ctx, userID, uint(helpers.StringToInt(id)))
+// @Router       /bookmarks/article/{id} [delete]
+func (a *BookmarkHandler) Delete(ctx *gin.Context) {
+	articleID := ctx.Param("id")
+	ID, err := helpers.StringToInt(articleID)
 	if err != nil {
-		if errors.Is(err, repository.ErrLikeNotFound) {
-			helpers.RespondWithError(ctx, http.StatusNotFound, "Like not found for deletion", map[string]interface{}{
-				"like_id": id,
-				"error":   err.Error(),
-			})
-			return
-		}
-		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete bookmark", map[string]interface{}{
-			"like_id": id,
-			"error":   err.Error(),
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error": "Article ID must be a valid integer",
+			"input": articleID,
 		})
 		return
 	}
 
-	helpers.RespondWithSuccess(ctx, http.StatusOK, "Like deleted successfully", map[string]interface{}{
-		"deleted_like_id": id,
+	userID := uint(ctx.GetInt("id"))
+
+	err = a.bookmarkService.DeleteBookmark(ctx, uint(ID), userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrBookmarkNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "bookmark not found for deletion", map[string]interface{}{
+				"article_id": articleID,
+				"error":      err.Error(),
+			})
+			return
+		}
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete bookmark", map[string]interface{}{
+			"article_id": articleID,
+			"error":      err.Error(),
+		})
+		return
+	}
+
+	helpers.RespondWithSuccess(ctx, http.StatusOK, "bookmark deleted successfully", map[string]interface{}{
+		"deleted_article_bookmark_id": articleID,
 		"metadata": map[string]interface{}{
 			"timestamp": time.Now(),
 			"status":    "deleted",

@@ -21,7 +21,7 @@ func NewMinioClient(cfg config.MinIO) (*minio.Client, error) {
 		return nil, err
 	}
 
-	cancel,err := minioClient.HealthCheck(time.Minute)
+	cancel, err := minioClient.HealthCheck(time.Minute)
 	if err != nil {
 		return nil, err
 	}

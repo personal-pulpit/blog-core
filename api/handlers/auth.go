@@ -163,25 +163,34 @@ func (h *AuthHandler) VerifyEmail(ctx *gin.Context) {
 		return
 	}
 
-	err = h.AuthService.VerifyEmail(ctx, input.OTP, uint(helpers.StringToInt(input.UserID)))
+	userID, err := helpers.StringToInt(input.UserID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid user ID format", map[string]interface{}{
+			"error":         "Invalid user ID format",
+			"provided_data": input.UserID,
+		})
+		return
+	}
+
+	err = h.AuthService.VerifyEmail(ctx, input.OTP, uint(userID))
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "User not found", map[string]interface{}{
-				"user_id": input.UserID,
+				"user_id": userID,
 				"error":   err.Error(),
 			})
 			return
 		}
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Email verification failed", map[string]interface{}{
 			"error":   err.Error(),
-			"user_id": input.UserID,
+			"user_id": userID,
 		})
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK, "Email verified successfully", map[string]interface{}{
 		"verification_status": "completed",
-		"user_id":             input.UserID,
+		"user_id":             userID,
 		"metadata": map[string]interface{}{
 			"timestamp":   time.Now(),
 			"verified_at": time.Now(),

@@ -19,5 +19,5 @@ type UserRepository interface {
 type UserCacheRepository interface {
 	SetUserProfileImageURL(ctx context.Context, userID uint, url string, exp time.Duration) error
 	GetUserProfileImageURL(ctx context.Context, userID uint) (string, error)
-	DestroyUserProfileImageURL(ctx context.Context,userID uint) error
+	DestroyUserProfileImageURL(ctx context.Context, userID uint) error
 }

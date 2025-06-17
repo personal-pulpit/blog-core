@@ -60,12 +60,12 @@ func main() {
 
 	emailService := email.NewEmailService(&config.Email)
 	authService := authentication.NewAuthenticateService(authPostgresRepo, userPostgresRepo, authManager, hashManager, emailService)
-	userService := user.NewUserService(userPostgresRepo,userCacheRepo, authPostgresRepo, objStorageRepo)
+	userService := user.NewUserService(userPostgresRepo, userCacheRepo, authPostgresRepo, objStorageRepo)
 	articleService := article.NewArticleService(articlePostgresRepo, categoryPostgresRepo)
 	commentService := comment.NewCommentService(commentPostgresRepo)
 	categoryService := category.NewCategoryService(categoryPostgresRepo)
-	likeService := like.NewLikeService(likePostgresRepo)
-	bookmarkService := bookmark.NewBookmarkService(bookmarkPostgresRepo,userPostgresRepo)
+	likeService := like.NewLikeService(likePostgresRepo, userPostgresRepo)
+	bookmarkService := bookmark.NewBookmarkService(bookmarkPostgresRepo, userPostgresRepo)
 
 	serverDeps := server.NewServerDependencies(
 		authManager,

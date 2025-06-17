@@ -37,7 +37,7 @@ func (s *CommentTestSuite) SetupSuite() {
 	s.Nil(err)
 	s.NotNil(category)
 
-	article, err := s.articleRepo.Create(context.TODO(), model.NewArticle("article1", "content", s.userID,[]model.Category{*category}))
+	article, err := s.articleRepo.Create(context.TODO(), model.NewArticle("article1", "content", s.userID, []model.Category{*category}))
 	s.Nil(err)
 	s.NotNil(article)
 

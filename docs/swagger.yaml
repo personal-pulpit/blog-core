@@ -200,6 +200,33 @@ paths:
       summary: Get all articles
       tags:
       - articles
+    post:
+      consumes:
+      - application/json
+      description: Create a new article with the provided title and content
+      parameters:
+      - description: Article input
+        in: body
+        name: article
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.articleInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Article created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input data
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new article
+      tags:
+      - articles
   /api/v1/articles/{id}:
     delete:
       description: Delete an article by its ID
@@ -294,75 +321,6 @@ paths:
             additionalProperties: true
             type: object
       summary: Update an article by ID
-      tags:
-      - articles
-  /api/v1/articles/create:
-    post:
-      consumes:
-      - application/json
-      description: Create a new article with the provided title and content
-      parameters:
-      - description: Article input
-        in: body
-        name: article
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.articleInput'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Article created successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid input data
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Create a new article
-      tags:
-      - articles
-  /api/v1/articles/search:
-    get:
-      description: Search articles by title using a query string
-      parameters:
-      - description: Search query
-        in: query
-        name: title
-        type: string
-      - description: 'Search query format: 2025-02-8 00:00:00.00000+00'
-        in: query
-        name: publishedAt
-        type: string
-      - description: 'Search query format: 2025-02-8 00:00:00.00000+00'
-        in: query
-        name: publishedAtGT
-        type: string
-      - description: 'Search query format: 2025-02-8 00:00:00.00000+00'
-        in: query
-        name: publishedAtLT
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Articles found successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: No articles found with given data
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Failed to search articles
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Search articles by title
       tags:
       - articles
   /api/v1/auth/authenticate:
@@ -767,6 +725,53 @@ paths:
       summary: Get all categories
       tags:
       - categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new category with the provided name
+      parameters:
+      - description: Category input
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createCategoryInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Category created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid category data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to create category
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Create a new category
+      tags:
+      - categories
   /api/v1/categories/{id}:
     delete:
       description: Delete a category by its ID
@@ -856,54 +861,34 @@ paths:
       summary: Get a category by ID
       tags:
       - categories
-  /api/v1/categories/create:
+  /api/v1/comments:
     post:
       consumes:
       - application/json
-      description: Create a new category with the provided name
+      description: Create a new comment with the provided content and comment ID
       parameters:
-      - description: Category input
+      - description: comment input
         in: body
-        name: category
+        name: comment
         required: true
         schema:
-          $ref: '#/definitions/handlers.createCategoryInput'
+          $ref: '#/definitions/handlers.commentInput'
       produces:
       - application/json
       responses:
         "201":
-          description: Category created successfully
+          description: comment created successfully
           schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
+            additionalProperties: true
+            type: object
         "400":
-          description: Invalid category data
+          description: Invalid input data
           schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "500":
-          description: Failed to create category
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-      summary: Create a new category
+            additionalProperties: true
+            type: object
+      summary: Create a new comment
       tags:
-      - categories
+      - comments
   /api/v1/comments/{id}:
     delete:
       description: Delete an comment by its ID
@@ -965,34 +950,119 @@ paths:
       summary: Update an comment by ID
       tags:
       - comments
-  /api/v1/comments/create:
-    post:
+  /api/v1/users:
+    delete:
       consumes:
       - application/json
-      description: Create a new comment with the provided content and comment ID
+      description: Delete the account of the currently authenticated user
       parameters:
-      - description: comment input
+      - description: Account deletion data
         in: body
-        name: comment
+        name: input
         required: true
         schema:
-          $ref: '#/definitions/handlers.commentInput'
+          $ref: '#/definitions/handlers.deleteAccountInput'
       produces:
       - application/json
       responses:
-        "201":
-          description: comment created successfully
+        "200":
+          description: Account deleted successfully
           schema:
-            additionalProperties: true
-            type: object
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
         "400":
-          description: Invalid input data
+          description: Invalid deletion request
           schema:
-            additionalProperties: true
-            type: object
-      summary: Create a new comment
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Delete user account
       tags:
-      - comments
+      - users
+    get:
+      description: Retrieve the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "404":
+          description: User not found
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to retrieve user profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get current user profile
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Update the profile of the currently authenticated user
+      parameters:
+      - description: User profile data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Invalid update data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Update user profile
+      tags:
+      - users
   /api/v1/users/{id}:
     get:
       description: Retrieve the profile of a user by their ID
@@ -1038,160 +1108,7 @@ paths:
       summary: Get user profile by ID
       tags:
       - users
-  /api/v1/users/add-profile-picture:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload a profile image for the currently authenticated user
-      parameters:
-      - description: Profile image file
-        in: formData
-        name: image
-        required: true
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Profile image uploaded successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "400":
-          description: Invalid image file
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "500":
-          description: Failed to upload profile image
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-      summary: Upload profile image
-      tags:
-      - users
-  /api/v1/users/delete:
-    delete:
-      consumes:
-      - application/json
-      description: Delete the account of the currently authenticated user
-      parameters:
-      - description: Account deletion data
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.deleteAccountInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Account deleted successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "400":
-          description: Invalid deletion request
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-      summary: Delete user account
-      tags:
-      - users
-  /api/v1/users/delete-profile-picture:
-    delete:
-      description: Delete the profile image of the currently authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Profile image deleted successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "500":
-          description: Failed to delete profile image
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-      summary: Delete profile image
-      tags:
-      - users
-  /api/v1/users/me:
-    get:
-      description: Retrieve the profile of the currently authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Profile retrieved successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "404":
-          description: User not found
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-        "500":
-          description: Failed to retrieve user profile
-          schema:
-            allOf:
-            - $ref: '#/definitions/helpers.HttpResponse'
-            - properties:
-                data:
-                  additionalProperties: true
-                  type: object
-              type: object
-      summary: Get current user profile
-      tags:
-      - users
-  /api/v1/users/profile-picture-url/{id}:
+  /api/v1/users/{id}/profile-picture-url/:
     get:
       description: Retrieve the profile image URL of a user by their ID
       parameters:
@@ -1236,23 +1153,50 @@ paths:
       summary: Get profile image URL
       tags:
       - users
-  /api/v1/users/update:
-    patch:
-      consumes:
-      - application/json
-      description: Update the profile of the currently authenticated user
-      parameters:
-      - description: User profile data
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.updateInput'
+  /api/v1/users/profile-picture:
+    delete:
+      description: Delete the profile image of the currently authenticated user
       produces:
       - application/json
       responses:
         "200":
-          description: Profile updated successfully
+          description: Profile image deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "500":
+          description: Failed to delete profile image
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Delete profile image
+      tags:
+      - users
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a profile image for the currently authenticated user
+      parameters:
+      - description: Profile image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile image uploaded successfully
           schema:
             allOf:
             - $ref: '#/definitions/helpers.HttpResponse'
@@ -1262,7 +1206,7 @@ paths:
                   type: object
               type: object
         "400":
-          description: Invalid update data
+          description: Invalid image file
           schema:
             allOf:
             - $ref: '#/definitions/helpers.HttpResponse'
@@ -1271,7 +1215,17 @@ paths:
                   additionalProperties: true
                   type: object
               type: object
-      summary: Update user profile
+        "500":
+          description: Failed to upload profile image
+          schema:
+            allOf:
+            - $ref: '#/definitions/helpers.HttpResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Upload profile image
       tags:
       - users
   /bookmarks:
@@ -1330,7 +1284,52 @@ paths:
       summary: Create a bookmark
       tags:
       - Bookmarks
+  /bookmarks/article/{id}:
+    delete:
+      description: Retrieve a bookmark by its ID for the authenticated user
+      parameters:
+      - description: ArticleID ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bookmark retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid bookmark ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Bookmark not found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a bookmark by ID
+      tags:
+      - Bookmarks
   /likes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Likes retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to retrieve likes
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all likes for the authenticated user
     post:
       consumes:
       - application/json
@@ -1355,12 +1354,10 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
       summary: Like an article
       tags:
       - Likes
-  /likes/{id}:
+  /likes/article/{id}:
     delete:
       description: Allows the authenticated user to remove their like from an article
       parameters:
@@ -1387,8 +1384,6 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
       summary: Delete a like
       tags:
       - Likes

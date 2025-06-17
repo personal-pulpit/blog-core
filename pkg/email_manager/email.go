@@ -43,7 +43,7 @@ func NewEmailService(Configs *config.Email) EmailService {
 	return &emailOtp{Configs}
 }
 
-func newEmailMessage(tmplFileName, subject string,args interface{}, reciver []string) *emailMessage {
+func newEmailMessage(tmplFileName, subject string, args interface{}, reciver []string) *emailMessage {
 	return &emailMessage{
 		tmplateFileName: tmplFileName,
 		subject:         subject,
@@ -53,7 +53,7 @@ func newEmailMessage(tmplFileName, subject string,args interface{}, reciver []st
 }
 
 func (s *emailOtp) readTemplate(templFileName string) *template.Template {
-	templFileNameFullAddres := fmt.Sprintf("%s/%s/%s",templatesDirPath(),"templates",templFileName)
+	templFileNameFullAddres := fmt.Sprintf("%s/%s/%s", templatesDirPath(), "templates", templFileName)
 
 	tpl := template.Must(template.ParseFiles(templFileNameFullAddres))
 
@@ -71,7 +71,7 @@ func (s *emailOtp) sendEmail(msg *emailMessage) error {
 
 	var body bytes.Buffer
 	err := template.Execute(&body, msg.args)
-	
+
 	if err != nil {
 		return err
 	}
@@ -79,16 +79,16 @@ func (s *emailOtp) sendEmail(msg *emailMessage) error {
 	emailMessage := fmt.Sprintf("Subject: %s\r\n"+
 		"Content-Type: text/html; charset=UTF-8\r\n"+
 		"\r\n"+body.String(), msg.subject)
-	
+
 	auth := smtp.PlainAuth("", s.Configs.SenderEmail, s.Configs.Password, s.Configs.Host)
 	err = smtp.SendMail(s.Configs.Host+":"+s.Configs.Port, auth, s.Configs.SenderEmail, msg.receiver, []byte(emailMessage))
-	
+
 	if err != nil {
 		return err
 	}
-	
+
 	log.Println("Verification code email sent successfully!")
-	
+
 	return nil
 }
 
@@ -96,15 +96,15 @@ func (s *emailOtp) SendWelcomeEmail(recipientEmail, name string) error {
 	msg := newEmailMessage(
 		"welcome.html",
 		"Welcome",
-		struct {Name string}{Name: name},
+		struct{ Name string }{Name: name},
 		[]string{recipientEmail},
 	)
-	
+
 	err := s.sendEmail(msg)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -112,10 +112,10 @@ func (s *emailOtp) SendVerificationEmail(recipientEmail, otp string) error {
 	msg := newEmailMessage(
 		"verification_code.html",
 		"Verify Account",
-		struct {OTP string}{OTP: otp},
+		struct{ OTP string }{OTP: otp},
 		[]string{recipientEmail},
 	)
-	
+
 	err := s.sendEmail(msg)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (s *emailOtp) SendResetPasswordEmail(recipientEmail, url, name, exp string)
 	msg := newEmailMessage(
 		"submit_reset_password.html",
 		"Reset Password",
-		struct {Name,RecipientEmail,URL,EXP string}{Name: name,RecipientEmail: recipientEmail,URL: url,EXP: exp},
+		struct{ Name, RecipientEmail, URL, EXP string }{Name: name, RecipientEmail: recipientEmail, URL: url, EXP: exp},
 		[]string{recipientEmail},
 	)
 

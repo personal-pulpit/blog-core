@@ -110,7 +110,7 @@ func getRedisInstance() *redis.Client {
 	redisConfig.Port = genEndPort(endpoint)
 
 	time.Sleep(5 * time.Second)
-	redis,err := redisDB.GetRedisDB(redisConfig)
+	redis, err := redisDB.GetRedisDB(redisConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

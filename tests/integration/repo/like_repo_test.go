@@ -15,7 +15,7 @@ type LikeTestSuite struct {
 	repo        repository.LikeRepository
 	userRepo    repository.UserRepository
 	articleRepo repository.ArticleRepository
-	likeID   uint
+	likeID      uint
 	articleID   uint
 	userID      uint
 }
@@ -33,7 +33,7 @@ func (s *LikeTestSuite) SetupSuite() {
 
 	s.userID = user.ID
 
-	article, err := s.articleRepo.Create(context.TODO(), model.NewArticle("article1", "content", s.userID,nil))
+	article, err := s.articleRepo.Create(context.TODO(), model.NewArticle("article1", "content", s.userID, nil))
 	s.Nil(err)
 	s.NotNil(article)
 
@@ -44,20 +44,20 @@ func (s *LikeTestSuite) TestA_CreateLike() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		like *model.Like
-		Valid   bool
+		like  *model.Like
+		Valid bool
 	}{
 		{
-			like: model.NewLike(s.userID, s.articleID),
-			Valid:   true,
+			like:  model.NewLike(s.userID, s.articleID),
+			Valid: true,
 		},
 		{
-			like: model.NewLike(0, s.articleID),
-			Valid:   false,
+			like:  model.NewLike(0, s.articleID),
+			Valid: false,
 		},
 		{
-			like: model.NewLike(s.userID, 0),
-			Valid:   false,
+			like:  model.NewLike(s.userID, 0),
+			Valid: false,
 		},
 	}
 
@@ -104,26 +104,43 @@ func (s *LikeTestSuite) TestB_GetLikeByID() {
 	}
 }
 
-func (s *LikeTestSuite) TestC_DeleteByID() {
+func (s *LikeTestSuite) TestC_GetByUserID() {
+	ctx := context.TODO()
+	likes, err := s.repo.GetByUserID(ctx, s.userID)
+	s.NoError(err)
+	s.NotNil(likes)
+
+}
+
+func (s *LikeTestSuite) TestD_DeleteByID() {
 	ctx := context.TODO()
 
 	testCases := []struct {
-		likeID uint
+		userID    uint
+		ArticleID uint
 		Valid     bool
 	}{
 		{
-			likeID: s.likeID,
+			userID:    s.userID,
+			ArticleID: s.articleID,
 			Valid:     true,
 		},
 
 		{
-			likeID: 0,
+			userID:    0,
+			ArticleID: s.articleID,
+			Valid:     false,
+		},
+
+		{
+			userID:    s.userID,
+			ArticleID: 0,
 			Valid:     false,
 		},
 	}
 
 	for _, tc := range testCases {
-		err := s.repo.DeleteByID(ctx, tc.likeID)
+		err := s.repo.DeleteByArticleIDAndUserID(ctx, tc.ArticleID, tc.userID)
 		if tc.Valid {
 			s.NoError(err)
 		} else if !tc.Valid {

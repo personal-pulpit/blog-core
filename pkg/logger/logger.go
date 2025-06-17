@@ -5,7 +5,7 @@ type Logger interface {
 	Info(msg string, extra ...interface{})
 	Warn(msg string, extra ...interface{})
 	Error(msg string, extra ...interface{})
-	Fatal(msg string, extra ...interface{})	
+	Fatal(msg string, extra ...interface{})
 	// Debug(cat Category, sub SubCategory, msg string, extra map[ExtraKey]interface{})
 	// Debugf(template string, args ...interface{})
 	// Info(cat Category, sub SubCategory, msg string, extra map[ExtraKey]interface{})

@@ -6,7 +6,7 @@ type Like struct {
 	ID        uint `gorm:"primaryKey"`
 	UserID    uint `gorm:"foreignKey:UserID"`
 	ArticleID uint `gorm:"foreignKey:ArticleID"`
-	Article *Article
+	Article   *Article
 	CreatedAt time.Time
 }
 

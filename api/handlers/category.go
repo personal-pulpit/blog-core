@@ -6,6 +6,7 @@ import (
 	"blog/internal/service/category"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,23 +32,59 @@ func NewCategoryHandler(categoryService category.CategoryService) *CategoryHandl
 // @Success 200 {object} helpers.HttpResponse{data=map[string]interface{}} "Successfully retrieved categories"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to fetch categories"
 // @Router /api/v1/categories [get]
-func (c *CategoryHandler) GetAll(ctx *gin.Context) {
-	categories, err := c.categoryService.GetAllCategories(ctx)
-	if err != nil {
-		helpers.RespondWithError(ctx, http.StatusInternalServerError,
-			"Failed to fetch categories",
+func (c *CategoryHandler) GetCategories(ctx *gin.Context) {
+	title := ctx.Query("title")
+
+	if title == "" {
+		categories, err := c.categoryService.GetAllCategories(ctx)
+		if err != nil {
+			helpers.RespondWithError(ctx, http.StatusInternalServerError,
+				"Failed to fetch categories",
+				map[string]interface{}{
+					"error": err.Error(),
+					"count": 0,
+				})
+			return
+		}
+
+		helpers.RespondWithSuccess(ctx, http.StatusOK,
+			"Successfully retrieved categories",
 			map[string]interface{}{
-				"error": err.Error(),
-				"count": 0,
+				"categories": categories,
+				"count":      len(categories),
 			})
+
+		return
+	}
+
+	category, err := c.categoryService.GetCategoryByTitle(ctx, title)
+	if err != nil {
+		if errors.Is(err, repository.ErrCategoryNotFound) {
+			helpers.RespondWithError(ctx, http.StatusNotFound, "No category found with given title", map[string]interface{}{
+				"title": title,
+				"error": err.Error(),
+			})
+			return
+		}
+
+		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed to search category", map[string]interface{}{
+			"title": title,
+			"error": err.Error(),
+		})
+
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK,
-		"Successfully retrieved categories",
+		"Category found successfully",
 		map[string]interface{}{
-			"categories": categories,
-			"count":      len(categories),
+			"category": category,
+			"search_criteria": map[string]interface{}{
+				"title": title,
+			},
+			"metadata": map[string]interface{}{
+				"timestamp": time.Now(),
+			},
 		})
 }
 
@@ -61,9 +98,17 @@ func (c *CategoryHandler) GetAll(ctx *gin.Context) {
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed fetch category"
 // @Router /api/v1/categories/{id} [get]
 func (c *CategoryHandler) GetByID(ctx *gin.Context) {
-	id := ctx.Param("id")
+	strID := ctx.Param("id")
 
-	ID := helpers.StringToInt(id)
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest,
+			"Invalid category ID", map[string]interface{}{
+				"error":         "Invalid category ID format",
+				"provided_data": strID,
+			})
+		return
+	}
 
 	category, err := c.categoryService.GetCategoryByID(ctx, uint(ID))
 	if err != nil {
@@ -77,7 +122,7 @@ func (c *CategoryHandler) GetByID(ctx *gin.Context) {
 		}
 
 		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed fetch category", map[string]interface{}{
-			"category_id": id,
+			"category_id": ID,
 			"error":       err.Error(),
 		})
 		return
@@ -98,7 +143,7 @@ func (c *CategoryHandler) GetByID(ctx *gin.Context) {
 // @Success 201 {object} helpers.HttpResponse{data=map[string]interface{}} "Category created successfully"
 // @Failure 400 {object} helpers.HttpResponse{data=map[string]interface{}} "Invalid category data"
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed to create category"
-// @Router /api/v1/categories/create [post]
+// @Router /api/v1/categories [post]
 func (c *CategoryHandler) Create(ctx *gin.Context) {
 	var ci = new(createCategoryInput)
 
@@ -139,9 +184,17 @@ func (c *CategoryHandler) Create(ctx *gin.Context) {
 func (c *CategoryHandler) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	ID := helpers.StringToInt(id)
+	ID, err := helpers.StringToInt(id)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest,
+			"Invalid category ID", map[string]interface{}{
+				"error":         "Invalid category ID format",
+				"provided_data": id,
+			})
+		return
+	}
 
-	err := c.categoryService.DeleteCategoryByID(ctx, uint(ID))
+	err = c.categoryService.DeleteCategoryByID(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrCategoryNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound,

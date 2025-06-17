@@ -53,7 +53,7 @@ func (u *userPostgresRepo) Create(ctx context.Context, user *model.User) (*model
 	return user, tx, nil
 }
 func (u *userPostgresRepo) UpdateByID(ctx context.Context, ID uint, firstName, lastName, biography string) (*model.User, error) {
-	user,err := u.GetUserByID(ctx,ID)
+	user, err := u.GetUserByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (u *userPostgresRepo) UpdateByID(ctx context.Context, ID uint, firstName, l
 
 	err = u.postgresCLI.WithContext(ctx).Save(user).Error
 	if err != nil {
-		return nil, fmt.Errorf("update user by id: user ID:%d ,first name:%s ,last name:%s ,biography:%s\n%w: %v",ID,firstName,lastName ,biography,repository.ErrDatabase,err)
+		return nil, fmt.Errorf("update user by id: user ID:%d ,first name:%s ,last name:%s ,biography:%s\n%w: %v", ID, firstName, lastName, biography, repository.ErrDatabase, err)
 	}
 
 	return user, nil
@@ -75,7 +75,7 @@ func (u *userPostgresRepo) DeleteByID(ctx context.Context, ID uint) error {
 
 	result := u.postgresCLI.WithContext(ctx).Delete(user, ID)
 	if result.Error != nil {
-		return fmt.Errorf("delete user by id: user ID:%d \n%w: %v",ID,repository.ErrDatabase,result.Error)
+		return fmt.Errorf("delete user by id: user ID:%d \n%w: %v", ID, repository.ErrDatabase, result.Error)
 	}
 
 	if result.RowsAffected == 0 {

@@ -12,17 +12,17 @@ import (
 
 type UserTestSuite struct {
 	suite.Suite
-	repo        repository.UserRepository
-	savedUser   *model.User
+	repo      repository.UserRepository
+	savedUser *model.User
 
-	commentRepo repository.CommentRepository
-	articleRepo repository.ArticleRepository
-	likeRepo repository.LikeRepository
+	commentRepo  repository.CommentRepository
+	articleRepo  repository.ArticleRepository
+	likeRepo     repository.LikeRepository
 	bookmarkRepo repository.BookmarkRepository
 
-	usersArticleID uint
-	usersCommentID uint
-	usersLikeID uint
+	usersArticleID  uint
+	usersCommentID  uint
+	usersLikeID     uint
 	usersBookmarkID uint
 	articleCategory *model.Category
 }
@@ -268,7 +268,6 @@ func (s *UserTestSuite) TestF_DeleteUser() {
 	// Ensure an error occur
 	_, err = s.bookmarkRepo.GetByID(ctx, s.usersBookmarkID)
 	s.Error(err)
-
 
 }
 func TestUserTestSuite(t *testing.T) {

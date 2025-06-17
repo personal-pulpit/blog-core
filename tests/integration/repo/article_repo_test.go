@@ -14,15 +14,15 @@ import (
 
 type ArticleTestSuite struct {
 	suite.Suite
-	repo        repository.ArticleRepository
-	userRepo    repository.UserRepository
-	likeRepo repository.LikeRepository
+	repo         repository.ArticleRepository
+	userRepo     repository.UserRepository
+	likeRepo     repository.LikeRepository
 	categoryRepo repository.CategoryRepository
-	commentRepo repository.CommentRepository
-	article     *model.Article
+	commentRepo  repository.CommentRepository
+	article      *model.Article
 
 	articleAuthorID uint
-	articleLikeID uint
+	articleLikeID   uint
 	articleCategory *model.Category
 }
 
@@ -65,11 +65,11 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 		},
 		{
 			article: model.NewArticle("article0", "content", s.articleAuthorID, []model.Category{*notExistingCategory1}),
-			Valid:  false,
+			Valid:   false,
 		},
 		{
 			article: model.NewArticle("article1", "content", s.articleAuthorID, []model.Category{*notExistingCategory2}),
-			Valid:  false,
+			Valid:   false,
 		},
 		{
 			article: model.NewArticle("article2", "content", 0, []model.Category{*s.articleCategory}),
@@ -92,7 +92,7 @@ func (s *ArticleTestSuite) TestA_CreateArticle() {
 			s.Nil(err)
 			s.NotNil(comment2)
 
-			like,err := s.likeRepo.Create(ctx,model.NewLike(s.articleAuthorID,s.article.ID))
+			like, err := s.likeRepo.Create(ctx, model.NewLike(s.articleAuthorID, s.article.ID))
 			s.Nil(err)
 			s.NotNil(like)
 
@@ -281,12 +281,12 @@ func (s *ArticleTestSuite) TestF_DeleteArticleByID() {
 	s.Equal(0, len(comments))
 
 	// Ensure the article's category exists
-	category, err := s.categoryRepo.GetCategoryByID(ctx,s.articleCategory.ID)
+	category, err := s.categoryRepo.GetCategoryByID(ctx, s.articleCategory.ID)
 	s.NoError(err)
 	s.NotNil(category)
 
 	// Ensure the article's likes deleted
-	_, err = s.likeRepo.GetByID(ctx,s.articleLikeID)
+	_, err = s.likeRepo.GetByID(ctx, s.articleLikeID)
 	s.Error(err)
 }
 

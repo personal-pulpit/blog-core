@@ -69,8 +69,31 @@ func (m *UserAuthMiddleware) SetUserStatus() gin.HandlerFunc {
 				return
 			}
 
-			ctx.Set("id", helpers.StringToInt(accessTokenClaims.UserID))
-			ctx.Set("role", accessTokenClaims.Role)
+			ID, err := helpers.StringToInt(accessTokenClaims.UserID)
+			if err != nil {
+				helpers.RespondWithError(ctx, http.StatusInternalServerError, "Invalid User ID", map[string]interface{}{
+					"message": "Failed to parse user ID from token",
+					"error":   err.Error(),
+					"metadata": map[string]interface{}{
+						"timestamp": time.Now(),
+					},
+				})
+				return
+			}
+
+			role, err := helpers.StringToInt(accessTokenClaims.Role)
+			if err != nil {
+				helpers.RespondWithError(ctx, http.StatusInternalServerError, "Invalid Role", map[string]interface{}{
+					"message": "Failed to parse user role from token",
+					"error":   err.Error(),
+					"metadata": map[string]interface{}{
+						"timestamp": time.Now(),
+					},
+				})
+				return
+			}
+			ctx.Set("id", ID)
+			ctx.Set("role", role)
 			ctx.Set("is_logged", true)
 		}
 		ctx.Next()
@@ -125,9 +148,9 @@ func (m *UserAuthMiddleware) EnsureNotLoggedIn() gin.HandlerFunc {
 func (m *UserAuthMiddleware) EnsureAdmin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		isLogged := common.GetUserStatus(ctx)
-		role := ctx.GetString("role")
+		role := ctx.GetInt("role")
 
-		if common.IsAdmin(model.Role(helpers.StringToInt(role))) && isLogged {
+		if common.IsAdmin(model.Role(role)) && isLogged {
 			ctx.Next()
 		} else {
 			helpers.RespondWithError(ctx, http.StatusForbidden, "Admin Access Required", map[string]interface{}{

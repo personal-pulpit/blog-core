@@ -8,8 +8,8 @@ import (
 
 type CommentService interface {
 	AddComment(ctx context.Context, content string, userID, articleID uint) (*model.Comment, error)
-	UpdateComment(ctx context.Context, userID,commentID uint, content string) (*model.Comment, error)
-	DeleteComment(ctx context.Context, userID,commentID uint) error
+	UpdateComment(ctx context.Context, userID, commentID uint, content string) (*model.Comment, error)
+	DeleteComment(ctx context.Context, userID, commentID uint) error
 }
 
 type commentServiceImpl struct {
@@ -32,10 +32,10 @@ func (s *commentServiceImpl) AddComment(ctx context.Context, content string, use
 	return comment, nil
 }
 
-func (s *commentServiceImpl) UpdateComment(ctx context.Context, userID,commentID uint, content string) (*model.Comment, error) {
+func (s *commentServiceImpl) UpdateComment(ctx context.Context, userID, commentID uint, content string) (*model.Comment, error) {
 	err := s.checkCommentCreator(ctx, userID, commentID)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	comment, err := s.commentRepo.UpdateByID(ctx, commentID, content)
@@ -46,7 +46,7 @@ func (s *commentServiceImpl) UpdateComment(ctx context.Context, userID,commentID
 	return comment, nil
 }
 
-func (s *commentServiceImpl) DeleteComment(ctx context.Context, userID,commentID uint) error {
+func (s *commentServiceImpl) DeleteComment(ctx context.Context, userID, commentID uint) error {
 	err := s.checkCommentCreator(ctx, userID, commentID)
 	if err != nil {
 		return err
