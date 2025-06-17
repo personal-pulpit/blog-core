@@ -23,9 +23,13 @@ func NewCommentHandler(commentService comment.CommentService) *CommentHandler {
 }
 
 // commentInput represents the input for creating a comment.
-type commentInput struct {
+type createCommentInput struct {
 	ArticleID string `json:"article_id" binding:"required" example:"1"`                                // ID of the comment
 	Content   string `json:"content" binding:"required" example:"This is the content of the comment."` // Content of the comment
+}
+
+type updateComment struct {
+	Content string `json:"content" binding:"required"`
 }
 
 // @Summary Create a new comment
@@ -38,7 +42,7 @@ type commentInput struct {
 // @Failure 400 {object} map[string]interface{} "Invalid input data"
 // @Router /api/v1/comments [post]
 func (a *CommentHandler) Create(ctx *gin.Context) {
-	var ci commentInput
+	var ci createCommentInput
 	err := ctx.ShouldBindJSON(&ci)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
@@ -56,11 +60,19 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetInt("id"))
+	articleInputID, err := helpers.StringToInt(ci.ArticleID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": ci.ArticleID,
+		})
+		return
+	}
 	comment, err := a.commentService.AddComment(
 		ctx,
 		ci.Content,
 		userID,
-		uint(helpers.StringToInt(ci.ArticleID)),
+		uint(articleInputID),
 	)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create comment", map[string]interface{}{
@@ -96,12 +108,19 @@ func (a *CommentHandler) Create(ctx *gin.Context) {
 // @Failure 404 {object} map[string]interface{} "comment not found for update"
 // @Router /api/v1/comments/{id} [patch]
 func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
-	id := ctx.Param("id")
-	var input struct {
-		Content string `json:"content" binding:"required"`
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid comment ID", map[string]interface{}{
+			"error":         "Invalid comment ID format",
+			"provided_data": strID,
+		})
+		return
 	}
 
-	err := ctx.ShouldBindJSON(&input)
+	var input updateComment
+
+	err = ctx.ShouldBindJSON(&input)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid update data", map[string]interface{}{
 			"validation_errors": utils.GetValidationError(err),
@@ -111,18 +130,19 @@ func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetInt("id"))
-	comment, err := a.commentService.UpdateComment(ctx, userID, uint(helpers.StringToInt(id)), input.Content)
+
+	comment, err := a.commentService.UpdateComment(ctx, userID, uint(ID), input.Content)
 	if err != nil {
 		if errors.Is(err, repository.ErrCommentNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Comment not found for update", map[string]interface{}{
-				"comment_id": id,
+				"comment_id": ID,
 				"error":      err.Error(),
 			})
 			return
 		}
 
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to update comment", map[string]interface{}{
-			"comment_id": id,
+			"comment_id": ID,
 			"error":      err.Error(),
 		})
 		return
@@ -152,27 +172,36 @@ func (a *CommentHandler) UpdateByID(ctx *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Failed to delete comment"
 // @Router /api/v1/comments/{id} [delete]
 func (a *CommentHandler) DeleteByID(ctx *gin.Context) {
-	id := ctx.Param("id")
-	userID := uint(ctx.GetInt("id"))
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid comment ID", map[string]interface{}{
+			"error":         "Invalid comment ID format",
+			"provided_data": strID,
+		})
+		return
+	}
 
-	err := a.commentService.DeleteComment(ctx, userID, uint(helpers.StringToInt(id)))
+	userID := uint(ctx.GetInt("id"))
+	
+	err = a.commentService.DeleteComment(ctx, userID, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrCommentNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Comment not found for deletion", map[string]interface{}{
-				"comment_id": id,
+				"comment_id": ID,
 				"error":      err.Error(),
 			})
 			return
 		}
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete comment", map[string]interface{}{
-			"comment_id": id,
+			"comment_id": ID,
 			"error":      err.Error(),
 		})
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK, "Comment deleted successfully", map[string]interface{}{
-		"deleted_comment_id": id,
+		"deleted_comment_id": ID,
 		"metadata": map[string]interface{}{
 			"timestamp": time.Now(),
 			"status":    "deleted",

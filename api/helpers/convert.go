@@ -2,12 +2,11 @@ package helpers
 
 import "strconv"
 
-func StringToInt(str string)int{
+func StringToInt(str string)(int,error){
 	i,err := strconv.Atoi(str)
 	if err != nil {
-		//TODO:manage panics
-		panic(err)
+		return 0, err
 	}
 
-	return i
+	return i,nil
 }

@@ -54,11 +54,20 @@ func (h *BookmarkHandler) Create(ctx *gin.Context) {
 		return
 	}
 
+	ID, err := helpers.StringToInt(bi.ArticleID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error": "Article ID must be a valid integer",
+			"input": bi,
+		})
+		return
+	}
+
 	userID := uint(ctx.GetInt("id"))
 	bookmark, err := h.bookmarkService.CreateBookmark(
 		ctx,
 		userID,
-		uint(helpers.StringToInt(bi.ArticleID)),
+		uint(ID),
 	)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create bookmark", map[string]interface{}{
@@ -80,7 +89,6 @@ func (h *BookmarkHandler) Create(ctx *gin.Context) {
 			"timestamp": time.Now()},
 	})
 }
-
 
 // @Summary      Get all bookmarks for the authenticated user
 // @Description  Retrieve all bookmarks for the authenticated user
@@ -147,26 +155,35 @@ func (a *BookmarkHandler) GetUserBookmarks(ctx *gin.Context) {
 // @Router       /bookmarks/article/{id} [delete]
 func (a *BookmarkHandler) Delete(ctx *gin.Context) {
 	articleID := ctx.Param("id")
+	ID, err := helpers.StringToInt(articleID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error": "Article ID must be a valid integer",
+			"input": articleID,
+		})
+		return
+	}
+
 	userID := uint(ctx.GetInt("id"))
 
-	err := a.bookmarkService.DeleteBookmark(ctx, uint(helpers.StringToInt(articleID)),userID)
+	err = a.bookmarkService.DeleteBookmark(ctx, uint(ID), userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrBookmarkNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "bookmark not found for deletion", map[string]interface{}{
 				"article_id": articleID,
-				"error":   err.Error(),
+				"error":      err.Error(),
 			})
 			return
 		}
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete bookmark", map[string]interface{}{
 			"article_id": articleID,
-			"error":   err.Error(),
+			"error":      err.Error(),
 		})
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK, "bookmark deleted successfully", map[string]interface{}{
-		"deleted_article_bookmark_id":articleID ,
+		"deleted_article_bookmark_id": articleID,
 		"metadata": map[string]interface{}{
 			"timestamp": time.Now(),
 			"status":    "deleted",

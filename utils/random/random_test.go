@@ -7,20 +7,17 @@ import (
 )
 
 func TestGenerateOTP(t *testing.T) {
-	otp := GenerateOTP()
+	otp, err := GenerateOTP()
+	require.NoError(t, err)
 	require.NotZero(t, otp)
 
 	t.Log(otp)
 }
 
-func TestGenerateUniqueId(t *testing.T) {
-	uniqueId := GenerateUniqueId()
+func TestGenerateUniqueID(t *testing.T) {
+	uniqueID, err := GenerateUniqueID()
+	require.NoError(t, err)
+	require.NotZero(t, uniqueID)
 
-	t.Log(uniqueId)
-}
-
-func TestGenerateId(t *testing.T) {
-	id := GenerateId()
-
-	t.Log(id)
+	t.Log(uniqueID)
 }

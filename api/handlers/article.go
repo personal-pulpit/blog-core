@@ -70,9 +70,8 @@ func (a *Article) GetArticles(ctx *gin.Context) {
 				"articles":  articles,
 			})
 
-			return 
-		}
-
+		return
+	}
 
 	articles, err := a.ArticleService.SearchArticle(ctx, filterData)
 	if err != nil {
@@ -116,9 +115,17 @@ func (a *Article) GetArticles(ctx *gin.Context) {
 // @Failure 500 {object} map[string]interface{} "Failed to fetch article"
 // @Router /api/v1/articles/{id} [get]
 func (a *Article) GetByID(ctx *gin.Context) {
-	ID := ctx.Param("id")
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": strID,
+		})
+		return
+	}
 
-	article, err := a.ArticleService.GetArticleByID(ctx, uint(helpers.StringToInt(ID)))
+	article, err := a.ArticleService.GetArticleByID(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrArticleNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found",
@@ -221,15 +228,24 @@ func (a *Article) Create(ctx *gin.Context) {
 // @Failure 404 {object} map[string]interface{} "Article not found for update"
 // @Router /api/v1/articles/{id} [patch]
 func (a *Article) UpdateByID(ctx *gin.Context) {
-	id := ctx.Param("id")
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": strID,
+		})
+		return
+	}
+
 	var ai = new(articleInput)
 
-	err := ctx.ShouldBind(ai)
+	err = ctx.ShouldBind(ai)
 	if err != nil {
 		if utils.CheckErrorForWord(err, "required") {
 			helpers.RespondWithError(ctx, http.StatusBadRequest, "Missing required fields for update", map[string]interface{}{
 				"validation_errors": utils.GetValidationError(ErrPleaseCompleteAllFields),
-				"article_id":        id,
+				"article_id":        ID,
 				"provided_data":     ai,
 			})
 			return
@@ -237,24 +253,24 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid update data", map[string]interface{}{
 			"validation_errors": utils.GetValidationError(err),
-			"article_id":        id,
+			"article_id":        ID,
 			"provided_data":     ai,
 		})
 		return
 	}
 
-	article, err := a.ArticleService.Update(ctx, uint(helpers.StringToInt(id)), ai.Title, ai.Content)
+	article, err := a.ArticleService.Update(ctx, uint(ID), ai.Title, ai.Content)
 	if err != nil {
 		if errors.Is(err, repository.ErrArticleNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found for update", map[string]interface{}{
-				"article_id": id,
+				"article_id": ID,
 				"error":      err.Error(),
 			})
 			return
 		}
 
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to update article", map[string]interface{}{
-			"article_id": id,
+			"article_id": ID,
 			"error":      err.Error(),
 		})
 		return
@@ -286,25 +302,34 @@ func (a *Article) UpdateByID(ctx *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Failed to delete article"
 // @Router /api/v1/articles/{id} [delete]
 func (a *Article) DeleteByID(ctx *gin.Context) {
-	id := ctx.Param("id")
-	err := a.ArticleService.Delete(ctx, uint(helpers.StringToInt(id)))
+	strID := ctx.Param("id")
+	ID, err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Invalid article ID format",
+			"provided_data": strID,
+		})
+		return
+	}
+
+	err = a.ArticleService.Delete(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrArticleNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Article not found for deletion", map[string]interface{}{
-				"article_id": id,
+				"article_id": ID,
 				"error":      err.Error(),
 			})
 			return
 		}
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to delete article", map[string]interface{}{
-			"article_id": id,
+			"article_id": ID,
 			"error":      err.Error(),
 		})
 		return
 	}
 
 	helpers.RespondWithSuccess(ctx, http.StatusOK, "Article deleted successfully", map[string]interface{}{
-		"deleted_article_id": id,
+		"deleted_article_id": ID,
 		"metadata": map[string]interface{}{
 			"timestamp": time.Now(),
 			"status":    "deleted",

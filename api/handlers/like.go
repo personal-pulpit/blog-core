@@ -54,11 +54,20 @@ func (a *LikeHandler) Create(ctx *gin.Context) {
 		return
 	}
 
+	ID,err := helpers.StringToInt(li.ArticleID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error": "Article ID must be a valid integer",
+			"input": li,
+		})
+		return
+	}
+
 	userID := uint(ctx.GetInt("id"))
 	like, err := a.likeService.CreateLike(
 		ctx,
 		userID,
-		uint(helpers.StringToInt(li.ArticleID)),
+		uint(ID),
 	)
 	if err != nil {
 		helpers.RespondWithError(ctx, http.StatusBadRequest, "Failed to create like", map[string]interface{}{
@@ -143,10 +152,19 @@ func (a *LikeHandler) GetUserLikes(ctx *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}  "Like not found"
 // @Router       /likes/article/{id} [delete]
 func (a *LikeHandler) DeleteByID(ctx *gin.Context) {
-	articleID := ctx.Param("id")
+	strArticleID := ctx.Param("id")
 	userID := uint(ctx.GetInt("id"))
 
-	err := a.likeService.DeleteLike(ctx, uint(helpers.StringToInt(articleID)), userID)
+	articleID, err := helpers.StringToInt(strArticleID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest, "Invalid article ID", map[string]interface{}{
+			"error":         "Article ID must be a valid integer",
+			"provided_data": strArticleID,
+		})
+		return
+	}
+
+	err = a.likeService.DeleteLike(ctx, uint(articleID), userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrLikeNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound, "Like not found for deletion", map[string]interface{}{

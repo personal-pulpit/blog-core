@@ -98,9 +98,17 @@ func (c *CategoryHandler) GetCategories(ctx *gin.Context) {
 // @Failure 500 {object} helpers.HttpResponse{data=map[string]interface{}} "Failed fetch category"
 // @Router /api/v1/categories/{id} [get]
 func (c *CategoryHandler) GetByID(ctx *gin.Context) {
-	id := ctx.Param("id")
+	strID := ctx.Param("id")
 
-	ID := helpers.StringToInt(id)
+	ID,err := helpers.StringToInt(strID)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest,
+			"Invalid category ID", map[string]interface{}{
+				"error":         "Invalid category ID format",
+				"provided_data": strID,
+			})
+		return
+	}
 
 	category, err := c.categoryService.GetCategoryByID(ctx, uint(ID))
 	if err != nil {
@@ -114,7 +122,7 @@ func (c *CategoryHandler) GetByID(ctx *gin.Context) {
 		}
 
 		helpers.RespondWithError(ctx, http.StatusInternalServerError, "Failed fetch category", map[string]interface{}{
-			"category_id": id,
+			"category_id": ID,
 			"error":       err.Error(),
 		})
 		return
@@ -176,9 +184,17 @@ func (c *CategoryHandler) Create(ctx *gin.Context) {
 func (c *CategoryHandler) DeleteByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	ID := helpers.StringToInt(id)
-
-	err := c.categoryService.DeleteCategoryByID(ctx, uint(ID))
+	ID,err := helpers.StringToInt(id)
+	if err != nil {
+		helpers.RespondWithError(ctx, http.StatusBadRequest,
+			"Invalid category ID", map[string]interface{}{
+				"error":         "Invalid category ID format",
+				"provided_data": id,
+			})
+		return
+	}
+	
+	err = c.categoryService.DeleteCategoryByID(ctx, uint(ID))
 	if err != nil {
 		if errors.Is(err, repository.ErrCategoryNotFound) {
 			helpers.RespondWithError(ctx, http.StatusNotFound,
