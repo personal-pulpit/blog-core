@@ -13,7 +13,7 @@ func TestHashManager(t *testing.T) {
 
 	hashedPassword, err := hashManager.HashPassword(plainPassword)
 	require.NoError(t, err)
-	require.NotEmpty(t, hashedPassword)
+	require.NotEmpty(t, hashedPassword) 
 
 	t.Log(hashedPassword)
 

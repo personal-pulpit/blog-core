@@ -32,15 +32,22 @@ var DefaultHashParams = &HashParams{
 	KeyLength:   32,
 }
 
-type HashManager struct {
+type HashManager interface{
+	HashPassword(password string)(hashedPassword string,err error)
+	CheckPasswordHash(password,hashedPassword string)bool
+}
+
+
+type hashManager struct {
 	params *HashParams
 }
 
-func NewHashManager(params *HashParams) *HashManager {
-	return &HashManager{params}
+func NewHashManager(params *HashParams) HashManager {
+	return &hashManager{params}
 }
 
-func (h *HashManager) HashPassword(password string) (hashedPassword string, err error) {
+
+func (h *hashManager) HashPassword(password string) (hashedPassword string, err error) {
 	salt, err := h.generateRandomBytes(h.params.SaltLength)
 	if err != nil {
 		return "", err
@@ -56,7 +63,7 @@ func (h *HashManager) HashPassword(password string) (hashedPassword string, err 
 	return hashedPassword, nil
 }
 
-func (h *HashManager) CheckPasswordHash(password, hashedPassword string) bool {
+func (h *hashManager) CheckPasswordHash(password, hashedPassword string) bool {
 	// Extract the parameters, salt and derived key from the encoded password
 	// hash.
 	p, salt, hash, err := h.decodeHash(hashedPassword)
@@ -69,7 +76,7 @@ func (h *HashManager) CheckPasswordHash(password, hashedPassword string) bool {
 	return subtle.ConstantTimeCompare(hash, otherHash) == 1
 }
 
-func (h *HashManager) generateRandomBytes(n uint32) ([]byte, error) {
+func (h *hashManager) generateRandomBytes(n uint32) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -79,7 +86,7 @@ func (h *HashManager) generateRandomBytes(n uint32) ([]byte, error) {
 	return b, nil
 }
 
-func (h *HashManager) decodeHash(encodedHash string) (params *HashParams, salt, hash []byte, err error) {
+func (h *hashManager) decodeHash(encodedHash string) (params *HashParams, salt, hash []byte, err error) {
 	vals := strings.Split(encodedHash, "$")
 	if len(vals) != 6 {
 		return nil, nil, nil, ErrInvalidHash

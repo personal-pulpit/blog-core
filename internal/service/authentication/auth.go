@@ -46,11 +46,11 @@ type authenticateManager struct {
 	userPostgresRepo repository.UserRepository
 	authPostgresRepo repository.AuthRepository
 	authManager      auth_manager.AuthManager
-	hashManager      *hash.HashManager
+	hashManager      hash.HashManager
 	emailService     email.EmailService
 }
 
-func NewAuthenticateService(authRepo repository.AuthRepository, userRepo repository.UserRepository, authManager auth_manager.AuthManager, hashManager *hash.HashManager, emailService email.EmailService) AuthService {
+func NewAuthenticateService(authRepo repository.AuthRepository, userRepo repository.UserRepository, authManager auth_manager.AuthManager, hashManager hash.HashManager, emailService email.EmailService) AuthService {
 	return &authenticateManager{
 		authPostgresRepo: authRepo,
 		userPostgresRepo: userRepo,
